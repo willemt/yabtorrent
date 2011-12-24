@@ -4,10 +4,9 @@
 #include <assert.h>
 #include <setjmp.h>
 #include <stdlib.h>
-#include <stdio.h>
 #include <string.h>
 
-char *readFile(
+char *read_file(
     const char *name,
     int *len
 )
@@ -22,8 +21,8 @@ char *readFile(
     file = fopen(name, "rb");
     if (!file)
     {
-        fprintf(stderr, "Unable to open file %s", name);
-        return;
+        fprintf(stderr, "Unable to open file %s\n", name);
+        return NULL;
     }
 
     //Get file length
@@ -32,12 +31,11 @@ char *readFile(
     fseek(file, 0, SEEK_SET);
 
     //Allocate memory
-    buffer = (char *) malloc(fileLen + 1);
-    if (!buffer)
+    if (!(buffer = (char *) malloc(fileLen + 1)))
     {
-        fprintf(stderr, "Memory error!");
+        fprintf(stderr, "Memory error!\n");
         fclose(file);
-        return;
+        return NULL;
     }
 
     //Read file contents into buffer
@@ -47,7 +45,6 @@ char *readFile(
     *len = fileLen + 1;
 
     return buffer;
-
     //Do what ever with buffer
 //      free(buffer);
 }

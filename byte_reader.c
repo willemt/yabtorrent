@@ -21,7 +21,7 @@ void stream_write_uint32(
 {
     uint32_t *ptr;
 
-    ptr = *bytes;
+    ptr = (uint32_t *) (*bytes);
 
     *ptr = htonl(value);
 
@@ -47,11 +47,9 @@ uint32_t stream_read_uint32(
     unsigned char **bytes
 )
 {
-    uint32_t val;
-
     uint32_t *ptr;
 
-    ptr = *bytes;
+    ptr = (uint32_t *) (*bytes);
 
     *bytes += 4;
 

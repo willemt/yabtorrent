@@ -9,6 +9,8 @@
  *
  */
 
+#include <stdlib.h>
+#include <string.h>
 #include <stdio.h>
 
 /* Converts a hex character to its integer value */
@@ -24,7 +26,7 @@ char to_hex(
     char code
 )
 {
-    static char hex[] = "0123456789abcdef";
+    static char hex[] = "0123456789ABCDEF";
 
     return hex[code & 15];
 }
@@ -41,14 +43,20 @@ char *url_encode(
 
     while (*pstr)
     {
-        if (isalnum(*pstr) || *pstr == '-' || *pstr == '_' || *pstr == '.'
-            || *pstr == '~')
+        if (isalnum(*pstr))     // || *pstr == '-' || *pstr == '_' || *pstr == '.'
+//            || *pstr == '~')
+        {
             *pbuf++ = *pstr;
-        else if (*pstr == ' ')
-            *pbuf++ = '+';
+        }
+//        else if (*pstr == ' ')
+//        {
+//            *pbuf++ = '+';
+//        }
         else
+        {
             *pbuf++ = '%', *pbuf++ = to_hex(*pstr >> 4), *pbuf++ =
                 to_hex(*pstr & 15);
+        }
         pstr++;
     }
     *pbuf = '\0';

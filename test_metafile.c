@@ -132,6 +132,7 @@ void bt_set_path(
     printf("setting path: %.*s\n", len, path);
 }
 
+#if 1
 void main(
 )
 {
@@ -143,5 +144,6 @@ void main(
     buf = ReadFile("test.torrent", &len);
     //buf = ReadFile("meta", &len);
 
-    bt_read_metainfo(0, buf, len);
+    bt_client_read_metainfo(0, buf, len);
 }
+#endif

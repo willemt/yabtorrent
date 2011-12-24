@@ -39,13 +39,32 @@ void *raprogress_init(
     raprogress_t *prog;
 
     prog = calloc(1, sizeof(raprogress_t));
-
     prog->max = max;
     prog->first_block = NULL;
-
     return prog;
 }
 
+void raprogress_free(
+    void *ra
+)
+{
+    raprogress_t *prog = ra;
+
+    var_block_t *blk, *prev;
+
+    blk = prog->first_block;
+
+    while (blk)
+    {
+        prev = blk;
+        blk = blk->next;
+        free(prev);
+    }
+
+    free(prog);
+}
+
+/*  get number of non-contiginous blocks */
 int raprogress_get_num_blocks(
     raprogress_t * prog
 )
@@ -63,18 +82,20 @@ int raprogress_get_num_blocks(
 //        printf("block: %d %d\n", block->offset, block->len);
         block = block->next;
     }
-
 //    printf("ending %d\n", num);
 
     return num;
 }
 
+/* mark this block as complete */
 void raprogress_mark_complete(
     raprogress_t * prog,
-    int offset,
-    int len
+    const int offset,
+    const int len
 )
 {
+    var_block_t *this = NULL, *prev;
+
     if (!prog->first_block)
     {
         var_block_t *block;
@@ -85,8 +106,6 @@ void raprogress_mark_complete(
         block->next = NULL;
         return;
     }
-
-    var_block_t *this, *prev;
 
     /* get 1st block that has a higher offset than us */
 
@@ -99,13 +118,13 @@ void raprogress_mark_complete(
         block = prog->first_block = malloc(sizeof(var_block_t));
         block->len = len;
         block->offset = offset;
-        block->next = prev;
-        this = prev;
+        block->next = this = prev;
         prev = block;
     }
     else
     {
-        while (prev->next && (offset >= prev->next->offset))
+        /*  find a place where our offset is equal or greater */
+        while (prev->next && (prev->next->offset <= offset))
         {
             prev = prev->next;
         }
@@ -122,12 +141,14 @@ void raprogress_mark_complete(
              * |00000LLNL0000| */
             if (offset + len <= prev->offset + prev->len)
             {
-                return;
-            }
 
-            /* increase coverage */
-            prev->len = (offset + len) - prev->offset;
-            /* might eat another... */
+            }
+            else
+            {
+                /* increase coverage */
+                prev->len = (offset + len) - prev->offset;
+                /* might eat another... */
+            }
         }
         else
         {
@@ -173,18 +194,17 @@ bool raprogress_is_complete(
     return block && !block->next && block->len == prog->max;
 }
 
+/* get an incompleted block  */
 void raprogress_get_incomplete(
-    raprogress_t * prog,
+    const raprogress_t * prog,
     int *offset,
     int *len,
     const int max
 )
 {
-    var_block_t *block;
+    const var_block_t *block;
 
-    *len = 0;
-    *offset = 0;
-
+    *offset = *len = 0;
     block = prog->first_block;
 
     if (!block)
@@ -214,12 +234,72 @@ void raprogress_get_incomplete(
         }
         else
         {
-            int start;
-
-            *offset = start = 0 + block->len;
+            *offset = 0 + block->len;
             *len = block->next->offset - block->len;
         }
     }
 
     *len = __capmax(*len, max);
+
+//    printf("%d %d %d %d\n", prog->max, *len, max, *offset + *len);
+
+    /*  make sure we aren't going over the boundary */
+    if (prog->max < *offset + *len)
+    {
+        *len = prog->max - *offset;
+    }
+}
+
+int raprogress_get_nbytes_completed(
+    const raprogress_t * prog
+)
+{
+    const var_block_t *block;
+
+    block = prog->first_block;
+
+    int nbytes = 0;
+
+    while (block)
+    {
+        nbytes += block->len;
+        block = block->next;
+    }
+
+    return nbytes;
+}
+
+/*  do we have this? */
+int raprogress_have(
+    raprogress_t * prog,
+    const int offset,
+    const int len
+)
+{
+    const var_block_t *block;
+
+    block = prog->first_block;
+
+    while (block)
+    {
+        if (offset < block->offset)
+        {
+
+        }
+        else if (block->offset <= offset)
+        {
+            if (offset + len <= block->offset + block->len)
+            {
+                return 1;
+            }
+        }
+        else
+        {
+            return 0;
+        }
+
+        block = block->next;
+    }
+
+    return 0;
 }

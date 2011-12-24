@@ -6,7 +6,7 @@ typedef struct
 } raprogress_t;
 
 void raprogress_get_incomplete(
-    raprogress_t * prog,
+    const raprogress_t * prog,
     int *offset,
     int *len,
     const int max
@@ -28,11 +28,4 @@ void raprogress_mark_complete(
 
 bool raprogress_is_complete(
     raprogress_t * prog
-);
-
-void raprogress_get_incomplete(
-    raprogress_t * prog,
-    int *offset,
-    int *len,
-    const int max
 );

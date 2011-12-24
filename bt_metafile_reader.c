@@ -8,17 +8,12 @@
 
 #include <arpa/inet.h>
 
-#include "sha1.h"
-
 #include "bencode.h"
-
-char *str2sha1hash(
-    const char *str,
-    int len
-);
+#include "bt.h"
+#include "bt_local.h"
 
 static void __do_files_list(
-    int id,
+    void *id,
     bencode_t * list
 )
 {
@@ -68,11 +63,9 @@ static void __do_files_list(
              */
             else if (!strncmp(key, "path", klen))
             {
-                char *fullpath;
+                char *fullpath = NULL;
 
-                int fp_len;     // count including last nul byte
-
-                fullpath = NULL;
+                int fp_len = 0; // count including last nul byte
 
                 while (bencode_list_has_next(&benk))
                 {
@@ -86,25 +79,28 @@ static void __do_files_list(
                     if (!fullpath)
                     {
                         fullpath = strndup(path, klen);
-                        fp_len = klen + 1;
+                        fp_len = klen;
                     }
                     else
                     {
                         fullpath = realloc(fullpath, fp_len + klen + 2);
-                        fullpath[fp_len - 1] = '/';
-                        strncpy(fullpath + fp_len, path, klen);
-                        fp_len += klen + 2;
+                        fullpath[fp_len] = '/';
+                        strncpy(fullpath + fp_len + 1, path, klen);
+                        fp_len += klen + 1;
                     }
                 }
-                bt_add_file(id, fullpath, fp_len, current_file_len);
+
+                bt_client_add_file(id, fullpath, fp_len, current_file_len);
+                free(fullpath);
             }
         }
     }
 }
 
 static void __do_info_dict(
-    int id,
-    bencode_t * dict
+    void *id,
+    bencode_t * dict,
+    bt_piece_info_t * pinfo
 )
 {
 #if 0
@@ -121,9 +117,10 @@ static void __do_info_dict(
         int len;
 
         bencode_dict_get_start_and_len(dict, &val, &len);
-//        printf("hash: %s\n", ));
+        printf("hash: %d\n", len);
+//        printf("hash: %d, %.*s\n", len, len, val, len);
 
-        bt_set_info_hash(id, url_encode(str2sha1hash(val, len)));
+        bt_client_set_info_hash(id, str2sha1hash(val, len));
         //bt_set_info_hash(id, str2sha1hash(val, len));
     }
 
@@ -136,7 +133,7 @@ static void __do_info_dict(
         bencode_t benk;
 
         bencode_dict_get_next(dict, &benk, &key, &klen);
-//        printf("ZZZZEKY %.*s\n", klen, key);
+
         /* is a single file torrent */
         if (!strncmp(key, "length", klen))
         {
@@ -144,6 +141,8 @@ static void __do_info_dict(
 
             bencode_int_value(&benk, &file_len);
 //            printf("got filelen %d\n", file_len);
+//            bt_set_file_length(
+
             bencode_dict_get_next(dict, &benk, &key, &klen);
             if (!strncmp(key, "name", klen))
             {
@@ -152,22 +151,27 @@ static void __do_info_dict(
                 const char *name;
 
                 bencode_string_value(&benk, &name, &len);
-                bt_add_file(id, name, len, file_len);
+                bt_client_add_file(id, name, len, file_len);
             }
         }
+        /*  ...otherwise multi-file torrent */
         else if (!strncmp(key, "files", klen))
         {
             __do_files_list(id, &benk);
         }
+#if 1
         else if (!strncmp(key, "piece length", klen))
         {
             int len;
 
             long int piece_len;
 
+            piece_len = 0;
             bencode_int_value(&benk, &piece_len);
-            bt_set_piece_length(id, piece_len, len);
+            bt_client_set_piece_length(id, piece_len);
+//            pinfo->piece_len = len;
         }
+#endif
         else if (!strncmp(key, "pieces", klen))
         {
             int len;
@@ -175,65 +179,22 @@ static void __do_info_dict(
             const char *val;
 
             bencode_string_value(&benk, &val, &len);
-            bt_add_pieces(id, val, len);
+            bt_client_add_pieces(id, val, len);
 //            printf("%.*s\n", len, val);
         }
     }
-}
 
-char *str2sha1hash(
-    const char *str,
-    int len
-)
-{
-    SHA1Context sha;
-
-    SHA1Reset(&sha);
-    SHA1Input(&sha, str, len);
-    if (!SHA1Result(&sha))
-    {
-        fprintf(stderr, "sha: could not compute message digest for %s\n", str);
-        return NULL;
-    }
-    else
-    {
-        char *hash;
-
-        char *dst, *src;
-
-        int ii;
-
-#if 1
-        hash = malloc(sizeof(char) * 20);
-        dst = hash;
-        src = sha.Message_Digest;
-
-        for (ii = 0; ii < 5; ii++)
-            sha.Message_Digest[ii] = htonl(sha.Message_Digest[ii]);
-//        for (ii = 0; ii < 20; ii++, dst++, src++)
-//            *dst = *src;
-        memcpy(hash, sha.Message_Digest, sizeof(char) * 20);
-#else
-        asprintf(&hash,
-                 "%08x%08x%08x%08x%08x",
-                 sha.Message_Digest[0],
-                 sha.Message_Digest[1],
-                 sha.Message_Digest[2],
-                 sha.Message_Digest[3], sha.Message_Digest[4]);
-#endif
-//        printf("hash: %s\n", hash);
-        return hash;
-    }
 }
 
 /**
  *
  * This assigns the info_hash
  * */
-void bt_read_metainfo(
-    const int id,
+void bt_client_read_metainfo(
+    void *id,
     const char *buf,
-    const int len
+    const int len,
+    bt_piece_info_t * pinfo
 //    const char *fname
 )
 {
@@ -242,7 +203,6 @@ void bt_read_metainfo(
     bencode_t ben;
 
     bencode_init(&ben, buf, len);
-//    printf("bencode->len = %d\n", len);
 
     if (!bencode_is_dict(&ben))
     {
@@ -258,7 +218,7 @@ void bt_read_metainfo(
         bencode_t benk;
 
         bencode_dict_get_next(&ben, &benk, &key, &klen);
-        printf("zey: %.*s\n", klen, key);
+
         if (!strncmp(key, "announce", klen))
         {
             int len;
@@ -266,14 +226,17 @@ void bt_read_metainfo(
             const char *val;
 
             bencode_string_value(&benk, &val, &len);
-            bt_set_tracker_url(id, val, len);
+            bt_client_set_tracker_url(id, val, len);
         }
         else if (!strncmp(key, "announce-list", klen))
         {
 
+            /*  loop through announce list */
+
             while (bencode_list_has_next(&benk))
             {
                 bencode_t innerlist;
+
 
                 bencode_list_get_next(&benk, &innerlist);
                 while (bencode_list_has_next(&innerlist))
@@ -286,7 +249,7 @@ void bt_read_metainfo(
                     int len;
 
                     bencode_string_value(&benlitem, &backup, &len);
-                    bt_add_tracker_backup(id, backup, len);
+                    bt_client_add_tracker_backup(id, backup, len);
                 }
             }
         }
@@ -297,7 +260,7 @@ void bt_read_metainfo(
             const char *val;
 
             bencode_string_value(&benk, &val, &len);
-            printf("comment: %.*s\n", len, val);
+//            printf("comment: %.*s\n", len, val);
         }
         else if (!strncmp(key, "created by", klen))
         {
@@ -306,14 +269,14 @@ void bt_read_metainfo(
             const char *val;
 
             bencode_string_value(&benk, &val, &len);
-            printf("created by: %.*s\n", len, val);
+//            printf("created by: %.*s\n", len, val);
         }
         else if (!strncmp(key, "creation date", klen))
         {
             long int date;
 
             bencode_int_value(&benk, &date);
-            printf("created date: %ld\n", date);
+//            printf("created date: %ld\n", date);
         }
         else if (!strncmp(key, "encoding", klen))
         {
@@ -322,13 +285,15 @@ void bt_read_metainfo(
             const char *val;
 
             bencode_string_value(&benk, &val, &len);
-            printf("encoding: %.*s\n", len, val);
+//            printf("encoding: %.*s\n", len, val);
         }
+#if 1
         else if (!strncmp(key, "info", klen))
         {
 
 //            printf("doing info:%s\n", benk.str);
-            __do_info_dict(id, &benk);
+            __do_info_dict(id, &benk, pinfo);
         }
+#endif
     }
 }

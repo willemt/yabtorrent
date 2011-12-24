@@ -1,6 +1,4 @@
 #include <stdbool.h>
-#include "ustr.h"
-#include "bencoding.h"
 #include <assert.h>
 #include <setjmp.h>
 #include <stdlib.h>
@@ -14,13 +12,13 @@ void TestByteReaderReadZero(
     CuTest * tc
 )
 {
-    uint32_t num[10];
+    char num[10];
 
     char *cptr_read;
 
     unsigned char val;
 
-    memset(num, 0, sizeof(uint32_t) * 10);
+    memset(num, 0, sizeof(char) * 10);
 
     cptr_read = &num[0];
 
@@ -33,13 +31,13 @@ void TestByteReaderUbyteWriteRead(
     CuTest * tc
 )
 {
-    uint32_t num[10];
+    char num[10];
 
     char *cptr_write, *cptr_read;
 
     unsigned char val;
 
-    memset(num, 0, sizeof(uint32_t) * 10);
+    memset(num, 0, sizeof(char) * 10);
 
     cptr_write = &num[0];
     cptr_read = &num[0];
@@ -54,13 +52,13 @@ void TestByteReaderUint32WriteRead(
     CuTest * tc
 )
 {
-    uint32_t num[10];
+    char num[10];
 
     char *cptr_write, *cptr_read;
 
     uint32_t val;
 
-    memset(num, 0, sizeof(uint32_t) * 10);
+    memset(num, 0, sizeof(char) * 10);
 
     cptr_write = &num[0];
     cptr_read = &num[0];
@@ -75,7 +73,7 @@ void TestByteReaderMiscWriteRead(
     CuTest * tc
 )
 {
-    uint32_t num[10];
+    char num[10];
 
     char *cptr_write, *cptr_read;
 
@@ -83,7 +81,7 @@ void TestByteReaderMiscWriteRead(
 
     uint32_t ival;
 
-    memset(num, 0, sizeof(uint32_t) * 10);
+    memset(num, 0, sizeof(char) * 10);
 
     cptr_write = &num[0];
     cptr_read = &num[0];
