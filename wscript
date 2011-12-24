@@ -58,9 +58,6 @@ def unittest(bld, src):
 #    unittest.print_results()
 
 def build(bld):
-#bld(rule='mkdir clinkedlistqueue && git pull git@github.com:willemt/CLinkedListQueue.git', always=True)
-        bld(rule='mkdir clinkedlistqueue')
-
 #        bld.stlib(source='a.c', target='mystlib')
         bld.objects(
                 source='config.c list.c',
@@ -77,7 +74,6 @@ def build(bld):
 #                cflags=['-g', '-fPIC']
 #                )
 
-        return
         bld.shlib(
             source='bencode/bencode.c bt_client.c bt_sha1.c bt_util.c bt_piece_db.c bt_filedumper.c bt_bitfield.c bt_piece.c byte_reader.c raprogress.c bt_metafile_reader.c bt_tracker_response_reader.c bt_choker_leecher.c bt_choker_seeder.c url_encoder.c http_request.c bt_peer_connection.c bt_diskcache.c bt_diskmem.c readfile.c sha1.c chashmap_via_linked_list/linked_list_hashmap.c clinkedlistqueue/linked_list_queue.c cheap/heap.c bt_rarestfirst_selector.c pseudolru/pseudolru.c bt_ticker.c',
                 use='config',
