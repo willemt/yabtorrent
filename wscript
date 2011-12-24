@@ -1,8 +1,27 @@
 def options(opt):
         opt.load('compiler_c')
 
+
+contribs = [
+('clinkedlistqueue', 'git@github.com:willemt/CLinkedListQueue.git'),
+('ccircularbuffer', 'git@github.com:willemt/CCircularBuffer.git'),
+('bencode', 'git@github.com:willemt/CHeaplessBencodeReader.git'),
+('chashmap_via_linked_list','git@github.com:willemt/CHashMapViaLinkedList.git'),
+('cmeanqueue','git@github.com:willemt/CMeanQueue.git'),
+('cheap','git@github.com:willemt/CHeap.git'),
+('pseudolru','git@github.com:willemt/CPseudoLRU.git')]
+
+#bld(rule='mkdir clinkedlistqueue && git pull git@github.com:willemt/CLinkedListQueue.git', always=True)
+
 def configure(conf):
-        conf.load('compiler_c')
+    conf.load('compiler_c')
+
+    # Get the required contributions via GIT
+    for c in contribs:
+        print "Git pulling %s..." % c[1]
+        conf.exec_command("mkdir %s" % c[0])
+        conf.exec_command("git init", cwd=c[0])
+        conf.exec_command("git pull %s" % c[1], cwd=c[0])
 
 
 from waflib.Task import Task
@@ -39,6 +58,9 @@ def unittest(bld, src):
 #    unittest.print_results()
 
 def build(bld):
+#bld(rule='mkdir clinkedlistqueue && git pull git@github.com:willemt/CLinkedListQueue.git', always=True)
+        bld(rule='mkdir clinkedlistqueue')
+
 #        bld.stlib(source='a.c', target='mystlib')
         bld.objects(
                 source='config.c list.c',
@@ -55,6 +77,7 @@ def build(bld):
 #                cflags=['-g', '-fPIC']
 #                )
 
+        return
         bld.shlib(
             source='bencode/bencode.c bt_client.c bt_sha1.c bt_util.c bt_piece_db.c bt_filedumper.c bt_bitfield.c bt_piece.c byte_reader.c raprogress.c bt_metafile_reader.c bt_tracker_response_reader.c bt_choker_leecher.c bt_choker_seeder.c url_encoder.c http_request.c bt_peer_connection.c bt_diskcache.c bt_diskmem.c readfile.c sha1.c chashmap_via_linked_list/linked_list_hashmap.c clinkedlistqueue/linked_list_queue.c cheap/heap.c bt_rarestfirst_selector.c pseudolru/pseudolru.c bt_ticker.c',
                 use='config',
