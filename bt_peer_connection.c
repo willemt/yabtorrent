@@ -164,7 +164,6 @@ static void __log(
 
     va_start(args, format);
     vsprintf(buffer, format, args);
-//    printf("%s\n", buffer);
     if (!pc->func_log)
         return;
     pc->func_log(pc->isr_udata, pc->send_peer, buffer);
@@ -1522,7 +1521,7 @@ void bt_peerconn_step(
 
         if (bt_peerconn_im_choked(pc))
         {
-            printf("peer is choking us %lx\n", (long unsigned int) pco);
+//            printf("peer is choking us %lx\n", (long unsigned int) pco);
             return;
         }
 

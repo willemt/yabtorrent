@@ -199,8 +199,8 @@ static int __write_block(
         mpce->idx = blk->piece_idx;
     }
 
-    printf("dc-writeblock: %d %d %d\n",
-           blk->piece_idx, blk->block_byte_offset, blk->block_len);
+//    printf("dc-writeblock: %d %d %d\n",
+//           blk->piece_idx, blk->block_byte_offset, blk->block_len);
 
     assert(0 < priv(dc)->piece_length);
     assert(mpce->data);

@@ -241,8 +241,6 @@ static void __log(
     bt->func_log(bt->log_udata, NULL, buf);
 }
 
-
-
 /*
  * peer connections are given this as a callback whenever they want to send
  * information */
@@ -317,6 +315,7 @@ static int __FUNC_peercon_pushblock(
     assert(pce);
     bt_piece_write_block(pce, NULL, block, data);
 //    bt_filedumper_write_block(bt->fd, block, data);
+
     if (bt_piece_is_complete(pce))
     {
 //        printf("COMPLETED %d\n", bt_piece_is_valid(pce));
@@ -339,6 +338,8 @@ static int __FUNC_peercon_pushblock(
             }
         }
 
+        __print_pieces_downloaded(bt);
+
         if (__all_pieces_are_complete(bt))
         {
             bt->am_seeding = 1;
@@ -346,7 +347,6 @@ static int __FUNC_peercon_pushblock(
         }
     }
 
-    __print_pieces_downloaded(bt);
     return 1;
 }
 
@@ -462,7 +462,6 @@ static int __process_peer_msg(
     void *pc;
 
     pc = __netpeerid_to_peerconn(bt, netpeerid);
-//    printf("available data from peer: %d\n", netpeerid);
     bt_peerconn_process_msg(pc);
 
     return 1;
@@ -477,13 +476,11 @@ static void __process_peer_connect(
 {
     bt_client_t *bt = bto;
     bt_peer_t *peer;
-    void *pc;
 
-    printf("new connection!! %d\n\n\n\n", netpeerid);
+//    void *pc;
+
     peer = bt_client_add_peer(bt, NULL, 0, ip, strlen(ip), port);
     peer->net_peerid = netpeerid;
-    pc = __netpeerid_to_peerconn(bt, netpeerid);
-//    bt_peerconn_set_active(pc, TRUE);
 //    pc = __netpeerid_to_peerconn(bt, netpeerid);
 }
 
@@ -547,40 +544,6 @@ static void __log_process_info(
 }
 
 /**
- * @return 0 on failure, 1 otherwise */
-static int __xconnect_to_peer(
-    bt_client_t * bt,
-    void *pc,
-    bt_peer_t * peer
-)
-{
-    /* the remote peer will have always send a handshake */
-    if (!bt->net.peer_connect)
-    {
-        return 0;
-    }
-
-    printf("connecting to peer (%s:%s)\n", peer->ip, peer->port);
-    if (0 ==
-        bt->net.peer_connect(&bt->net_udata, peer->ip,
-                             peer->port, &peer->net_peerid))
-    {
-        printf("failed\n");
-        return 0;
-    }
-
-    printf("handshaking with peer: %d...\n", peer->net_peerid);
-    bt_peerconn_set_active(pc, TRUE);
-    if (0 == bt_peerconn_send_handshake(pc, bt->info_hash, bt->p_peer_id))
-    {
-        bt_peerconn_set_active(pc, FALSE);
-        return 0;
-    }
-
-    return 1;
-}
-
-/**
  * Run peerconnection step.
  * Ensure we are connected to our assigned peers.
  * */
@@ -590,30 +553,11 @@ static void __peerconn_step(
 )
 {
     void *pc;
-    bt_peer_t *peer;
+
+//    bt_peer_t *peer;
 
     pc = bt->peerconnects[ii];
-    peer = bt_peerconn_get_peer(pc);
-
-#if 0
-
-    if (bt->am_seeding)
-    {
-        if (!bt_peerconn_is_active(pc))
-        {
-            return;
-        }
-    }
-    else
-    {
-        if (!bt_peerconn_is_active(pc))
-            // && peer is not rubbish
-        {
-            if (0 == __connect_to_peer(bt, pc, peer))
-                return;
-        }
-    }
-#endif
+//    peer = bt_peerconn_get_peer(pc);
 
     bt_peerconn_step(pc);
 }
@@ -685,24 +629,12 @@ static int __FUNC_peerconn_connect(
         return 0;
     }
 
-//    printf("connecting to peer (%s:%s)\n", peer->ip, peer->port);
     if (0 == bt->net.peer_connect(&bt->net_udata, peer->ip,
                                   peer->port, &peer->net_peerid))
     {
-        printf("failed\n");
+        printf("failed connection to peer\n");
         return 0;
     }
-
-#if 0
-    printf("handshaking with peer: %d...\n", peer->net_peerid);
-    bt_peerconn_set_active(pc, TRUE);
-
-    if (0 == bt_peerconn_send_handshake(pc, bt->info_hash, bt->p_peer_id))
-    {
-        bt_peerconn_set_active(pc, FALSE);
-        return 0;
-    }
-#endif
 
     return 1;
 }
@@ -840,9 +772,7 @@ void *bt_client_new(
 
     /*  start optimistic unchoker timer */
     bt_ticker_push_event(bt->ticker, 30, bt, __leecher_peer_optimistic_unchoke);
-//    bt_piecedb_set_filelist(bt->db, bt->fd);
-//    sprintf(bt->my_port, "9000");
-//    bt_piecedb_set_piece_info(bt->db, &bt->pinfo);
+
     return bt;
 }
 
@@ -890,13 +820,15 @@ int bt_client_read_metainfo_file(
 
     bt_client_read_metainfo(bto, contents, len, &bt->pinfo);
 
-    free(contents);
-    printf("numpieces: %d\n", bt_client_get_num_pieces(bto));
+
     __print_pieces_downloaded(bto);
+
     if (__all_pieces_are_complete(bt))
     {
         bt->am_seeding = 1;
     }
+
+    free(contents);
 
     return 1;
 }
@@ -912,7 +844,6 @@ static void __build_tracker_request(
     bi = &bt->pinfo;
     info_hash_encoded = url_encode(bt->info_hash);
     asprintf(request,
-//             "GET %s?info_hash=%s&peer_id=%s&port=%d&uploaded=%d&downloaded=%d&left=%d&numwant=200 http/1.0\r\n"
              "GET %s?info_hash=%s&peer_id=%s&port=%d&uploaded=%d&downloaded=%d&left=%d&event=started&compact=1 http/1.0\r\n"
              "\r\n\r\n",
              bt->tracker_url,
@@ -930,7 +861,6 @@ static int __get_tracker_request(
     int status = 0;
     char *host, *port, *default_port = "80";
 
-//    printf("connecting to : %s\n", bt->tracker_url);
 //    printf("connecting to tracker: '%s:%s'\n", host, port);
     host = url2host(bt->tracker_url);
     if (!(port = url2port(bt->tracker_url)))
@@ -944,8 +874,8 @@ static int __get_tracker_request(
         char *request, *document, *response;
 
         __build_tracker_request(bt, &request);
-        printf("my ip: %s\n", bt->my_ip);
-        printf("requesting peer list: %s\n", request);
+//        printf("my ip: %s\n", bt->my_ip);
+//        printf("requesting peer list: %s\n", request);
         if (
                /*  send http request */
                1
@@ -994,24 +924,7 @@ int bt_client_connect_to_tracker(
     assert(bt->tracker_url);
     assert(bt->info_hash);
     assert(bt->p_peer_id);
-//    asprintf(&request, "GET %s/?info_hash=%s&peer_id=%s", bt->tracker_url,
-//             bt->info_hash, bt->peer_id);
     return __get_tracker_request(bt);
-}
-
-/**
- * Add tracker backup
- *
- * @todo implement back functionality
- *
- */
-void bt_client_add_tracker_backup(
-    void *bto,
-    char *url,
-    int url_len
-)
-{
-    printf("backup tracker url: %.*s\n", url_len, url);
 }
 
 /* @} ------------------------------------------------------------------------*/
@@ -1045,7 +958,6 @@ int bt_client_add_piece(
 {
     bt_client_t *bt = bto;
 
-//    printf("got a piece '%.*s'\n", 20, sha1);
     bt_piecedb_add(bt->db, sha1);
     bt->pinfo.npieces = bt_piecedb_get_length(bt->db);
     return 1;
@@ -1071,7 +983,6 @@ void bt_client_add_pieces(
         prog++;
         if (0 == prog % 20)
         {
-//            printf("%d\n", prog);
             bt_client_add_piece(bto, pieces);
             pieces += 20;
         }
@@ -1237,7 +1148,9 @@ int bt_client_step(
 
     /*  shutdown if we are setup to not seed */
     if (1 == bt->am_seeding && 1 == bt->o_shutdown_when_complete)
+    {
         return 0;
+    }
 
     /*  perform tracker request to get new peers */
     if (bt->last_tracker_request + bt->cfg.tracker_scrape_interval < seconds)
@@ -1276,7 +1189,7 @@ void bt_client_go(
 
     while (1)
     {
-        if (1 == bt_client_step(bt))
+        if (0 == bt_client_step(bt))
             break;
     }
 
@@ -1469,7 +1382,6 @@ void bt_client_set_piece_length(
 {
     bt_client_t *bt = bto;
 
-    printf("setting piece length: %d\n", len);
     bt->pinfo.piece_len = len;
     bt_piecedb_set_piece_length(bt->db, len);
     bt_filedumper_set_piece_length(bt->fd, len);
@@ -1547,7 +1459,6 @@ int bt_client_set_opt(
     if (!strcmp(key, "pwp_listen_port"))
     {
         bt->pwp_listen_port = atoi(val);
-        printf("set pwp_listen_port=%d\n", bt->pwp_listen_port);
         return 1;
     }
     else if (!strcmp(key, "tracker_interval"))
@@ -1566,11 +1477,21 @@ int bt_client_set_opt(
         int ii;
 
         bt->info_hash = strdup(val);
+#if 0
         printf("Info hash.....: ");
         for (ii = 0; ii < 20; ii++)
             printf("%02x", val[ii]);
         printf("\n");
+#endif
+
+        return 1;
     }
+    else if (!strcmp(key, "tracker_backup"))
+    {
+
+        return 1;
+    }
+
     return 255;
 }
 

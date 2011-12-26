@@ -274,7 +274,7 @@ void bt_client_read_metainfo(
                     int len;
 
                     bencode_string_value(&benlitem, &backup, &len);
-                    bt_client_add_tracker_backup(id, backup, len);
+                    bt_client_set_opt(id, "tracker_backup", backup, len);
                 }
             }
         }

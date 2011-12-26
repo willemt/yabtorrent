@@ -132,7 +132,6 @@ int main(
         switch (c)
         {
         case 's':
-            printf("shutdown when complete\n");
             o_shutdown_when_complete = 1;
             break;
 
@@ -199,8 +198,11 @@ int main(
     }
     else
     {
-        while (1 == bt_client_connect_to_tracker(bt))
+        while (0 == bt_client_connect_to_tracker(bt))
+        {
             sleep(1);
+        }
+
         bt_client_go(bt);
     }
 
