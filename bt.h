@@ -120,6 +120,28 @@ typedef struct
     int block_len;
 } bt_block_t;
 
+/*  bittorrent piece */
+typedef struct
+{
+    /* index on 'bit stream' */
+    const int idx;
+
+} bt_piece_t;
+
+/* peer */
+typedef struct
+{
+    /* 20 byte sha1 string */
+    char *peer_id;
+    char *ip;
+    char *port;
+
+    /* for network api */
+    int net_peerid;
+} bt_peer_t;
+
+/*----------------------------------------------------------------------------*/
+
 char *bt_generate_peer_id(
 );
 
@@ -141,6 +163,11 @@ void bt_peerconn_send_piece(
 void *bt_client_new(
 );
 
+bt_piece_t *bt_client_get_piece(
+    void *bto,
+    const int piece_idx
+);
+
 int bt_client_get_num_peers(
     void *bto
 );
@@ -157,15 +184,7 @@ int bt_client_get_total_file_size(
     void *bto
 );
 
-char *bt_client_get_info_hash(
-    void *bto
-);
-
 char *bt_client_get_fail_reason(
-    void *bto
-);
-
-int bt_client_get_interval(
     void *bto
 );
 
@@ -175,4 +194,18 @@ int bt_client_get_nbytes_downloaded(
 
 int bt_client_is_failed(
     void *bto
+);
+
+bt_peer_t *bt_client_add_peer(
+    void *bto,
+    const char *peer_id,
+    const int peer_id_len,
+    const char *ip,
+    const int ip_len,
+    const int port
+);
+
+char *bt_client_get_opt_string(
+    void *bto,
+    const char *key
 );

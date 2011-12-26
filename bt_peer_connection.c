@@ -152,7 +152,7 @@ static void __disconnect(
     vsprintf(buffer, reason, args);
     if (pc->isr.disconnect)
     {
-        printf("disconnect: %s\n", reason);
+//        printf("disconnect: %s\n", reason);
         pc->isr.disconnect(pc->isr_udata, pc->send_peer, buffer);
     }
 }
@@ -757,10 +757,15 @@ static int __recv_handshake(
 {
 }
 #endif
-/* 
- * receive handshake from other end
- * disconnect on any errors
- * @return 1 on success; otherwise 0 */
+ /****f* bt.peerconnection/recv_handshake*
+ * FUNCTION
+ *  receive handshake from other end
+ *  disconnect on any errors
+ * RESULT
+ *  1 on success;
+ *  otherwise 0
+ *
+ ******/
 int bt_peerconn_recv_handshake(
     void *pco,
     const char *info_hash

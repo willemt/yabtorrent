@@ -45,14 +45,6 @@ typedef struct
     int npieces;
 } bt_piece_info_t;
 
-/*  bittorrent piece */
-typedef struct
-{
-    /* index on 'bit stream' */
-    const int idx;
-
-} bt_piece_t;
-
 /*  bitfield */
 typedef struct
 {
@@ -72,18 +64,6 @@ typedef struct
 {
     int pass;
 } bt_diskcache_t;
-
-/* peer */
-typedef struct
-{
-    /* 20 byte sha1 string */
-    char *peer_id;
-    char *ip;
-    char *port;
-
-    /* for network api */
-    int net_peerid;
-} bt_peer_t;
 
 #include "bt_interfaces.h"
 

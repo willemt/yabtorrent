@@ -42,7 +42,7 @@ def unittest(bld, src):
                     '-g',
                     '-Werror'
                 ],
-                use='ebt',
+                use='yabbt',
                 unit_test='yes',
                 includes='.')
 
@@ -77,7 +77,7 @@ def build(bld):
         bld.shlib(
             source='bencode/bencode.c bt_client.c bt_sha1.c bt_util.c bt_piece_db.c bt_filedumper.c bt_bitfield.c bt_piece.c byte_reader.c raprogress.c bt_metafile_reader.c bt_tracker_response_reader.c bt_choker_leecher.c bt_choker_seeder.c url_encoder.c http_request.c bt_peer_connection.c bt_diskcache.c bt_diskmem.c readfile.c sha1.c chashmap_via_linked_list/linked_list_hashmap.c clinkedlistqueue/linked_list_queue.c cheap/heap.c bt_rarestfirst_selector.c pseudolru/pseudolru.c bt_ticker.c',
                 use='config',
-                target='ebt',
+                target='yabbt',
                 includes='bencode clinkedlistqueue chashmap_via_linked_list cheap pseudolru',
                 cflags=[
                     '-Werror',
@@ -108,7 +108,7 @@ def build(bld):
 #        unittest(bld,'test_peer_connection_send.c')
 
         bld.program(
-                source='bt_main.c bt_main_network.c ccircularbuffer/cbuffer.c',
+                source='bt_main.c bt_networkfuncs_tcp.c ccircularbuffer/cbuffer.c',
                 target='bt',
                 includes='ccircularbuffer',
                 cflags=[
@@ -117,7 +117,7 @@ def build(bld):
                     '-Werror=uninitialized',
                     '-Werror=return-type'
                     ],
-                use='ebt')
+                use='yabbt')
 
 
 

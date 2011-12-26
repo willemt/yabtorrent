@@ -117,11 +117,7 @@ static void __do_info_dict(
         int len;
 
         bencode_dict_get_start_and_len(dict, &val, &len);
-        printf("hash: %d\n", len);
-//        printf("hash: %d, %.*s\n", len, len, val, len);
-
-        bt_client_set_info_hash(id, str2sha1hash(val, len));
-        //bt_set_info_hash(id, str2sha1hash(val, len));
+        bt_client_set_opt(id, "infohash", str2sha1hash(val, len), len);
     }
 
     while (bencode_dict_has_next(dict))
@@ -187,7 +183,6 @@ static void __do_info_dict(
 }
 
 /**
- *
  * This assigns the info_hash
  * */
 void bt_client_read_metainfo(
@@ -195,11 +190,8 @@ void bt_client_read_metainfo(
     const char *buf,
     const int len,
     bt_piece_info_t * pinfo
-//    const char *fname
 )
 {
-//    bencode_next(&ben);
-//    if (bencode_is_dict(&ben))
     bencode_t ben;
 
     bencode_init(&ben, buf, len);
@@ -226,7 +218,7 @@ void bt_client_read_metainfo(
             const char *val;
 
             bencode_string_value(&benk, &val, &len);
-            bt_client_set_tracker_url(id, val, len);
+            bt_client_set_opt(id, "tracker_url", val, len);
         }
         else if (!strncmp(key, "announce-list", klen))
         {

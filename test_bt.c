@@ -155,19 +155,6 @@ void TestBT_SetFailed(
                  0 == strcmp(bt_client_get_fail_reason(id), "just not good"));
 }
 
-void TestBT_SetInterval(
-    CuTest * tc
-)
-{
-    void *id;
-
-    id = bt_client_new();
-
-    bt_client_set_interval(id, 1000);
-
-    CuAssertTrue(tc, bt_client_get_interval(id) == 1000);
-}
-
 void TestBT_SetInfoHash(
     CuTest * tc
 )
@@ -178,9 +165,11 @@ void TestBT_SetInfoHash(
 
     id = bt_client_new();
 
-    bt_client_set_info_hash(id, info_hash);
+    bt_client_set_opt(id, "infohash", info_hash, 20);
 
-    CuAssertTrue(tc, 0 == strcmp(bt_client_get_info_hash(id), info_hash));
+    CuAssertTrue(tc,
+                 0 == strcmp(bt_client_get_opt_string(id, "infohash"),
+                             info_hash));
 }
 
 void TestBT_GeneratedPeeridIs20BytesLong(

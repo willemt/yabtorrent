@@ -5,79 +5,19 @@
 #include <string.h>
 #include <assert.h>
 
-//#include <sys/types.h>
-//#include <sys/socket.h>
-//#include <netinet/in.h>
-//#include <netdb.h>
-//#include <poll.h>
-
-//#include <unistd.h>     /* for sleep */
-
 #include <fcntl.h>
 
 #include <getopt.h>
-
 
 #include "bt.h"
 #include "bt_main.h"
 #include "config.h"
 
 #define PROGRAM_NAME "bt"
-/*----------------------------------------------------------------------------*/
 
-#if 0
-int peer_recv_len(
-    void **udata,
-    const int peerid,
-    char *buf,
-    int *len
-)
-{
-    net_t *net;
-
-    sock_t *sock;
-
-    int recvd = 0;
-
-    net = *udata;
-    sock = &net->peer_socks[peerid];
-//    printf("recv: len:%d\n", *len);
-    if (0 < (recvd = recv(sock->fd, buf, *len, MSG_WAITALL)))
-    {
-#if 0
-        int ii;
-
-        for (ii = 0; ii < recvd; ii++)
-        {
-            printf("%c,", buf[ii]);
-        }
-        printf("\n");
-#endif
-//        buf[recvd] = '\0';
-        assert(recvd == *len);
-    }
-    else
-    {
-        perror("unable to receive from peer");
-        exit(EXIT_FAILURE);
-        return 0;
-    }
-
-    if (recvd == 0)
-    {
-        printf("peer has shutdown\n");
-        perror("recv from socket:");
-        assert(0);
-        return 0;
-    }
-
-    return 1;
-}
-#endif
-
-
+/**
+ * The bounded network interface for net communications */
 char __cfg_bound_iface[32];
-
 
 #include <sys/time.h>
 
@@ -92,18 +32,16 @@ static void __log(
     struct timeval tv;
 
     gettimeofday(&tv, NULL);
-//    tv.tv_sec // seconds
-//    tv.tv_usec // microseconds
 
     char stamp[32];
 
     sprintf(stamp, "%d,%0.2f,", (int) tv.tv_sec, (float) tv.tv_usec / 100000);
     write(fd, stamp, strlen(stamp));
     write(fd, buf, strlen(buf));
-    printf("%s\n", buf);
+//    printf("%s\n", buf);
 }
 
-void usage(
+static void __usage(
     int status
 )
 {
@@ -139,7 +77,6 @@ static struct option const long_opts[] = {
      NULL, 0, NULL, 0}
 };
 
-#if 1
 int main(
     int argc,
     char **argv
@@ -169,7 +106,7 @@ int main(
 
         case 'p':
             printf("opt: %s\n", optarg);
-            bt_client_set_opt(bt, "pwp_listen_port", optarg);
+            bt_client_set_opt(bt, "pwp_listen_port", optarg, strlen(optarg));
             break;
 
         case 'i':
@@ -182,19 +119,17 @@ int main(
             break;
 
         default:
-            usage(EXIT_FAILURE);
+            __usage(EXIT_FAILURE);
         }
     }
 
-//    printf("%d '%s'\n", optind, argv[optind]);
-
-
+    char *str;
     int status;
 
-    status = config_read(" yabtc ", " config ");
-//    printf(" test % d % s \ n ", status, config_get(" value "));
     /* do configuration */
-    char *str;
+
+    status = config_read(" yabtc ", " config ");
+
 
     if ((str = config_get(" max_peer_connections ")))
         bt_client_set_max_peer_connections(bt, atoi(str));
@@ -232,7 +167,7 @@ int main(
     }
     else
     {
-        while (0 == bt_client_connect_to_tracker(bt))
+        while (1 == bt_client_connect_to_tracker(bt))
             sleep(1);
         bt_client_go(bt);
     }
@@ -242,4 +177,3 @@ int main(
 
     return 1;
 }
-#endif
