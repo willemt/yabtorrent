@@ -31,6 +31,10 @@ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+/**
+ * This is the choker ruleset when the client is seeding
+ * */
+
 #include <stdlib.h>
 #include <string.h>
 #include <stdarg.h>
@@ -77,17 +81,12 @@ typedef struct
 
 /*----------------------------------------------------------------------------*/
 
-static unsigned long __peer_hash(
-    const void *obj
-)
+static unsigned long __peer_hash(const void *obj)
 {
     return (unsigned long) obj;
 }
 
-static long __peer_compare(
-    const void *obj,
-    const void *other
-)
+static long __peer_compare(const void *obj, const void *other)
 {
     return obj - other;
 }
@@ -95,9 +94,7 @@ static long __peer_compare(
 /*----------------------------------------------------------------------------*/
 
 /* @param size : the most number of unchoked peers we can have */
-void *bt_seeding_choker_new(
-    const int size
-)
+void *bt_seeding_choker_new(const int size)
 {
     choker_t *ch;
 
@@ -109,10 +106,7 @@ void *bt_seeding_choker_new(
     return ch;
 }
 
-void bt_seeding_choker_add_peer(
-    void *ckr,
-    void *peer
-)
+void bt_seeding_choker_add_peer(void *ckr, void *peer)
 {
     choker_t *ch = ckr;
 
@@ -120,20 +114,15 @@ void bt_seeding_choker_add_peer(
     llqueue_offer(ch->peers_choked, peer);
 }
 
-void bt_seeding_choker_remove_peer(
-    void *ckr,
-    void *peer
-)
+void bt_seeding_choker_remove_peer(void *ckr, void *peer)
 {
     choker_t *ch = ckr;
 
     hashmap_remove(ch->peers, peer);
+    /* FIXME: shouldn't this peer also be removed from the queues? */
 }
 
-static void __choke_peer(
-    choker_t * ch,
-    void *peer
-)
+static void __choke_peer(choker_t * ch, void *peer)
 {
     llqueue_remove_item(ch->peers_unchoked, peer);
     /*  we're back in the queue for being allowed back */
@@ -141,9 +130,7 @@ static void __choke_peer(
     ch->iface->choke_peer(ch->udata, peer);
 }
 
-void bt_seeding_choker_decide_best_npeers(
-    void *ckr
-)
+void bt_seeding_choker_decide_best_npeers(void *ckr)
 {
     choker_t *ch = ckr;
 
@@ -169,9 +156,7 @@ void bt_seeding_choker_decide_best_npeers(
 }
 
 #if 0
-void bt_seeding_choker_set_peer(
-    void *cho
-)
+void bt_seeding_choker_set_peer(void *cho)
 {
 // Every 10 seconds...
 // It does reciprocation and number of uploads capping by unchoking the four peers which it has the best download rates from and are interested. Peers which have a better upload rate but aren't interested get unchoked and if they become interested the worst uploader gets choked. If a downloader has a complete file, it uses its upload rate rather than its download rate to decide who to unchoke.
@@ -181,10 +166,7 @@ void bt_seeding_choker_set_peer(
 }
 #endif
 
-void bt_seeding_choker_unchoke_peer(
-    void *ckr,
-    void *peer
-)
+void bt_seeding_choker_unchoke_peer(void *ckr, void *peer)
 {
     choker_t *ch = ckr;
 
@@ -204,11 +186,11 @@ void bt_seeding_choker_unchoke_peer(
 //    pr->unchoke_id = pr
 }
 
-void bt_seeding_choker_set_choker_peer_iface(
-    void *ckr,
-    void *udata,
-    bt_choker_peer_i * iface
-)
+/*----------------------------------------------------------------------------*/
+
+void bt_seeding_choker_set_choker_peer_iface(void *ckr,
+                                             void *udata,
+                                             bt_choker_peer_i * iface)
 {
     choker_t *ch = ckr;
 
@@ -216,18 +198,14 @@ void bt_seeding_choker_set_choker_peer_iface(
     ch->iface = iface;
 }
 
-int bt_seeding_choker_get_npeers(
-    void *ckr
-)
+int bt_seeding_choker_get_npeers(void *ckr)
 {
     choker_t *ch = ckr;
 
     return hashmap_count(ch->peers);
 }
 
-void bt_seeding_choker_get_iface(
-    bt_choker_i * iface
-)
+void bt_seeding_choker_get_iface(bt_choker_i * iface)
 {
     iface->new = bt_seeding_choker_new;
     iface->unchoke_peer = bt_seeding_choker_unchoke_peer;

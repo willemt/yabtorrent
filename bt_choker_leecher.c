@@ -31,6 +31,10 @@ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+/**
+ * This is the choker ruleset when the client is leeching
+ * */
+
 #include <stdlib.h>
 #include <string.h>
 #include <stdarg.h>
@@ -53,13 +57,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "linked_list_hashmap.h"
 #include "heap.h"
 
-#if 0
-typedef struct
-{
-    void *udata_peer;
-} peer_t;
-#endif
-
 typedef struct
 {
     /* the most number of unchoked peers we can have */
@@ -78,26 +75,19 @@ typedef struct
 
 /*----------------------------------------------------------------------------*/
 
-static unsigned long __peer_hash(
-    const void *obj
-)
+static unsigned long __peer_hash(const void *obj)
 {
     return (unsigned long) obj;
 }
 
-static long __peer_compare(
-    const void *obj,
-    const void *other
-)
+static long __peer_compare(const void *obj, const void *other)
 {
     return obj - other;
 }
 
 /*----------------------------------------------------------------------------*/
 
-void *bt_leeching_choker_new(
-    const int size
-)
+void *bt_leeching_choker_new(const int size)
 {
     choker_t *ch;
 
@@ -110,10 +100,7 @@ void *bt_leeching_choker_new(
     return ch;
 }
 
-void bt_leeching_choker_add_peer(
-    void *ckr,
-    void *peer
-)
+void bt_leeching_choker_add_peer(void *ckr, void *peer)
 {
     choker_t *ch = ckr;
 
@@ -122,20 +109,16 @@ void bt_leeching_choker_add_peer(
     llqueue_offer(ch->peers_waiting_for_optimistic_unchoke, peer);
 }
 
-void bt_leeching_choker_remove_peer(
-    void *ckr,
-    void *peer
-)
+void bt_leeching_choker_remove_peer(void *ckr, void *peer)
 {
     choker_t *ch = ckr;
 
     hashmap_remove(ch->peers, peer);
 }
 
-static void __choke_peer(
-    choker_t * ch,
-    void *peer
-)
+/*----------------------------------------------------------------------------*/
+
+static void __choke_peer(choker_t * ch, void *peer)
 {
     llqueue_remove_item(ch->peers_unchoked, peer);
     /*  we're back in the queue for being allowed back */
@@ -144,21 +127,18 @@ static void __choke_peer(
     ch->iface->choke_peer(ch->udata, peer);
 }
 
-void bt_leeching_choker_announce_interested_peer(
-    void *cho,
-    void *peer
-)
+void bt_leeching_choker_announce_interested_peer(void *cho, void *peer)
 {
+
 }
+
+/*----------------------------------------------------------------------------*/
 
 /** 
  * function used in heap for priority 
  * */
-static int __cmp_peer_priority_datarate(
-    const void *i1,
-    const void *i2,
-    const void *ckr
-)
+static int __cmp_peer_priority_datarate(const void *i1,
+                                        const void *i2, const void *ckr)
 {
     const choker_t *ch = ckr;
 
@@ -185,18 +165,15 @@ static int __cmp_peer_priority_datarate(
 #endif
 }
 
-static int __cmp_peer_priority_datarate_inverse(
-    const void *i1,
-    const void *i2,
-    const void *ckr
-)
+static int __cmp_peer_priority_datarate_inverse(const void *i1,
+                                                const void *i2, const void *ckr)
 {
     return -__cmp_peer_priority_datarate(i1, i2, ckr);
 }
 
-void bt_leeching_choker_decide_best_npeers(
-    void *ckr
-)
+/*----------------------------------------------------------------------------*/
+
+void bt_leeching_choker_decide_best_npeers(void *ckr)
 {
     choker_t *ch = ckr;
 
@@ -239,9 +216,7 @@ void bt_leeching_choker_decide_best_npeers(
     heap_free(hp);
 }
 
-static void __choke_worst_downloader(
-    choker_t * ch
-)
+static void __choke_worst_downloader(choker_t * ch)
 {
     heap_t *hp;
 
@@ -263,7 +238,6 @@ static void __choke_worst_downloader(
         void *peer;
 
         peer = heap_poll(hp);
-
         __choke_peer(ch, peer);
     }
 
@@ -279,34 +253,32 @@ static void __choke_worst_downloader(
 
 }
 
-void bt_leeching_choker_optimistically_unchoke(
-    void *ckr
-)
+void bt_leeching_choker_optimistically_unchoke(void *ckr)
 {
-    int ii, end;
-
     choker_t *ch = ckr;
-
+    int ii, end;
     void *peer;
 
+    /* go through peers waiting to be optimistically unchoked... */
     for (ii = 0, end = llqueue_count(ch->peers_waiting_for_optimistic_unchoke);
          ii < end; ii++)
     {
         peer = llqueue_poll(ch->peers_waiting_for_optimistic_unchoke);
+
+        /* ...if the peer is interested... */
         if (1 == ch->iface->get_is_interested(ch->udata, peer))
         {
             __choke_worst_downloader(ch);
             bt_leeching_choker_unchoke_peer(ch, peer);
             break;
         }
+
+        /* ...otherwise, better luck next time */
         llqueue_offer(ch->peers_waiting_for_optimistic_unchoke, peer);
     }
 }
 
-void bt_leeching_choker_unchoke_peer(
-    void *ckr,
-    void *peer
-)
+void bt_leeching_choker_unchoke_peer(void *ckr, void *peer)
 {
     choker_t *ch = ckr;
 
@@ -322,20 +294,18 @@ void bt_leeching_choker_unchoke_peer(
     llqueue_offer(ch->peers_unchoked, peer);
 }
 
-int bt_leeching_choker_get_npeers(
-    void *ckr
-)
+/**
+ * Get number of peers */
+int bt_leeching_choker_get_npeers(void *ckr)
 {
     choker_t *ch = ckr;
 
     return hashmap_count(ch->peers);
 }
 
-void bt_leeching_choker_set_choker_peer_iface(
-    void *ckr,
-    void *udata,
-    bt_choker_peer_i * iface
-)
+void bt_leeching_choker_set_choker_peer_iface(void *ckr,
+                                              void *udata,
+                                              bt_choker_peer_i * iface)
 {
     choker_t *ch = ckr;
 
@@ -343,9 +313,10 @@ void bt_leeching_choker_set_choker_peer_iface(
     ch->iface = iface;
 }
 
-void bt_leeching_choker_get_iface(
-    bt_choker_i * iface
-)
+/**
+ * Get choker interface
+ */
+void bt_leeching_choker_get_iface(bt_choker_i * iface)
 {
     iface->new = bt_leeching_choker_new;
     iface->unchoke_peer = bt_leeching_choker_unchoke_peer;

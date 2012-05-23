@@ -53,11 +53,7 @@ char __cfg_bound_iface[32];
 
 #include <sys/time.h>
 
-static void __log(
-    void *udata,
-    void *src,
-    char *buf
-)
+static void __log(void *udata, void *src, char *buf)
 {
     int fd = (unsigned long) udata;
 
@@ -73,9 +69,7 @@ static void __log(
 //    printf("%s\n", buf);
 }
 
-static void __usage(
-    int status
-)
+static void __usage(int status)
 {
 #if 0
     if (status != EXIT_SUCCESS)
@@ -109,18 +103,16 @@ static struct option const long_opts[] = {
      NULL, 0, NULL, 0}
 };
 
-int main(
-    int argc,
-    char **argv
-)
+int main(int argc, char **argv)
 {
     char c;
 
-    int o_verify_download = 0;
-
-    int o_shutdown_when_complete = 0;
+    int o_verify_download, o_shutdown_when_complete;
 
     void *bt;
+
+    o_verify_download = 0;
+    o_shutdown_when_complete = 0;
 
     bt = bt_client_new();
 

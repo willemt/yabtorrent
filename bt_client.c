@@ -78,14 +78,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 typedef struct
 {
+    /*  the size of the piece, etc */
     bt_piece_info_t pinfo;
-    bt_piecedb_t *db;
-
-    /*  disk cache */
-    void *dc;
-
-    /*  file dumper */
-    bt_filedumper_t *fd;
 
     /* 20-byte self-designated ID of the peer */
     char *p_peer_id;
@@ -96,13 +90,24 @@ typedef struct
     /* the main directory of the file */
     char *path;
 
+    /* how often we must send messages to the tracker */
+    int interval;
+
     char *tracker_url;
-    int trackerclient_id;
     void **peerconnects;
     int npeers;
 
     /* sha1 hash of the info_hash */
     char *info_hash;
+
+    /*  the piece container */
+    bt_piecedb_t *db;
+
+    /*  disk cache */
+    void *dc;
+
+    /*  file dumper */
+    bt_filedumper_t *fd;
 
     /* net stuff */
 
@@ -110,8 +115,6 @@ typedef struct
 
     void *net_udata;
 
-    /* how often we must send messages to the tracker */
-    int interval;
 
     /* number of complete peers */
     int ncomplete_peers;
@@ -159,9 +162,7 @@ typedef struct
 
 /**
  * print a string of all the downloaded pieces */
-static void __print_pieces_downloaded(
-    void *bto
-)
+static void __print_pieces_downloaded(void *bto)
 {
     bt_client_t *bt = bto;
 
@@ -202,9 +203,7 @@ static void __print_pieces_downloaded(
 
 /**
  * @return 1 if all complete, 0 otherwise */
-static int __all_pieces_are_complete(
-    bt_client_t * bt
-)
+static int __all_pieces_are_complete(bt_client_t * bt)
 {
     int ii;
 
@@ -221,12 +220,7 @@ static int __all_pieces_are_complete(
     return 1;
 }
 
-static void __log(
-    void *bto,
-    void *src,
-    const char *fmt,
-    ...
-)
+static void __log(void *bto, void *src, const char *fmt, ...)
 {
     bt_client_t *bt = bto;
     char buf[1024];
@@ -244,23 +238,18 @@ static void __log(
 /*
  * peer connections are given this as a callback whenever they want to send
  * information */
-static int __FUNC_peerconn_send_to_peer(
-    void *bto,
-    bt_peer_t * peer,
-    void *data,
-    const int len
-)
+static int __FUNC_peerconn_send_to_peer(void *bto,
+                                        bt_peer_t * peer,
+                                        void *data, const int len)
 {
     bt_client_t *bt = bto;
 
     return bt->net.peer_send(&bt->net_udata, peer->net_peerid, data, len);
 }
 
-static int __FUNC_peercon_pollblock(
-    void *bto,
-    bt_bitfield_t * peer_bitfield,
-    bt_block_t * blk
-)
+static int __FUNC_peercon_pollblock(void *bto,
+                                    bt_bitfield_t * peer_bitfield,
+                                    bt_block_t * blk)
 {
     bt_client_t *bt = bto;
 
@@ -283,12 +272,7 @@ static int __FUNC_peercon_pollblock(
 }
 
 /*  return how many we've read */
-static int __FUNC_peercon_recv(
-    void *bto,
-    bt_peer_t * peer,
-    char *buf,
-    int *len
-)
+static int __FUNC_peercon_recv(void *bto, bt_peer_t * peer, char *buf, int *len)
 {
     bt_client_t *bt = bto;
 
@@ -301,12 +285,9 @@ static int __FUNC_peercon_recv(
  *
  * @param peer : peer received from
  * */
-static int __FUNC_peercon_pushblock(
-    void *bto,
-    bt_peer_t * peer,
-    bt_block_t * block,
-    void *data
-)
+static int __FUNC_peercon_pushblock(void *bto,
+                                    bt_peer_t * peer,
+                                    bt_block_t * block, void *data)
 {
     bt_client_t *bt = bto;
     bt_piece_t *pce;
@@ -352,11 +333,7 @@ static int __FUNC_peercon_pushblock(
 
 /*----------------------------------------------------------------------------*/
 
-static int __have_peer(
-    void *bto,
-    const char *ip,
-    const int port
-)
+static int __have_peer(void *bto, const char *ip, const int port)
 {
     bt_client_t *bt = bto;
     int ii;
@@ -427,10 +404,7 @@ If the torrent specifies multiple files, the info dictionary must have the follo
 
 /*----------------------------------------------------------------------------*/
 
-static void *__netpeerid_to_peerconn(
-    bt_client_t * bt,
-    const int netpeerid
-)
+static void *__netpeerid_to_peerconn(bt_client_t * bt, const int netpeerid)
 {
     int ii;
 
@@ -453,10 +427,7 @@ static void *__netpeerid_to_peerconn(
 /**
  * Take this message and process it on the PeerConnection side
  * */
-static int __process_peer_msg(
-    void *bto,
-    const int netpeerid
-)
+static int __process_peer_msg(void *bto, const int netpeerid)
 {
     bt_client_t *bt = bto;
     void *pc;
@@ -467,12 +438,9 @@ static int __process_peer_msg(
     return 1;
 }
 
-static void __process_peer_connect(
-    void *bto,
-    const int netpeerid,
-    char *ip,
-    const int port
-)
+static void __process_peer_connect(void *bto,
+                                   const int netpeerid,
+                                   char *ip, const int port)
 {
     bt_client_t *bt = bto;
     bt_peer_t *peer;
@@ -487,9 +455,7 @@ static void __process_peer_connect(
 #include <sys/time.h>
 #include <sys/resource.h>
 
-static void __log_process_info(
-    bt_client_t * bt
-)
+static void __log_process_info(bt_client_t * bt)
 {
 #if 0
     struct rusage
@@ -547,10 +513,7 @@ static void __log_process_info(
  * Run peerconnection step.
  * Ensure we are connected to our assigned peers.
  * */
-static void __peerconn_step(
-    bt_client_t * bt,
-    int ii
-)
+static void __peerconn_step(bt_client_t * bt, int ii)
 {
     void *pc;
 
@@ -563,12 +526,7 @@ static void __peerconn_step(
 }
 
 /*----------------------------------------------------------------------------*/
-static void __FUNC_peerconn_log(
-    void *bto,
-    void *src_peer,
-    const char *buf,
-    ...
-)
+static void __FUNC_peerconn_log(void *bto, void *src_peer, const char *buf, ...)
 {
     bt_client_t *bt = bto;
 
@@ -580,10 +538,7 @@ static void __FUNC_peerconn_log(
     bt->func_log(bt->log_udata, NULL, buffer);
 }
 
-static int __FUNC_peerconn_pieceiscomplete(
-    void *bto,
-    void *piece
-)
+static int __FUNC_peerconn_pieceiscomplete(void *bto, void *piece)
 {
     bt_client_t *bt = bto;
 
@@ -595,31 +550,21 @@ static int __FUNC_peerconn_pieceiscomplete(
 /**
  *
  * @return info hash */
-static char *__FUNC_peerconn_get_infohash(
-    void *bto,
-    bt_peer_t * peer
-)
+static char *__FUNC_peerconn_get_infohash(void *bto, bt_peer_t * peer)
 {
     bt_client_t *bt = bto;
 
     return bt->info_hash;
 }
 
-static int __FUNC_peerconn_disconnect(
-    void *udata,
-    bt_peer_t * peer,
-    char *reason
-)
+static int __FUNC_peerconn_disconnect(void *udata,
+                                      bt_peer_t * peer, char *reason)
 {
 //    printf("DISCONNECTING: %s\n", reason);
     return 1;
 }
 
-static int __FUNC_peerconn_connect(
-    void *bto,
-    void *pc,
-    bt_peer_t * peer
-)
+static int __FUNC_peerconn_connect(void *bto, void *pc, bt_peer_t * peer)
 {
     bt_client_t *bt = bto;
 
@@ -639,40 +584,28 @@ static int __FUNC_peerconn_connect(
     return 1;
 }
 
-static int __get_drate(
-    const void *bto,
-    const void *pc
-)
+static int __get_drate(const void *bto, const void *pc)
 {
     const bt_client_t *bt = bto;
 
     return bt_peerconn_get_download_rate(pc);
 }
 
-static int __get_urate(
-    const void *bto,
-    const void *pc
-)
+static int __get_urate(const void *bto, const void *pc)
 {
     const bt_client_t *bt = bto;
 
     return bt_peerconn_get_upload_rate(pc);
 }
 
-static int __get_is_interested(
-    void *bto,
-    void *pc
-)
+static int __get_is_interested(void *bto, void *pc)
 {
     bt_client_t *bt = bto;
 
     return bt_peerconn_is_interested(pc);
 }
 
-static void __choke_peer(
-    void *bto,
-    void *pc
-)
+static void __choke_peer(void *bto, void *pc)
 {
 
     bt_client_t *bt = bto;
@@ -681,10 +614,7 @@ static void __choke_peer(
 //    pc->isChoked = 1;
 }
 
-static void __unchoke_peer(
-    void *bto,
-    void *pc
-)
+static void __unchoke_peer(void *bto, void *pc)
 {
     bt_client_t *bt = bto;
 
@@ -700,9 +630,7 @@ static bt_choker_peer_i iface_choker_peer = {
         __choke_peer,.unchoke_peer = __unchoke_peer
 };
 
-static void __leecher_peer_reciprocation(
-    void *bto
-)
+static void __leecher_peer_reciprocation(void *bto)
 {
     bt_client_t *bt = bto;
 
@@ -710,9 +638,7 @@ static void __leecher_peer_reciprocation(
     bt_ticker_push_event(bt->ticker, 10, bt, __leecher_peer_reciprocation);
 }
 
-static void __leecher_peer_optimistic_unchoke(
-    void *bto
-)
+static void __leecher_peer_optimistic_unchoke(void *bto)
 {
     bt_client_t *bt = bto;
 
@@ -732,8 +658,7 @@ static void __leecher_peer_optimistic_unchoke(
  *
  * \nosubgrouping
  */
-void *bt_client_new(
-)
+void *bt_client_new()
 {
     bt_client_t *bt;
 
@@ -782,9 +707,7 @@ void *bt_client_new(
  * Close all peer connections
  * @todo add destructors
  */
-int bt_client_release(
-    void *bto
-)
+int bt_client_release(void *bto)
 {
     //FIXME_STUB;
 
@@ -803,10 +726,7 @@ int bt_client_release(
  *
  * @return 1 on sucess; otherwise 0
  */
-int bt_client_read_metainfo_file(
-    void *bto,
-    const char *fname
-)
+int bt_client_read_metainfo_file(void *bto, const char *fname)
 {
     bt_client_t *bt = bto;
     char *contents;
@@ -833,10 +753,7 @@ int bt_client_read_metainfo_file(
     return 1;
 }
 
-static void __build_tracker_request(
-    bt_client_t * bt,
-    char **request
-)
+static void __build_tracker_request(bt_client_t * bt, char **request)
 {
     bt_piece_info_t *bi;
     char *info_hash_encoded;
@@ -853,9 +770,7 @@ static void __build_tracker_request(
     free(info_hash_encoded);
 }
 
-static int __get_tracker_request(
-    void *bto
-)
+static int __get_tracker_request(void *bto)
 {
     bt_client_t *bt = bto;
     int status = 0;
@@ -914,9 +829,7 @@ static int __get_tracker_request(
  * @return 1 on sucess; otherwise 0
  *
  */
-int bt_client_connect_to_tracker(
-    void *bto
-)
+int bt_client_connect_to_tracker(void *bto)
 {
     bt_client_t *bt = bto;
 
@@ -937,10 +850,7 @@ int bt_client_connect_to_tracker(
  *
  * @return piece specified by piece_idx; otherwise NULL
  */
-bt_piece_t *bt_client_get_piece(
-    void *bto,
-    const int piece_idx
-)
+bt_piece_t *bt_client_get_piece(void *bto, const int piece_idx)
 {
     bt_client_t *bt = bto;
 
@@ -951,10 +861,7 @@ bt_piece_t *bt_client_get_piece(
  * Add a piece to the piece database
  * @return 1 on sucess; otherwise 0
  * */
-int bt_client_add_piece(
-    void *bto,
-    const char *sha1
-)
+int bt_client_add_piece(void *bto, const char *sha1)
 {
     bt_client_t *bt = bto;
 
@@ -969,11 +876,7 @@ int bt_client_add_piece(
  * @param pieces A string of 20 byte sha1 hashes. This string is always a multiple of 20 bytes in length. 
  * @param bto the bittorrent client object
  * */
-void bt_client_add_pieces(
-    void *bto,
-    const char *pieces,
-    int len
-)
+void bt_client_add_pieces(void *bto, const char *pieces, int len)
 {
     int prog;
 
@@ -1001,12 +904,8 @@ void bt_client_add_pieces(
  *
  * @return 1 on sucess; otherwise 0
  */
-int bt_client_add_file(
-    void *bto,
-    const char *fname,
-    const int fname_len,
-    const int flen
-)
+int bt_client_add_file(void *bto,
+                       const char *fname, const int fname_len, const int flen)
 {
     bt_client_t *bt = bto;
     char *path = NULL;
@@ -1032,14 +931,10 @@ int bt_client_add_file(
  *
  * @return freshly created bt_peer
  */
-bt_peer_t *bt_client_add_peer(
-    void *bto,
-    const char *peer_id,
-    const int peer_id_len,
-    const char *ip,
-    const int ip_len,
-    const int port
-)
+bt_peer_t *bt_client_add_peer(void *bto,
+                              const char *peer_id,
+                              const int peer_id_len,
+                              const char *ip, const int ip_len, const int port)
 {
     bt_client_t *bt = bto;
     void *pc;
@@ -1103,10 +998,7 @@ bt_peer_t *bt_client_add_peer(
  * @return 1 on sucess; otherwise 0
  *
  */
-int bt_client_remove_peer(
-    void *bto,
-    const int peerid
-)
+int bt_client_remove_peer(void *bto, const int peerid)
 {
 //    bt_client_t *bt = bto;
 //    bt->peerconnects[bt->npeers - 1]
@@ -1124,9 +1016,7 @@ int bt_client_remove_peer(
  * Tell us if the download is done.
  * @return 1 on sucess; otherwise 0
  */
-int bt_client_is_done(
-    void *bto
-)
+int bt_client_is_done(void *bto)
 {
     return 0;
 }
@@ -1135,9 +1025,7 @@ int bt_client_is_done(
  * Used for stepping the bittorrent logic
  * @return 1 on sucess; otherwise 0
  */
-int bt_client_step(
-    void *bto
-)
+int bt_client_step(void *bto)
 {
     bt_client_t *bt = bto;
     int ii;
@@ -1178,9 +1066,7 @@ int bt_client_step(
 /**
  * Used for initiation of downloading
  */
-void bt_client_go(
-    void *bto
-)
+void bt_client_go(void *bto)
 {
     bt_client_t *bt = bto;
     int ii;
@@ -1210,9 +1096,7 @@ void bt_client_go(
 /**
  * @return number of bytes downloaded
  */
-int bt_client_get_nbytes_downloaded(
-    void *bto
-)
+int bt_client_get_nbytes_downloaded(void *bto)
 {
     //FIXME_STUB;
     return 0;
@@ -1222,9 +1106,7 @@ int bt_client_get_nbytes_downloaded(
  * @todo implement
  * @return 1 if client has failed 
  */
-int bt_client_is_failed(
-    void *bto
-)
+int bt_client_is_failed(void *bto)
 {
     return 0;
 }
@@ -1236,10 +1118,7 @@ int bt_client_is_failed(
 /**
  * Set the maximum number of peer connection
  */
-void bt_client_set_max_peer_connections(
-    void *bto,
-    const int npeers
-)
+void bt_client_set_max_peer_connections(void *bto, const int npeers)
 {
     bt_client_t *bt = bto;
 
@@ -1249,10 +1128,7 @@ void bt_client_set_max_peer_connections(
 /**
  * Set timeout in milliseconds
  */
-void bt_client_set_select_timeout_msec(
-    void *bto,
-    const int val
-)
+void bt_client_set_select_timeout_msec(void *bto, const int val)
 {
     bt_client_t *bt = bto;
 
@@ -1262,10 +1138,7 @@ void bt_client_set_select_timeout_msec(
 /**
  * Set maximum amount of megabytes used by piece cache
  */
-void bt_client_set_max_cache_mem(
-    void *bto,
-    const int val
-)
+void bt_client_set_max_cache_mem(void *bto, const int val)
 {
     bt_client_t *bt = bto;
 
@@ -1275,10 +1148,7 @@ void bt_client_set_max_cache_mem(
 /**
  * Set the number of completed peers
  */
-void bt_client_set_num_complete_peers(
-    void *bto,
-    const int npeers
-)
+void bt_client_set_num_complete_peers(void *bto, const int npeers)
 {
     bt_client_t *bt = bto;
 
@@ -1288,10 +1158,7 @@ void bt_client_set_num_complete_peers(
 /**
  * Set the failure flag to true
  */
-void bt_client_set_failed(
-    void *bto,
-    const char *reason
-)
+void bt_client_set_failed(void *bto, const char *reason)
 {
 
 }
@@ -1300,10 +1167,7 @@ void bt_client_set_failed(
  * Set tracker correspondence interval
  * @todo implement
  */
-void bt_client_set_interval(
-    void *bto,
-    int interval
-)
+void bt_client_set_interval(void *bto, int interval)
 {
 
 }
@@ -1311,10 +1175,7 @@ void bt_client_set_interval(
 /**
  * Set the client's peer id
  */
-void bt_client_set_peer_id(
-    void *bto,
-    char *peer_id
-)
+void bt_client_set_peer_id(void *bto, char *peer_id)
 {
     bt_client_t *bt = bto;
     int ii;
@@ -1329,9 +1190,7 @@ void bt_client_set_peer_id(
 /**
  * Get the client's peer id
  */
-char *bt_client_get_peer_id(
-    void *bto
-)
+char *bt_client_get_peer_id(void *bto)
 {
     bt_client_t *bt = bto;
 
@@ -1344,10 +1203,7 @@ char *bt_client_get_peer_id(
  * <b>Note:</b> bt_read_torrent_file sets this
  * The size of a piece is determined by the publisher of the torrent. A good recommendation is to use a piece size so that the metainfo file does not exceed 70 kilobytes.
  */
-void bt_client_set_npieces(
-    void *bto,
-    int npieces
-)
+void bt_client_set_npieces(void *bto, int npieces)
 {
     assert(FALSE);
 // fixed_piece_size = size_of_torrent / number_of_pieces
@@ -1360,10 +1216,7 @@ void bt_client_set_npieces(
  * Set file download path
  * @see bt_client_read_metainfo_file
  */
-void bt_client_set_path(
-    void *bto,
-    const char *path
-)
+void bt_client_set_path(void *bto, const char *path)
 {
     bt_client_t *bt = bto;
 
@@ -1375,10 +1228,7 @@ void bt_client_set_path(
  * Set piece length
  * @see bt_client_read_metainfo_file
  */
-void bt_client_set_piece_length(
-    void *bto,
-    const int len
-)
+void bt_client_set_piece_length(void *bto, const int len)
 {
     bt_client_t *bt = bto;
 
@@ -1391,11 +1241,7 @@ void bt_client_set_piece_length(
 /**
  * Set the logging function
  */
-void bt_client_set_logging(
-    void *bto,
-    void *udata,
-    func_log_f func
-)
+void bt_client_set_logging(void *bto, void *udata, func_log_f func)
 {
     bt_client_t *bt = bto;
 
@@ -1406,10 +1252,7 @@ void bt_client_set_logging(
 /**
  * Set network functions
  */
-void bt_client_set_net_funcs(
-    void *bto,
-    bt_net_funcs_t * net
-)
+void bt_client_set_net_funcs(void *bto, bt_net_funcs_t * net)
 {
     bt_client_t *bt = bto;
 
@@ -1423,10 +1266,7 @@ void bt_client_set_net_funcs(
  *
  * @return 1 on success, 255 if the option doesn't exist, 0 otherwise
  * */
-void bt_client_set_opt_shutdown_when_completed(
-    void *bto,
-    const int flag
-)
+void bt_client_set_opt_shutdown_when_completed(void *bto, const int flag)
 {
     bt_client_t *bt = bto;
 
@@ -1447,12 +1287,8 @@ void bt_client_set_opt_shutdown_when_completed(
  * @param val_len Value's length
  *
  */
-int bt_client_set_opt(
-    void *bto,
-    const char *key,
-    const char *val,
-    const int val_len
-)
+int bt_client_set_opt(void *bto,
+                      const char *key, const char *val, const int val_len)
 {
     bt_client_t *bt = bto;
 
@@ -1500,10 +1336,7 @@ int bt_client_set_opt(
  *
  * @return string of value if applicable, otherwise NULL
  */
-char *bt_client_get_opt_string(
-    void *bto,
-    const char *key
-)
+char *bt_client_get_opt_string(void *bto, const char *key)
 {
     bt_client_t *bt = bto;
 
@@ -1526,10 +1359,7 @@ char *bt_client_get_opt_string(
  *
  * @return integer of value if applicable, otherwise -1
  */
-int bt_client_get_opt_int(
-    void *bto,
-    const char *key
-)
+int bt_client_get_opt_int(void *bto, const char *key)
 {
     bt_client_t *bt = bto;
 
@@ -1551,9 +1381,7 @@ int bt_client_get_opt_int(
 /**
  * @return number of peers this client is involved with
  */
-int bt_client_get_num_peers(
-    void *bto
-)
+int bt_client_get_num_peers(void *bto)
 {
     bt_client_t *bt = bto;
 
@@ -1563,9 +1391,7 @@ int bt_client_get_num_peers(
 /**
  * @return number of pieces in this torrent
  */
-int bt_client_get_num_pieces(
-    void *bto
-)
+int bt_client_get_num_pieces(void *bto)
 {
     bt_client_t *bt = bto;
 
@@ -1576,9 +1402,7 @@ int bt_client_get_num_pieces(
  * @return the total size of the file as specified by the torrent
  * @see bt_client_read_metainfo_file
  */
-int bt_client_get_total_file_size(
-    void *bto
-)
+int bt_client_get_total_file_size(void *bto)
 {
     bt_client_t *bt = bto;
 
@@ -1588,9 +1412,7 @@ int bt_client_get_total_file_size(
 /**
  * @return reason for failure
  */
-char *bt_client_get_fail_reason(
-    void *bto
-)
+char *bt_client_get_fail_reason(void *bto)
 {
     bt_client_t *bt = bto;
 
@@ -1600,9 +1422,7 @@ char *bt_client_get_fail_reason(
 /**
  * @return interval that we have to communicate with the tracker
  */
-int bt_client_get_interval(
-    void *bto
-)
+int bt_client_get_interval(void *bto)
 {
     bt_client_t *bt = bto;
 

@@ -31,9 +31,7 @@ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <stdbool.h>
 #include <assert.h>
-#include <setjmp.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -43,21 +41,18 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "bt.h"
 #include "bt_local.h"
 
-void bt_bitfield_init(
-    bt_bitfield_t * bf,
-    const int nbits
-)
+void bt_bitfield_init(bt_bitfield_t * bf, const int nbits)
 {
-//    assert(0 < nbits);
-    bf->bits = calloc(nbits, sizeof(uint32_t));
+    assert(0 <= nbits);
+    assert(bf->bits);
     bf->size = nbits;
+    bf->bits = calloc(bf->size, sizeof(uint32_t));
 //    bf->bits = realloc(bf->bits, sizeof(uint32_t) * nbits);
 }
 
-void bt_bitfield_mark(
-    bt_bitfield_t * bf,
-    const int bit
-)
+/**
+ * Mark bit as on. */
+void bt_bitfield_mark(bt_bitfield_t * bf, const int bit)
 {
     int cint;
 
@@ -69,10 +64,9 @@ void bt_bitfield_mark(
     bf->bits[cint] |= 1 << (31 - bit % 32);
 }
 
-void bt_bitfield_unmark(
-    bt_bitfield_t * bf,
-    const int bit
-)
+/**
+ * Mark bit as off.*/
+void bt_bitfield_unmark(bt_bitfield_t * bf, const int bit)
 {
     assert(bf->bits);
     assert(0 <= bit);
@@ -81,10 +75,7 @@ void bt_bitfield_unmark(
 
 }
 
-int bt_bitfield_is_marked(
-    bt_bitfield_t * bf,
-    const int bit
-)
+int bt_bitfield_is_marked(bt_bitfield_t * bf, const int bit)
 {
     assert(bf->bits);
     assert(0 <= bit);
@@ -96,16 +87,14 @@ int bt_bitfield_is_marked(
     return 0 != (bf->bits[cint] & (1 << (31 - bit % 32)));
 }
 
-int bt_bitfield_get_length(
-    bt_bitfield_t * bf
-)
+int bt_bitfield_get_length(bt_bitfield_t * bf)
 {
     return bf->size;
 }
 
-char *bt_bitfield_str(
-    bt_bitfield_t * bf
-)
+/**
+ * Output bitfield to new string */
+char *bt_bitfield_str(bt_bitfield_t * bf)
 {
     char *str;
 
