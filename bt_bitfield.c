@@ -1,6 +1,6 @@
-
 /**
  * @file
+ * @brief A data structure which manages the un/marking of bitfields
  * @author  Willem Thiart himself@willemthiart.com
  * @version 0.1
  *
