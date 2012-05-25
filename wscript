@@ -90,11 +90,14 @@ def build(bld):
                     bt_tracker_response_reader.c
                     bt_choker_leecher.c
                     bt_choker_seeder.c
+                    bt_tracker_client.c
                     url_encoder.c
                     http_request.c
                     bt_peer_connection.c
                     bt_diskcache.c
                     bt_diskmem.c
+                    bt_networkfuncs_tcp.c
+                    ccircularbuffer/cbuffer.c
                     readfile.c
                     sha1.c
                     chashmap_via_linked_list/linked_list_hashmap.c
@@ -106,7 +109,14 @@ def build(bld):
                     """,
                 use='config',
                 target='yabbt',
-                includes='bencode clinkedlistqueue chashmap_via_linked_list cheap pseudolru',
+                includes="""
+                    bencode
+                    clinkedlistqueue
+                    chashmap_via_linked_list
+                    cheap
+                    pseudolru
+                    ccircularbuffer
+                    """,
                 cflags=[
                     '-Werror',
                     '-g',
@@ -136,9 +146,8 @@ def build(bld):
 #        unittest(bld,'test_peer_connection_send.c')
 
         bld.program(
-                source='bt_main.c bt_networkfuncs_tcp.c ccircularbuffer/cbuffer.c',
+                source='bt_main.c ',
                 target='bt',
-                includes='ccircularbuffer',
                 cflags=[
                     '-g',
                     '-Werror',

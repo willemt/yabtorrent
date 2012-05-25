@@ -168,7 +168,6 @@ int main(int argc, char **argv)
     bt_client_set_opt_shutdown_when_completed(bt, o_shutdown_when_complete);
 //    if (bt_client_set_func
 
-    bt_client_set_net_funcs(bt, &netfuncs);
     bt_client_set_path(bt, ".");
     bt_client_set_peer_id(bt, bt_generate_peer_id());
 //    bt_set_log_func(bt,);
@@ -190,10 +189,12 @@ int main(int argc, char **argv)
     }
     else
     {
+#if 0
         while (0 == bt_client_connect_to_tracker(bt))
         {
             sleep(1);
         }
+#endif
 
         bt_client_go(bt);
     }

@@ -32,5 +32,3 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 extern char __cfg_bound_iface[32];
-
-extern bt_net_funcs_t netfuncs;

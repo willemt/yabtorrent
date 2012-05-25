@@ -36,6 +36,9 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <stdio.h>
 #include <assert.h>
 
+#include <sys/time.h>
+#include <sys/resource.h>
+
 #include <string.h>
 #include <stdarg.h>
 
@@ -78,12 +81,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 typedef struct
 {
-    /*  the size of the piece, etc */
-    bt_piece_info_t pinfo;
-
-    /* 20-byte self-designated ID of the peer */
-    char *p_peer_id;
-
     /* name of the topmost directory */
     char *name;
 
@@ -93,12 +90,8 @@ typedef struct
     /* how often we must send messages to the tracker */
     int interval;
 
-    char *tracker_url;
     void **peerconnects;
     int npeers;
-
-    /* sha1 hash of the info_hash */
-    char *info_hash;
 
     /*  the piece container */
     bt_piecedb_t *db;
@@ -106,48 +99,30 @@ typedef struct
     /*  disk cache */
     void *dc;
 
+    /*  tracker client */
+    void *tc;
+
     /*  file dumper */
     bt_filedumper_t *fd;
 
     /* net stuff */
-
-    bt_net_funcs_t net;
+    bt_net_pwp_funcs_t net;
 
     void *net_udata;
-
 
     /* number of complete peers */
     int ncomplete_peers;
 
     char fail_reason[255];
 
-    /* so that we remember when we last requested the peer list */
-    time_t last_tracker_request;
-
     /*  are we seeding? */
     int am_seeding;
-
-    /*------------------------------------------------*/
-
-    /*  don't seed, shutdown when complete */
-    int o_shutdown_when_complete;
-    /*  how many seconds between tracker scrapes */
-//    int o_tracker_scrape_interval;
-
-    /*------------------------------------------------*/
 
     /*  logging  */
 
 //    bt_logger_t logger;
     func_log_f func_log;
     void *log_udata;
-
-    /*  this holds my IP. I figure it out */
-    char my_ip[32];
-//    char my_port[8];
-
-    /* listen for pwp messages on this port */
-    int pwp_listen_port;
 
     bt_client_cfg_t cfg;
     bt_pwp_cfg_t pwpcfg;
@@ -159,47 +134,6 @@ typedef struct
 } bt_client_t;
 
 /*----------------------------------------------------------------------------*/
-
-/**
- * print a string of all the downloaded pieces */
-static void __print_pieces_downloaded(void *bto)
-{
-    bt_client_t *bt = bto;
-
-    int ii, counter, is_complete = 1;
-
-    printf("pieces downloaded: ");
-
-    for (ii = 0, counter = 20;
-         ii < bt_piecedb_get_length(bt->db); ii++, counter += 1)
-    {
-        bt_piece_t *pce;
-
-        pce = bt_piecedb_get(bt->db, ii);
-
-        if (bt_piece_is_complete(pce))
-        {
-            printf("1");
-        }
-        else
-        {
-            printf("0");
-            is_complete = 0;
-        }
-
-        if (counter == 80)
-        {
-            counter = 2;
-            printf("\n  ");
-        }
-    }
-    printf("\n");
-
-    if (is_complete)
-    {
-
-    }
-}
 
 /**
  * @return 1 if all complete, 0 otherwise */
@@ -319,7 +253,7 @@ static int __FUNC_peercon_pushblock(void *bto,
             }
         }
 
-        __print_pieces_downloaded(bt);
+        bt_piecedb_print_pieces_downloaded(bt->db);
 
         if (__all_pieces_are_complete(bt))
         {
@@ -452,9 +386,6 @@ static void __process_peer_connect(void *bto,
 //    pc = __netpeerid_to_peerconn(bt, netpeerid);
 }
 
-#include <sys/time.h>
-#include <sys/resource.h>
-
 static void __log_process_info(bt_client_t * bt)
 {
 #if 0
@@ -554,7 +485,7 @@ static char *__FUNC_peerconn_get_infohash(void *bto, bt_peer_t * peer)
 {
     bt_client_t *bt = bto;
 
-    return bt->info_hash;
+    return bt->cfg.info_hash;
 }
 
 static int __FUNC_peerconn_disconnect(void *udata,
@@ -647,6 +578,12 @@ static void __leecher_peer_optimistic_unchoke(void *bto)
 }
 
 /*----------------------------------------------------------------------------*/
+static void __FUNC_read_metafile(void *bt, char *metafile, int len)
+{
+    bt_client_read_tracker_response(bt, metafile, len);
+}
+
+/*----------------------------------------------------------------------------*/
 /** @name Setup
  */
 /* @{ */
@@ -668,10 +605,13 @@ void *bt_client_new()
     bt->db = bt_piecedb_new();
     bt->fd = bt_filedumper_new();
     bt->dc = bt_diskcache_new();
+    bt->tc = bt_tracker_client_new(&bt->cfg, __FUNC_read_metafile, bt);
+
+    bt_client_set_pwp_net_funcs(bt, &pwpNetFuncs);
 
     /* configuration */
-    sprintf(bt->my_ip, "127.0.0.1");
-    bt->pwp_listen_port = 6000;
+    sprintf(bt->cfg.my_ip, "127.0.0.1");
+    bt->cfg.pwp_listen_port = 6000;
     bt->cfg.max_peer_connections = 10;
     bt->cfg.select_timeout_msec = 1000;
     bt->cfg.tracker_scrape_interval = 10;
@@ -738,11 +678,10 @@ int bt_client_read_metainfo_file(void *bto, const char *fname)
         return 0;
     }
 
-    bt_client_read_metainfo(bto, contents, len, &bt->pinfo);
+    bt_client_read_metainfo(bto, contents, len, &bt->cfg.pinfo);
 
-
-    __print_pieces_downloaded(bto);
-
+    /*  find out if we are seeding by default */
+    bt_piecedb_print_pieces_downloaded(bt->db);
     if (__all_pieces_are_complete(bt))
     {
         bt->am_seeding = 1;
@@ -751,93 +690,6 @@ int bt_client_read_metainfo_file(void *bto, const char *fname)
     free(contents);
 
     return 1;
-}
-
-static void __build_tracker_request(bt_client_t * bt, char **request)
-{
-    bt_piece_info_t *bi;
-    char *info_hash_encoded;
-
-    bi = &bt->pinfo;
-    info_hash_encoded = url_encode(bt->info_hash);
-    asprintf(request,
-             "GET %s?info_hash=%s&peer_id=%s&port=%d&uploaded=%d&downloaded=%d&left=%d&event=started&compact=1 http/1.0\r\n"
-             "\r\n\r\n",
-             bt->tracker_url,
-             info_hash_encoded,
-             bt->p_peer_id, bt->pwp_listen_port, 0, 0,
-             bi->npieces * bi->piece_len);
-    free(info_hash_encoded);
-}
-
-static int __get_tracker_request(void *bto)
-{
-    bt_client_t *bt = bto;
-    int status = 0;
-    char *host, *port, *default_port = "80";
-
-//    printf("connecting to tracker: '%s:%s'\n", host, port);
-    host = url2host(bt->tracker_url);
-    if (!(port = url2port(bt->tracker_url)))
-    {
-        port = default_port;
-    }
-
-    if (1 == bt->net.tracker_connect(&bt->net_udata, host, port, bt->my_ip))
-    {
-        int rlen;
-        char *request, *document, *response;
-
-        __build_tracker_request(bt, &request);
-//        printf("my ip: %s\n", bt->my_ip);
-//        printf("requesting peer list: %s\n", request);
-        if (
-               /*  send http request */
-               1
-               ==
-               bt->net.tracker_send(&bt->net_udata, request, strlen(request)) &&
-               /*  receive http response */
-               1 == bt->net.tracker_recv(&bt->net_udata, &response, &rlen))
-        {
-            int bencode_len;
-
-            document = strstr(response, "\r\n\r\n") + 4;
-            bencode_len = response + rlen - document;
-            bt_client_read_tracker_response(bt, document, bencode_len);
-            free(request);
-            free(response);
-            status = 1;
-        }
-    }
-
-    free(host);
-    if (port != default_port)
-        free(port);
-    return status;
-}
-
-/* @} ------------------------------------------------------------------------*/
-/** @name Tracker
- * @{
- */
-
-/**
- * Connect to tracker.
- *
- * Send request to tracker and get peer listing.
- *
- * @return 1 on sucess; otherwise 0
- *
- */
-int bt_client_connect_to_tracker(void *bto)
-{
-    bt_client_t *bt = bto;
-
-    assert(bt);
-    assert(bt->tracker_url);
-    assert(bt->info_hash);
-    assert(bt->p_peer_id);
-    return __get_tracker_request(bt);
 }
 
 /* @} ------------------------------------------------------------------------*/
@@ -866,7 +718,7 @@ int bt_client_add_piece(void *bto, const char *sha1)
     bt_client_t *bt = bto;
 
     bt_piecedb_add(bt->db, sha1);
-    bt->pinfo.npieces = bt_piecedb_get_length(bt->db);
+    bt->cfg.pinfo.npieces = bt_piecedb_get_length(bt->db);
     return 1;
 }
 
@@ -941,7 +793,7 @@ bt_peer_t *bt_client_add_peer(void *bto,
     bt_peer_t *peer;
 
     /*  peer is me.. */
-    if (!strncmp(ip, bt->my_ip, ip_len) && port == bt->pwp_listen_port)
+    if (!strncmp(ip, bt->cfg.my_ip, ip_len) && port == bt->cfg.pwp_listen_port)
     {
         return NULL;
     }
@@ -976,10 +828,10 @@ bt_peer_t *bt_client_add_peer(void *bto,
     bt_peerconn_set_func_connect(pc, __FUNC_peerconn_connect);
     bt_peerconn_set_func_get_infohash(pc, __FUNC_peerconn_get_infohash);
     bt_peerconn_set_func_piece_is_complete(pc, __FUNC_peerconn_pieceiscomplete);
-    bt_peerconn_set_pieceinfo(pc, &bt->pinfo);
+    bt_peerconn_set_pieceinfo(pc, &bt->cfg.pinfo);
     bt_peerconn_set_isr_udata(pc, bt);
     bt_peerconn_set_pwp_cfg(pc, &bt->pwpcfg);
-    bt_peerconn_set_peer_id(pc, bt->p_peer_id);
+    bt_peerconn_set_peer_id(pc, bt->cfg.p_peer_id);
     printf("adding peer: ip:%.*s port:%d\n", ip_len, ip, port);
     bt->npeers++;
     bt->peerconnects = realloc(bt->peerconnects, sizeof(void *) * bt->npeers);
@@ -1011,7 +863,6 @@ int bt_client_remove_peer(void *bto, const int peerid)
 /** @name Download Management
  * @{ */
 
-
 /**
  * Tell us if the download is done.
  * @return 1 on sucess; otherwise 0
@@ -1035,17 +886,12 @@ int bt_client_step(void *bto)
     seconds = time(NULL);
 
     /*  shutdown if we are setup to not seed */
-    if (1 == bt->am_seeding && 1 == bt->o_shutdown_when_complete)
+    if (1 == bt->am_seeding && 1 == bt->cfg.o_shutdown_when_complete)
     {
         return 0;
     }
 
-    /*  perform tracker request to get new peers */
-    if (bt->last_tracker_request + bt->cfg.tracker_scrape_interval < seconds)
-    {
-        bt->last_tracker_request = seconds;
-        __get_tracker_request(bt);
-    }
+    bt_tracker_client_step(bt->tc, seconds);
 
     /*  poll data from peer pwp connections */
     bt->net.peers_poll(&bt->net_udata,
@@ -1071,7 +917,7 @@ void bt_client_go(void *bto)
     bt_client_t *bt = bto;
     int ii;
 
-    bt->net.peer_listen_open(&bt->net_udata, bt->pwp_listen_port);
+    bt->net.peer_listen_open(&bt->net_udata, bt->cfg.pwp_listen_port);
 
     while (1)
     {
@@ -1180,7 +1026,7 @@ void bt_client_set_peer_id(void *bto, char *peer_id)
     bt_client_t *bt = bto;
     int ii;
 
-    bt->p_peer_id = peer_id;
+    bt->cfg.p_peer_id = peer_id;
     for (ii = 0; ii < bt->npeers; ii++)
     {
         bt_peerconn_set_peer_id(bt->peerconnects[ii], peer_id);
@@ -1194,7 +1040,7 @@ char *bt_client_get_peer_id(void *bto)
 {
     bt_client_t *bt = bto;
 
-    return bt->p_peer_id;
+    return bt->cfg.p_peer_id;
 }
 
 /**
@@ -1209,7 +1055,7 @@ void bt_client_set_npieces(void *bto, int npieces)
 // fixed_piece_size = size_of_torrent / number_of_pieces
     bt_client_t *bt = bto;
 
-    bt->pinfo.npieces = npieces;
+    bt->cfg.pinfo.npieces = npieces;
 }
 
 /**
@@ -1232,7 +1078,7 @@ void bt_client_set_piece_length(void *bto, const int len)
 {
     bt_client_t *bt = bto;
 
-    bt->pinfo.piece_len = len;
+    bt->cfg.pinfo.piece_len = len;
     bt_piecedb_set_piece_length(bt->db, len);
     bt_filedumper_set_piece_length(bt->fd, len);
     bt_diskcache_set_size(bt->dc, len);
@@ -1252,11 +1098,11 @@ void bt_client_set_logging(void *bto, void *udata, func_log_f func)
 /**
  * Set network functions
  */
-void bt_client_set_net_funcs(void *bto, bt_net_funcs_t * net)
+void bt_client_set_pwp_net_funcs(void *bto, bt_net_pwp_funcs_t * net)
 {
     bt_client_t *bt = bto;
 
-    memcpy(&bt->net, net, sizeof(bt_net_funcs_t));
+    memcpy(&bt->net, net, sizeof(bt_net_pwp_funcs_t));
 }
 
 /**
@@ -1270,7 +1116,7 @@ void bt_client_set_opt_shutdown_when_completed(void *bto, const int flag)
 {
     bt_client_t *bt = bto;
 
-    bt->o_shutdown_when_complete = flag;
+    bt->cfg.o_shutdown_when_complete = flag;
 }
 
 /**
@@ -1294,7 +1140,7 @@ int bt_client_set_opt(void *bto,
 
     if (!strcmp(key, "pwp_listen_port"))
     {
-        bt->pwp_listen_port = atoi(val);
+        bt->cfg.pwp_listen_port = atoi(val);
         return 1;
     }
     else if (!strcmp(key, "tracker_interval"))
@@ -1304,15 +1150,15 @@ int bt_client_set_opt(void *bto,
     }
     else if (!strcmp(key, "tracker_url"))
     {
-        bt->tracker_url = calloc(1, sizeof(char) * (val_len + 1));
-        strncpy(bt->tracker_url, val, val_len);
+        bt->cfg.tracker_url = calloc(1, sizeof(char) * (val_len + 1));
+        strncpy(bt->cfg.tracker_url, val, val_len);
         return 1;
     }
     else if (!strcmp(key, "infohash"))
     {
         int ii;
 
-        bt->info_hash = strdup(val);
+        bt->cfg.info_hash = strdup(val);
 #if 0
         printf("Info hash.....: ");
         for (ii = 0; ii < 20; ii++)
@@ -1342,11 +1188,11 @@ char *bt_client_get_opt_string(void *bto, const char *key)
 
     if (!strcmp(key, "tracker_url"))
     {
-        return bt->tracker_url;
+        return bt->cfg.tracker_url;
     }
     else if (!strcmp(key, "infohash"))
     {
-        return bt->info_hash;
+        return bt->cfg.info_hash;
     }
     else
     {
@@ -1365,7 +1211,7 @@ int bt_client_get_opt_int(void *bto, const char *key)
 
     if (!strcmp(key, "pwp_listen_port"))
     {
-        return bt->pwp_listen_port;
+        return bt->cfg.pwp_listen_port;
     }
     else if (!strcmp(key, "tracker_interval"))
     {
@@ -1376,7 +1222,6 @@ int bt_client_get_opt_int(void *bto, const char *key)
         return -1;
     }
 }
-
 
 /**
  * @return number of peers this client is involved with

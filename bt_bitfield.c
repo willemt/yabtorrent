@@ -44,7 +44,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 void bt_bitfield_init(bt_bitfield_t * bf, const int nbits)
 {
     assert(0 <= nbits);
-    assert(bf->bits);
     bf->size = nbits;
     bf->bits = calloc(bf->size, sizeof(uint32_t));
 //    bf->bits = realloc(bf->bits, sizeof(uint32_t) * nbits);
