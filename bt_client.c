@@ -54,7 +54,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <time.h>
 
-
 /*
  * bt_client
  *  has a bt_peerconn_t for each peer_t
@@ -117,11 +116,9 @@ typedef struct
 
     /*  are we seeding? */
     int am_seeding;
-
-    /*  logging  */
-
-//    bt_logger_t logger;
-    func_log_f func_log;
+        1232
+        /*  logging  */
+        func_log_f func_log;
     void *log_udata;
 
     bt_client_cfg_t cfg;
@@ -415,6 +412,7 @@ static void __log_process_info(bt_client_t * bt)
 
 #define SECONDS_SINCE_LAST_LOG 1
     gettimeofday(&tv, NULL);
+
     /*  run every n seconds */
     if (0 == last_run)
     {
@@ -730,9 +728,8 @@ int bt_client_add_piece(void *bto, const char *sha1)
  * */
 void bt_client_add_pieces(void *bto, const char *pieces, int len)
 {
-    int prog;
+    int prog = 0;
 
-    prog = 0;
     while (prog <= len)
     {
         prog++;
@@ -764,7 +761,6 @@ int bt_client_add_file(void *bto,
 
     printf("adding file: %.*s (%d bytes) flen:%d\n",
            fname_len, fname, flen, fname_len);
-//    bt->tot_file_size += flen;
     bt_piecedb_set_tot_file_size(bt->db,
                                  bt_piecedb_get_tot_file_size(bt->db) + flen);
     asprintf(&path, "%.*s", fname_len, fname);
@@ -804,6 +800,7 @@ bt_peer_t *bt_client_add_peer(void *bto,
     }
 
     peer = calloc(1, sizeof(bt_peer_t));
+
     /*  'compact=0'
      *  doesn't use peerids.. */
     if (peer_id)
