@@ -1,6 +1,6 @@
-
 /**
  * @file
+ * @brief Manages layer between memory and disk
  * @author  Willem Thiart himself@willemthiart.com
  * @version 0.1
  *

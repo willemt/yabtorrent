@@ -1,6 +1,6 @@
-
 /**
  * @file
+ * @brief Major class tasked with managing downloads
  * @author  Willem Thiart himself@willemthiart.com
  * @version 0.1
  *
