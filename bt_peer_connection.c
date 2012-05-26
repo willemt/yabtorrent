@@ -1,6 +1,7 @@
 
 /**
  * @file
+ * @brief Manage a connection with a peer
  * @author  Willem Thiart himself@willemthiart.com
  * @version 0.1
  *

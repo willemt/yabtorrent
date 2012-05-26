@@ -1,6 +1,7 @@
 
 /**
  * @file
+ * @brief block_rw implementor which dumps files to disk
  * @author  Willem Thiart himself@willemthiart.com
  * @version 0.1
  *

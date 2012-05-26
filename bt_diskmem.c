@@ -1,6 +1,7 @@
 
 /**
  * @file
+ * @brief A disk layer which just works in memory
  * @author  Willem Thiart himself@willemthiart.com
  * @version 0.1
  *

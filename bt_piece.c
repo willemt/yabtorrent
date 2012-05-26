@@ -1,6 +1,7 @@
 
 /**
  * @file
+ * @brief Represent a single piece and the accounting it needs
  * @author  Willem Thiart himself@willemthiart.com
  * @version 0.1
  *

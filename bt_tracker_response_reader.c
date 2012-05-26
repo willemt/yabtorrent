@@ -1,6 +1,7 @@
 
 /**
  * @file
+ * @brief Read tracker's response
  * @author  Willem Thiart himself@willemthiart.com
  * @version 0.1
  *

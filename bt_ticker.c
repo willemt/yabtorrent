@@ -1,6 +1,7 @@
 
 /**
  * @file
+ * @brief Manage the timing of downloads
  * @author  Willem Thiart himself@willemthiart.com
  * @version 0.1
  *

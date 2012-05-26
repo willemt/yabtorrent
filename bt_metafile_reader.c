@@ -1,6 +1,7 @@
 
 /**
  * @file
+ * @brief Read bittorrent meta files 
  * @author  Willem Thiart himself@willemthiart.com
  * @version 0.1
  *

@@ -1,6 +1,7 @@
 
 /**
  * @file
+ * @brief Keep track of what pieces we've downloaded
  * @author  Willem Thiart himself@willemthiart.com
  * @version 0.1
  *

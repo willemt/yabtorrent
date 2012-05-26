@@ -1,6 +1,7 @@
 
 /**
  * @file
+ * @brief Select the most rarest piece to download
  * @author  Willem Thiart himself@willemthiart.com
  * @version 0.1
  *
