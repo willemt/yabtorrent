@@ -64,20 +64,6 @@ typedef struct
     int max_pending_requests;
 } bt_pwp_cfg_t;
 
-/*  piece info
- *  this is how this torrent has */
-typedef struct
-{
-    /* a string containing the 20 byte sha1 of every file, concatenated.
-     * (from protocol)
-     * sha1 hash = 20 bytes */
-    char *pieces_hash;
-    /* the length of a piece (from protocol) */
-    int piece_len;
-    /* number of pieces (from protocol) */
-    int npieces;
-} bt_piece_info_t;
-
 /*  bitfield */
 typedef struct
 {
@@ -147,23 +133,13 @@ typedef enum
     PWP_MSGTYPE_CANCEL == (m) ? "CANCEL" : "none"\
 
 
-void stream_write_ubyte(
-    unsigned char **bytes,
-    unsigned char value
-);
+void stream_write_ubyte(unsigned char **bytes, unsigned char value);
 
-void stream_write_uint32(
-    unsigned char **bytes,
-    uint32_t value
-);
+void stream_write_uint32(unsigned char **bytes, uint32_t value);
 
-unsigned char stream_read_ubyte(
-    unsigned char **bytes
-);
+unsigned char stream_read_ubyte(unsigned char **bytes);
 
-uint32_t stream_read_uint32(
-    unsigned char **bytes
-);
+uint32_t stream_read_uint32(unsigned char **bytes);
 
 /*----------------------------------------------------------------------------*/
 #define PROTOCOL_NAME "BitTorrent protocol"
@@ -185,397 +161,212 @@ typedef struct
     char *path;
 } bt_file_t;
 
-/*----------------------------------------------------------------------------*/
 
-
-/*----------------------------------------------------------------------------*/
-bt_piece_t *bt_piece_new(
-    const unsigned char *sha1sum,
-    const int piece_bytes_size
-);
-
-void bt_piece_set_disk_blockrw(
-    bt_piece_t * pce,
-    bt_blockrw_i * irw,
-    void *udata
-);
-
-char *bt_piece_get_hash(
-    bt_piece_t * pce
-);
-
-void *bt_piece_read_block(
-    void *pceo,
-    void *caller,
-    const bt_block_t * blk
-);
-
-bt_piecedb_t *bt_piecedb_new(
-);
-
-bt_piece_t *bt_piecedb_get(
-    bt_piecedb_t * db,
-    const int idx
-);
-
-bt_piece_t *bt_piecedb_poll_best_from_bitfield(
-    bt_piecedb_t * db,
-    bt_bitfield_t * bf_possibles
-);
-
-bt_peer_t *bt_peerconn_get_peer(
-    void *pco
-);
-
-void *bt_peerconn_new(
-);
-
-char *url2host(
-    const char *url
-);
-
-/*----------------------------------------------------------------------------*/
-char *read_file(
-    const char *name,
-    int *len
-);
-
-/*----------------------------------------------------------------------------*/
-
-void bt_read_metainfo(
-    int id,
-    const char *buf,
-    int len,
-    bt_piece_info_t * pinfo
-);
-
-/*----------------------------------------------------------------------------*/
-
-void bt_bitfield_init(
-    bt_bitfield_t * bf,
-    const int nbits
-);
-
-void bt_bitfield_mark(
-    bt_bitfield_t * bf,
-    const int bit
-);
-
-void bt_bitfield_unmark(
-    bt_bitfield_t * bf,
-    const int bit
-);
-
-int bt_bitfield_is_marked(
-    bt_bitfield_t * bf,
-    const int bit
-);
-
-int bt_bitfield_get_length(
-    bt_bitfield_t * bf
-);
-
-
-char *bt_bitfield_str(
-    bt_bitfield_t * bf
-);
-
-/*----------------------------------------------------------------------------*/
-void bt_peerconn_set_func_send(
-    void *pco,
-    func_send_f func
-);
-
-void bt_peerconn_set_func_getpiece(
-    void *pco,
-    func_getpiece_f func
-);
-
-
-void bt_peerconn_set_func_pollblock(
-    void *pco,
-    func_pollblock_f func
-);
-
-
-void bt_peerconn_set_func_have(
-    void *pco,
-    func_have_f func
-);
-
-
-void bt_peerconn_set_func_disconnect(
-    void *pco,
-    func_disconnect_f func
-);
-
-
-void bt_peerconn_set_func_push_block(
-    void *pco,
-    func_push_block_f func
-);
-
-
-void bt_peerconn_set_func_recv(
-    void *pco,
-    func_recv_f func
-);
-
-
-void bt_peerconn_set_func_log(
-    void *pco,
-    func_log_f func
-);
-
-char *url2port(
-    const char *url
-);
-
-
-void bt_diskcache_set_func_log(
-    bt_diskcache_t * dc,
-    func_log_f log,
-    void *udata
-);
-
-void *bt_diskcache_new(
-);
-
-void bt_diskcache_set_size(
-    void *dco,
-    const int piece_bytes_size
-);
-
-void bt_diskcache_set_disk_blockrw(
-    void *dco,
-    bt_blockrw_i * irw,
-    void *irw_data
-);
-
-bt_blockrw_i *bt_diskcache_get_blockrw(
-    void *dco
-);
-
-/*----------------------------------------------------------------------------*/
-
-int bt_filedumper_write_block(
-    void *flo,
-    void *caller,
-    const bt_block_t * blk,
-    const void *data
-);
-
-void *bt_filedumper_read_block(
-    void *flo,
-    void *caller,
-    const bt_block_t * blk
-);
-
-const char *bt_filedumper_file_get_path(
-    bt_filedumper_t * fl,
-    int idx
-);
-
-
-bt_filedumper_t *bt_filedumper_new(
-);
-
-
-void bt_filedumper_add_file(
-    bt_filedumper_t * fl,
-    const char *fname,
-    const int size
-);
-
-
-int bt_filedumper_get_nfiles(
-    bt_filedumper_t * fl
-);
-
-
-bt_blockrw_i *bt_filedumper_get_blockrw(
-    bt_filedumper_t * fl
-);
-
-
-void bt_filedumper_set_piece_length(
-    bt_filedumper_t * fl,
-    const int piece_size
-);
-
-
-void bt_filedumper_set_path(
-    bt_filedumper_t * fl,
-    const char *path
-);
-
-
-void bt_filedumper_set_udata(
-    bt_filedumper_t * fl,
-    void *udata
-);
+extern bt_net_pwp_funcs_t pwpNetFuncs;
+extern bt_net_tracker_funcs_t trackerNetFuncs;
 
 /*----------------------------------------------------------------------------*/
 
 
-void *bt_rarestfirst_selector_new(
-    int npieces
-);
+/*----------------------------------------------------------------------------*/
+bt_piece_t *bt_piece_new(const unsigned char *sha1sum,
+                         const int piece_bytes_size);
 
-void bt_rarestfirst_selector_offer_piece(
-    void *r,
-    int piece_idx
-);
+void bt_piece_set_disk_blockrw(bt_piece_t * pce,
+                               bt_blockrw_i * irw, void *udata);
 
-void bt_rarestfirst_selector_announce_have_piece(
-    void *r,
-    int piece_idx
-);
+char *bt_piece_get_hash(bt_piece_t * pce);
 
-void bt_rarestfirst_selector_remove_peer(
-    void *r,
-    void *peer
-);
+void *bt_piece_read_block(void *pceo, void *caller, const bt_block_t * blk);
 
-void bt_rarestfirst_selector_add_peer(
-    void *r,
-    void *peer
-);
+bt_piecedb_t *bt_piecedb_new();
 
-void bt_rarestfirst_selector_announce_peer_have_piece(
-    void *r,
-    void *peer,
-    int piece_idx
-);
+bt_piece_t *bt_piecedb_get(bt_piecedb_t * db, const int idx);
 
-int bt_rarestfirst_selector_get_npeers(
-    void *r
-);
+bt_piece_t *bt_piecedb_poll_best_from_bitfield(bt_piecedb_t * db,
+                                               bt_bitfield_t * bf_possibles);
 
+bt_peer_t *bt_peerconn_get_peer(void *pco);
 
-int bt_rarestfirst_selector_get_npieces(
-    void *r
-);
+void *bt_peerconn_new();
 
-int bt_rarestfirst_selector_poll_best_piece(
-    void *r,
-    const void *peer
-);
+char *url2host(const char *url);
+
+/*----------------------------------------------------------------------------*/
+char *read_file(const char *name, int *len);
 
 /*----------------------------------------------------------------------------*/
 
-void *bt_leeching_choker_new(
-    const int size
-);
-
-void bt_leeching_choker_add_peer(
-    void *ckr,
-    void *peer
-);
-
-void bt_leeching_choker_remove_peer(
-    void *ckr,
-    void *peer
-);
-
-void bt_leeching_choker_announce_interested_peer(
-    void *cho,
-    void *peer
-);
-
-void bt_leeching_choker_decide_best_npeers(
-    void *ckr
-);
-
-void bt_leeching_choker_optimistically_unchoke(
-    void *ckr
-);
-
-void bt_leeching_choker_unchoke_peer(
-    void *ckr,
-    void *peer
-);
-
-int bt_leeching_choker_get_npeers(
-    void *ckr
-);
-
-void bt_leeching_choker_set_choker_peer_iface(
-    void *ckr,
-    void *udata,
-    bt_choker_peer_i * iface
-);
-
-void bt_leeching_choker_get_iface(
-    bt_choker_i * iface
-);
-
-/*----------------------------------------------------------------------------*/
-void *bt_seeding_choker_new(
-    const int size
-);
-
-void bt_seeding_choker_add_peer(
-    void *ckr,
-    void *peer
-);
-
-void bt_seeding_choker_remove_peer(
-    void *ckr,
-    void *peer
-);
-
-void bt_seeding_choker_decide_best_npeers(
-    void *ckr
-);
-
-void bt_seeding_choker_unchoke_peer(
-    void *ckr,
-    void *peer
-);
-
-void bt_seeding_choker_set_choker_peer_iface(
-    void *ckr,
-    void *udata,
-    bt_choker_peer_i * iface
-);
-
-int bt_seeding_choker_get_npeers(
-    void *ckr
-);
-
-void bt_seeding_choker_get_iface(
-    bt_choker_i * iface
-);
+void bt_read_metainfo(int id,
+                      const char *buf, int len, bt_piece_info_t * pinfo);
 
 /*----------------------------------------------------------------------------*/
 
-void *bt_ticker_new(
-);
+void bt_bitfield_init(bt_bitfield_t * bf, const int nbits);
 
-void bt_ticker_push_event(
-    void *ti,
-    int nsecs,
-    void *udata,
-    void (*func) (void *)
-);
+void bt_bitfield_mark(bt_bitfield_t * bf, const int bit);
 
-void bt_ticker_step(
-    void *ti
-);
+void bt_bitfield_unmark(bt_bitfield_t * bf, const int bit);
 
-/*----------------------------------------------------------------------------*/
-char *str2sha1hash(
-    const char *str,
-    int len
-);
+int bt_bitfield_is_marked(bt_bitfield_t * bf, const int bit);
+
+int bt_bitfield_get_length(bt_bitfield_t * bf);
+
+
+char *bt_bitfield_str(bt_bitfield_t * bf);
 
 /*----------------------------------------------------------------------------*/
+void bt_peerconn_set_func_send(void *pco, func_send_f func);
+
+void bt_peerconn_set_func_getpiece(void *pco, func_getpiece_f func);
+
+
+void bt_peerconn_set_func_pollblock(void *pco, func_pollblock_f func);
+
+
+void bt_peerconn_set_func_have(void *pco, func_have_f func);
+
+
+void bt_peerconn_set_func_disconnect(void *pco, func_disconnect_f func);
+
+
+void bt_peerconn_set_func_push_block(void *pco, func_push_block_f func);
+
+
+void bt_peerconn_set_func_recv(void *pco, func_recv_f func);
+
+
+void bt_peerconn_set_func_log(void *pco, func_log_f func);
+
+char *url2port(const char *url);
+
+
+void bt_diskcache_set_func_log(bt_diskcache_t * dc,
+                               func_log_f log, void *udata);
+
+void *bt_diskcache_new();
+
+void bt_diskcache_set_size(void *dco, const int piece_bytes_size);
+
+void bt_diskcache_set_disk_blockrw(void *dco,
+                                   bt_blockrw_i * irw, void *irw_data);
+
+bt_blockrw_i *bt_diskcache_get_blockrw(void *dco);
 
 /*----------------------------------------------------------------------------*/
-void *bt_diskmem_new(
-);
 
-bt_blockrw_i *bt_diskmem_get_blockrw(
-    void *dco
-);
+int bt_filedumper_write_block(void *flo,
+                              void *caller,
+                              const bt_block_t * blk, const void *data);
+
+void *bt_filedumper_read_block(void *flo, void *caller, const bt_block_t * blk);
+
+const char *bt_filedumper_file_get_path(bt_filedumper_t * fl, int idx);
+
+
+bt_filedumper_t *bt_filedumper_new();
+
+
+void bt_filedumper_add_file(bt_filedumper_t * fl,
+                            const char *fname, const int size);
+
+
+int bt_filedumper_get_nfiles(bt_filedumper_t * fl);
+
+
+bt_blockrw_i *bt_filedumper_get_blockrw(bt_filedumper_t * fl);
+
+
+void bt_filedumper_set_piece_length(bt_filedumper_t * fl, const int piece_size);
+
+
+void bt_filedumper_set_path(bt_filedumper_t * fl, const char *path);
+
+
+void bt_filedumper_set_udata(bt_filedumper_t * fl, void *udata);
+
+/*----------------------------------------------------------------------------*/
+
+
+void *bt_rarestfirst_selector_new(int npieces);
+
+void bt_rarestfirst_selector_offer_piece(void *r, int piece_idx);
+
+void bt_rarestfirst_selector_announce_have_piece(void *r, int piece_idx);
+
+void bt_rarestfirst_selector_remove_peer(void *r, void *peer);
+
+void bt_rarestfirst_selector_add_peer(void *r, void *peer);
+
+void bt_rarestfirst_selector_announce_peer_have_piece(void *r,
+                                                      void *peer,
+                                                      int piece_idx);
+
+int bt_rarestfirst_selector_get_npeers(void *r);
+
+
+int bt_rarestfirst_selector_get_npieces(void *r);
+
+int bt_rarestfirst_selector_poll_best_piece(void *r, const void *peer);
+
+/*----------------------------------------------------------------------------*/
+
+void *bt_leeching_choker_new(const int size);
+
+void bt_leeching_choker_add_peer(void *ckr, void *peer);
+
+void bt_leeching_choker_remove_peer(void *ckr, void *peer);
+
+void bt_leeching_choker_announce_interested_peer(void *cho, void *peer);
+
+void bt_leeching_choker_decide_best_npeers(void *ckr);
+
+void bt_leeching_choker_optimistically_unchoke(void *ckr);
+
+void bt_leeching_choker_unchoke_peer(void *ckr, void *peer);
+
+int bt_leeching_choker_get_npeers(void *ckr);
+
+void bt_leeching_choker_set_choker_peer_iface(void *ckr,
+                                              void *udata,
+                                              bt_choker_peer_i * iface);
+
+void bt_leeching_choker_get_iface(bt_choker_i * iface);
+
+/*----------------------------------------------------------------------------*/
+void *bt_seeding_choker_new(const int size);
+
+void bt_seeding_choker_add_peer(void *ckr, void *peer);
+
+void bt_seeding_choker_remove_peer(void *ckr, void *peer);
+
+void bt_seeding_choker_decide_best_npeers(void *ckr);
+
+void bt_seeding_choker_unchoke_peer(void *ckr, void *peer);
+
+void bt_seeding_choker_set_choker_peer_iface(void *ckr,
+                                             void *udata,
+                                             bt_choker_peer_i * iface);
+
+int bt_seeding_choker_get_npeers(void *ckr);
+
+void bt_seeding_choker_get_iface(bt_choker_i * iface);
+
+/*----------------------------------------------------------------------------*/
+
+void *bt_ticker_new();
+
+void bt_ticker_push_event(void *ti,
+                          int nsecs, void *udata, void (*func) (void *));
+
+void bt_ticker_step(void *ti);
+
+/*----------------------------------------------------------------------------*/
+char *str2sha1hash(const char *str, int len);
+
+/*----------------------------------------------------------------------------*/
+
+/*----------------------------------------------------------------------------*/
+void *bt_diskmem_new();
+
+bt_blockrw_i *bt_diskmem_get_blockrw(void *dco);
