@@ -41,6 +41,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "bt.h"
 #include "bt_local.h"
 
+/**
+ * Initialise a bitfield of nbits length */
 void bt_bitfield_init(bt_bitfield_t * bf, const int nbits)
 {
     assert(0 <= nbits);
@@ -74,6 +76,10 @@ void bt_bitfield_unmark(bt_bitfield_t * bf, const int bit)
 
 }
 
+/**
+ * Check if a certain bet is marked as on.
+ * TODO need to remove 32 bit centeredness from this function
+ */
 int bt_bitfield_is_marked(bt_bitfield_t * bf, const int bit)
 {
     assert(bf->bits);
@@ -92,7 +98,9 @@ int bt_bitfield_get_length(bt_bitfield_t * bf)
 }
 
 /**
- * Output bitfield to new string */
+ * Output bitfield to new string
+ * @return string representation of the bitfield (string is null terminated)
+ */
 char *bt_bitfield_str(bt_bitfield_t * bf)
 {
     char *str;
