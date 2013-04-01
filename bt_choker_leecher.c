@@ -60,12 +60,16 @@ typedef struct
     /*  last time we checked who was choked */
     int time_last_choke_check;
     hashmap_t *peers;
-    bt_choker_peer_i *iface;
+    
     /*  the head node is the node that will be choked */
     /*  nodes that are choked are removed from the queue */
     linked_list_queue_t *peers_unchoked;
     linked_list_queue_t *peers_choked;
     linked_list_queue_t *peers_waiting_for_optimistic_unchoke;
+    
+    /* choker peer interface, for callbacks on the peer */
+    bt_choker_peer_i *iface;
+    
     void *udata;
 } choker_t;
 
@@ -83,6 +87,10 @@ static long __peer_compare(const void *obj, const void *other)
 
 /*----------------------------------------------------------------------------*/
 
+/**
+ * Create a new leeching choker
+ * @param size: the maximum number of unchoked peers
+ */
 void *bt_leeching_choker_new(const int size)
 {
     choker_t *ch;
@@ -96,15 +104,25 @@ void *bt_leeching_choker_new(const int size)
     return ch;
 }
 
+/**
+ * Start managing a new peer */
 void bt_leeching_choker_add_peer(void *ckr, void *peer)
 {
     choker_t *ch = ckr;
+    
+    /* Don't add the same peer again */
+    if (hashmap_contains_key(ch->peers, peer))
+    {
+      return;
+    }
 
     hashmap_put(ch->peers, peer, peer);
     llqueue_offer(ch->peers_choked, peer);
     llqueue_offer(ch->peers_waiting_for_optimistic_unchoke, peer);
 }
 
+/**
+ * Stop managing this peer */
 void bt_leeching_choker_remove_peer(void *ckr, void *peer)
 {
     choker_t *ch = ckr;
@@ -125,7 +143,7 @@ static void __choke_peer(choker_t * ch, void *peer)
 
 void bt_leeching_choker_announce_interested_peer(void *cho, void *peer)
 {
-
+ // @TODO
 }
 
 /*----------------------------------------------------------------------------*/
@@ -140,7 +158,6 @@ static int __cmp_peer_priority_datarate(const void *i1,
 
 #if 0
     const peer_t *p1 = i1;
-
     const peer_t *p2 = i2;
 
     return ch->iface->get_urate(ch->udata,
@@ -148,7 +165,6 @@ static int __cmp_peer_priority_datarate(const void *i1,
         ch->iface->get_urate(ch->udata, p2->udata_peer);
 #else
     const void *p1 = i1;
-
     const void *p2 = i2;
 
     assert(ch->iface);
@@ -156,8 +172,6 @@ static int __cmp_peer_priority_datarate(const void *i1,
 
     return ch->iface->get_urate(ch->udata, p1) -
         ch->iface->get_urate(ch->udata, p2);
-
-
 #endif
 }
 
@@ -245,8 +259,6 @@ static void __choke_worst_downloader(choker_t * ch)
     }
 
     heap_free(hp);
-
-
 }
 
 void bt_leeching_choker_optimistically_unchoke(void *ckr)
@@ -281,6 +293,7 @@ void bt_leeching_choker_unchoke_peer(void *ckr, void *peer)
     void *pr;
 
     assert(hashmap_contains_key(ch->peers, peer));
+    
     ch->iface->unchoke_peer(ch->udata, peer);
     pr = hashmap_get(ch->peers, peer);
     /*  ensure that this peer is on the tail of the queue */
