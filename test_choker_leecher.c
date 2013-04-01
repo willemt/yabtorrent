@@ -145,6 +145,20 @@ void TestBTleechingChoke_add_peer(
     CuAssertTrue(tc, 1 == bt_leeching_choker_get_npeers(cr));
 }
 
+void TestBTleechingChoke_cant_add_peer_more_than_once(
+    CuTest * tc
+)
+{
+    void *cr;
+
+    peer_t peers[10];
+
+    cr = bt_leeching_choker_new(3);
+    bt_leeching_choker_add_peer(cr, &peers[0]);
+    bt_leeching_choker_add_peer(cr, &peers[0]);
+    CuAssertTrue(tc, 1 == bt_leeching_choker_get_npeers(cr));
+}
+
 void TestBTleechingChoke_remove_peer(
     CuTest * tc
 )
