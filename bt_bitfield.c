@@ -42,7 +42,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "bt_local.h"
 
 /**
- * Initialise a bitfield of nbits length */
+ * Initialise a bitfield of nbits length
+ * @param nbits: size of bitfield */
 void bt_bitfield_init(bt_bitfield_t * bf, const int nbits)
 {
     assert(0 <= nbits);
@@ -72,8 +73,6 @@ void bt_bitfield_unmark(bt_bitfield_t * bf, const int bit)
     assert(bf->bits);
     assert(0 <= bit);
     assert(bit < bf->size);
-
-
 }
 
 /**
