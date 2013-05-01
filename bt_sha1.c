@@ -34,17 +34,36 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <stdio.h>
 #include <stdbool.h>
 #include <assert.h>
+#include <stdint.h>
 #include <setjmp.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 
-#include <arpa/inet.h>
+//#include <arpa/inet.h>
 
 #include "sha1.h"
 
+#include "block.h"
 #include "bt.h"
 #include "bt_local.h"
+
+
+int bt_sha1_equal(
+    uint32_t * s1,
+    uint32_t * s2
+)
+{
+    return 0 == memcmp(s1, s2, 20);
+#if 0
+    return ((*s1 + 0) == *(s1 + 0) & *(s2 + 0)) &&
+        ((*s1 + 1) == *(s1 + 1) & *(s2 + 1)) &&
+        ((*s1 + 2) == *(s1 + 2) & *(s2 + 2)) &&
+        ((*s1 + 3) == *(s1 + 3) & *(s2 + 3)) &&
+        ((*s1 + 4) == *(s1 + 4) & *(s2 + 4));
+#endif
+}
+
 
 char *str2sha1hash(
     const char *str,

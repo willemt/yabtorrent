@@ -37,12 +37,15 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <stdio.h>
 #include <assert.h>
 
-#include <arpa/inet.h>
+/* for uint32_t */
+#include <stdint.h>
+#include "sha1.h"
 
+#include "block.h"
 #include "bt.h"
 #include "bt_local.h"
-#include "sha1.h"
-#include "raprogress.h"
+#include "bt_block_readwriter_i.h"
+#include "sparse_counter.h"
 
 /*  bittorrent piece */
 typedef struct
@@ -63,20 +66,21 @@ typedef struct
     /*  if we calculate that we are completed, cache this result */
     int is_completed;
 
+    /* functions and data for reading/writing block data */
     bt_blockrw_i *disk;
     void *disk_udata;
 
     bt_blockrw_i irw;
-} bt_piece_private_t;
+} __piece_private_t;
 
-#define priv(x) ((bt_piece_private_t*)(x))
+#define priv(x) ((__piece_private_t*)(x))
 
 /*----------------------------------------------------------------------------*/
 bt_blockrw_i *bt_piece_get_blockrw(
-    bt_piece_t * pce
+    bt_piece_t * me
 )
 {
-    return &priv(pce)->irw;
+    return &priv(me)->irw;
 }
 
 /**
@@ -88,39 +92,40 @@ int bt_piece_write_block(
     const void *blkdata
 )
 {
-    bt_piece_t *pce = pceo;
+    bt_piece_t *me = pceo;
 
-    int offset, len;
-
-    assert(pce);
-
-    offset = blk->block_byte_offset;
-    len = blk->block_len;
+    assert(me);
 
 //    printf("writing block: %d\n", blk->piece_idx, blk->block_byte_offset);
 
-    if (!priv(pce)->disk)
+    if (!priv(me)->disk)
     {
         return 0;
     }
 
-    assert(priv(pce)->disk);
-    assert(priv(pce)->disk->write_block);
-    assert(priv(pce)->disk_udata);
+    assert(priv(me)->disk);
+    assert(priv(me)->disk->write_block);
+    assert(priv(me)->disk_udata);
 
-    priv(pce)->disk->write_block(priv(pce)->disk_udata, pce, blk, blkdata);
-    raprogress_mark_complete(priv(pce)->progress_requested, offset, len);
-    raprogress_mark_complete(priv(pce)->progress_downloaded, offset, len);
+    priv(me)->disk->write_block(priv(me)->disk_udata, me, blk, blkdata);
 
-    int off, ln;
+    /* mark progress */
+    {
+        int offset, len;
+//        int off, ln;
 
-    raprogress_get_incomplete(priv(pce)->progress_requested, &off, &ln,
-                              priv(pce)->piece_length);
+        offset = blk->block_byte_offset;
+        len = blk->block_len;
+        sparsecounter_mark_complete(priv(me)->progress_requested, offset, len);
+        sparsecounter_mark_complete(priv(me)->progress_downloaded, offset, len);
+//        sparsecounter_get_incomplete(priv(me)->progress_requested, &off, &ln,
+//                                  priv(me)->piece_length);
+    }
 #if 0
     printf("%d left to go: %d/%d\n",
-           pce->idx,
-           raprogress_get_nbytes_completed(pce->progress_downloaded),
-           pce->piece_length);
+           me->idx,
+           sparsecounter_get_nbytes_completed(me->progress_downloaded),
+           me->piece_length);
 #endif
 
     return 1;
@@ -132,20 +137,19 @@ void *bt_piece_read_block(
     const bt_block_t * blk
 )
 {
-    bt_piece_t *pce = pceo;
+    bt_piece_t *me = pceo;
 
-    assert(priv(pce)->disk->write_block);
+    assert(priv(me)->disk->write_block);
 
-    if (!priv(pce)->disk->write_block)
+    if (!priv(me)->disk->write_block)
         return NULL;
 
-    if (!raprogress_have
-        (priv(pce)->progress_downloaded, blk->block_byte_offset,
+    if (!sparsecounter_have
+        (priv(me)->progress_downloaded, blk->block_byte_offset,
          blk->block_len))
         return NULL;
 
-
-    return priv(pce)->disk->read_block(priv(pce)->disk_udata, pce, blk);
+    return priv(me)->disk->read_block(priv(me)->disk_udata, me, blk);
 }
 
 /*----------------------------------------------------------------------------*/
@@ -155,328 +159,257 @@ bt_piece_t *bt_piece_new(
     const int piece_bytes_size
 )
 {
-    bt_piece_private_t *pce;
+    __piece_private_t *me;
 
-    pce = malloc(sizeof(bt_piece_private_t));
-    priv(pce)->sha1 = malloc(20);
-    memcpy(priv(pce)->sha1, sha1sum, 20);
-    priv(pce)->progress_downloaded = raprogress_init(piece_bytes_size);
-    priv(pce)->progress_requested = raprogress_init(piece_bytes_size);
-    priv(pce)->piece_length = piece_bytes_size;
-    priv(pce)->irw.read_block = bt_piece_read_block;
-    priv(pce)->irw.write_block = bt_piece_write_block;
-    priv(pce)->is_completed = FALSE;
-//    priv(pce)->data = malloc(priv(pce)->piece_length);
-//    memset(priv(pce)->data, 0, piece_bytes_size);
+    me = malloc(sizeof(__piece_private_t));
+    priv(me)->sha1 = malloc(20);
+    memcpy(priv(me)->sha1, sha1sum, 20);
+    priv(me)->progress_downloaded = sparsecounter_init(piece_bytes_size);
+    priv(me)->progress_requested = sparsecounter_init(piece_bytes_size);
+    priv(me)->piece_length = piece_bytes_size;
+    priv(me)->irw.read_block = bt_piece_read_block;
+    priv(me)->irw.write_block = bt_piece_write_block;
+    priv(me)->is_completed = FALSE;
+//    priv(me)->data = malloc(priv(me)->piece_length);
+//    memset(priv(me)->data, 0, piece_bytes_size);
 
-    assert(priv(pce)->progress_downloaded);
-    assert(priv(pce)->progress_requested);
-    return (bt_piece_t *) pce;
+    return (bt_piece_t *) me;
 }
 
 void bt_piece_free(
-    bt_piece_t * pce
+    bt_piece_t * me
 )
 {
-    free(priv(pce)->sha1);
-    raprogress_free(priv(pce)->progress_downloaded);
-    raprogress_free(priv(pce)->progress_requested);
-    free(pce);
+    free(priv(me)->sha1);
+    sparsecounter_free(priv(me)->progress_downloaded);
+    sparsecounter_free(priv(me)->progress_requested);
+    free(me);
 }
 
 /* 
  ** get data via block read */
 static void *__get_data(
-    bt_piece_t * pce
+    bt_piece_t * me
 )
 {
     bt_block_t tmp;
 
     /*  fail without disk writing functions */
-    if (!priv(pce)->disk || !priv(pce)->disk->read_block)
+    if (!priv(me)->disk || !priv(me)->disk->read_block)
     {
         assert(FALSE);
     }
 
     /*  read this block */
-    tmp.piece_idx = priv(pce)->idx;
+    tmp.piece_idx = priv(me)->idx;
     tmp.block_byte_offset = 0;
-    tmp.block_len = priv(pce)->piece_length;
+    tmp.block_len = priv(me)->piece_length;
     /*  go to the disk */
-    return priv(pce)->disk->read_block(priv(pce)->disk_udata, pce, &tmp);
+    return priv(me)->disk->read_block(priv(me)->disk_udata, me, &tmp);
 }
 
 /*----------------------------------------------------------------------------*/
 
 void bt_piece_set_disk_blockrw(
-    bt_piece_t * pce,
+    bt_piece_t * me,
     bt_blockrw_i * irw,
     void *udata
 )
 {
-//    assert(irw->write_block);
-//    assert(irw->read_block);
-//    assert(udata);
-
-    priv(pce)->disk = irw;
-    priv(pce)->disk_udata = udata;
+    priv(me)->disk = irw;
+    priv(me)->disk_udata = udata;
 }
 
 void *bt_piece_get_data(
-    bt_piece_t * pce
+    bt_piece_t * me
 )
 {
-    return __get_data(pce);
+    return __get_data(me);
 }
 
-/*----------------------------------------------------------------------------*/
-
+/**
+ * Use sha1 to determine if valid
+ * @return 1 if valid; 0 otherwise */
 bool bt_piece_is_valid(
-    bt_piece_t * pce
+    bt_piece_t * me
 )
 {
-//    printf("our hash: %.*s\n", 20, pce->sha1);
-
+    char *hash;
+    int ret;
     unsigned char *sha1;
-
     void *data;
 
-    if (!(data = __get_data(pce)))
+    if (!(data = __get_data(me)))
     {
         return 0;
     }
 
-//    printf("piece_length: %d\n", priv(pce)->piece_length);
-#if 0
-    SHA1Context sha;
-
-    SHA1Reset(&sha);
-    SHA1Input(&sha, data, priv(pce)->piece_length);
-    SHA1Result(&sha);
-
-    /*  convert to big endian */
-    sha1 = (unsigned char *) sha.Message_Digest;
-    for (ii = 0; ii < 5; ii++)
-        sha.Message_Digest[ii] = htonl(sha.Message_Digest[ii]);
-#endif
-
-#if 0
-    SHA1_CTX ctx;
-
-    int ii;
-
-    unsigned char hash[20];
-
-    SHA1Init(&ctx);
-    SHA1Update(&ctx, data, priv(pce)->piece_length);
-    SHA1Final(hash, &ctx);
-//    for(i=0;i<20;i++)
-//        printf("%02x", hash[i]);
-
-#endif
-
-#if 0
-    printf("created: ");
-    for (ii = 0; ii < 20; ii++)
-        printf("%2.0x ", sha1[ii]);
-    printf("\n");
-    printf("expected:");
-    for (ii = 0; ii < 20; ii++)
-        printf("%2.0x ", (unsigned char) priv(pce)->sha1[ii]);
-    printf("\n");
-#endif
-
-    char *hash;
-
-    int ret;
-
-    hash = str2sha1hash(data, priv(pce)->piece_length);
-    ret = bt_sha1_equal(hash, priv(pce)->sha1);
+    hash = str2sha1hash(data, priv(me)->piece_length);
+    ret = bt_sha1_equal(hash, priv(me)->sha1);
     free(hash);
     return ret;
-//    return bt_sha1_equal(sha1, priv(pce)->sha1);
 }
 
+/**
+ * Determine if the piece is complete
+ * A piece needs to be valid to be complete
+ *
+ * @return 1 if complete; 0 otherwise */
 bool bt_piece_is_complete(
-    bt_piece_t * pce
+    bt_piece_t * me
 )
 {
-    if (priv(pce)->is_completed)
+    if (priv(me)->is_completed)
     {
         return TRUE;
     }
-#if 1
-    else if (raprogress_is_complete(priv(pce)->progress_downloaded))
+    else if (sparsecounter_is_complete(priv(me)->progress_downloaded))
     {
-        return bt_piece_is_valid(pce);
+        if (bt_piece_is_valid(me))
+        {
+            priv(me)->is_completed = TRUE;
+            return  TRUE;
+        }
     }
-#endif
     else
     {
         int off, ln;
 
-        raprogress_get_incomplete(priv(pce)->progress_downloaded, &off, &ln,
-                                  priv(pce)->piece_length);
+        sparsecounter_get_incomplete(priv(me)->progress_downloaded, &off, &ln,
+                                  priv(me)->piece_length);
 
         /*  if we haven't downloaded any of the file */
-        if (0 == off && ln == priv(pce)->piece_length)
+        if (0 == off && ln == priv(me)->piece_length)
         {
             /* if sha1 matches properly - then we are done */
-            if (bt_piece_is_valid(pce))
+            if (bt_piece_is_valid(me))
             {
-                priv(pce)->is_completed = TRUE;
+                priv(me)->is_completed = TRUE;
                 return TRUE;
             }
         }
 
         return FALSE;
     }
+
+    return FALSE;
 }
 
 bool bt_piece_is_fully_requested(
-    bt_piece_t * pce
+    bt_piece_t * me
 )
 {
-    return raprogress_is_complete(priv(pce)->progress_requested);
+    return sparsecounter_is_complete(priv(me)->progress_requested);
 }
 
 /*----------------------------------------------------------------------------*/
 
-/*
+/**
  * Build the following request block for the peer, from this piece.
  * Assume that we want to complete the piece by going through the piece in 
  * sequential blocks. */
 void bt_piece_poll_block_request(
-    bt_piece_t * pce,
+    bt_piece_t * me,
     bt_block_t * request
 )
 {
-//    assert(!bt_piece_is_done(pce));
-
     int offset, len, block_size;
 
     /*  very rare that the standard block size is greater than the piece size
      *  this should relate to testing only */
-    if (priv(pce)->piece_length < BLOCK_SIZE)
+    if (priv(me)->piece_length < BLOCK_SIZE)
     {
-        block_size = priv(pce)->piece_length;
-//        printf("blocksize: %d\n", block_size);
+        block_size = priv(me)->piece_length;
     }
     else
     {
         block_size = BLOCK_SIZE;
     }
 
-    /*  get */
-    raprogress_get_incomplete(priv(pce)->progress_requested, &offset, &len,
+    /* get an incomplete block */
+    sparsecounter_get_incomplete(priv(me)->progress_requested, &offset, &len,
                               block_size);
 
-    request->piece_idx = priv(pce)->idx;
+    /* create the request */
+    request->piece_idx = priv(me)->idx;
     request->block_byte_offset = offset;
     request->block_len = len;
+
 //    printf("polled: zpceidx: %d block_byte_offset: %d block_len: %d\n",
 //           request->piece_idx, request->block_byte_offset, request->block_len);
-    /*  mark */
-    raprogress_mark_complete(priv(pce)->progress_requested, offset, len);
+
+    /* mark requested counter */
+    sparsecounter_mark_complete(priv(me)->progress_requested, offset, len);
 }
 
 /*----------------------------------------------------------------------------*/
 
 void bt_piece_set_idx(
-    bt_piece_t * pce,
+    bt_piece_t * me,
     const int idx
 )
 {
-    priv(pce)->idx = idx;
+    priv(me)->idx = idx;
 }
 
 int bt_piece_get_idx(
-    bt_piece_t * pce
+    bt_piece_t * me
 )
 {
-    return pce->idx;
+    return me->idx;
 }
 
 char *bt_piece_get_hash(
-    bt_piece_t * pce
+    bt_piece_t * me
 )
 {
-    return priv(pce)->sha1;
+    return priv(me)->sha1;
 }
 
 int bt_piece_get_size(
-    bt_piece_t * pce
+    bt_piece_t * me
 )
 {
-    return priv(pce)->piece_length;
+    return priv(me)->piece_length;
 }
 
 /*----------------------------------------------------------------------------*/
-#if 0
-void bt_piece_do_progress(
-    bt_piece_t * pce,
-    const int offset,
-    const int len
-)
-{
-}
-#endif
 
-#if 0
-int bt_piece_block_is_completed(
-    bt_piece_t * pce,
-    const int offset,
-    const int len
-)
-{
-    return raprogress_get_incomplete(pce->progress_requested,
-                                     &off, &ln, pce->piece_length);
-}
-#endif
-
+/**
+ * Write the block to the byte stream */
 void bt_piece_write_block_to_stream(
-    bt_piece_t * pce,
+    bt_piece_t * me,
     bt_block_t * blk,
     byte ** msg
 )
 {
     byte *data;
-
     int ii;
 
-    data = __get_data(pce) + blk->block_byte_offset;
+    data = __get_data(me) + blk->block_byte_offset;
 
     for (ii = 0; ii < blk->block_len; ii++)
     {
         byte val;
 
         val = *(data + ii);
-        stream_write_ubyte(msg, val);
+        bitstream_write_ubyte(msg, val);
     }
 }
 
 int bt_piece_write_block_to_str(
-    bt_piece_t * pce,
+    bt_piece_t * me,
     bt_block_t * blk,
     char *out
 )
 {
     int offset, len;
-
-    void *data = __get_data(pce);
-
+    void *data;
+    
+    data = __get_data(me);
     offset = blk->block_byte_offset;
     len = blk->block_len;
     memcpy(out, (byte *) data + offset, len);
-#if 0
-    for (ii = 0; ii < len; ii++)
-    {
-        byte val;
-
-        val = *((byte *) priv(pce)->data + offset + ii);
-        stream_write_ubyte(*msg, val);
-    }
-#endif
 
     return 1;
 }

@@ -32,6 +32,17 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 /*----------------------------------------------------------------------------*/
+
+#if 0
+typedef char *(
+    *func_get_infohash_f
+)    (
+    void *udata,
+    bt_peer_t * peer
+);
+#endif
+
+
 typedef void (
     *func_log_f
 )    (
@@ -42,18 +53,12 @@ typedef void (
     ...
 );
 
-typedef bt_piece_t *(
-    *func_getpiece_f
-)          (
-    void *udata,
-    int piece
-);
 
 typedef int (
     *func_pollblock_f
 )   (
     void *udata,
-    bt_bitfield_t * peers_bitfield,
+    void * peers_bitfield,
     bt_block_t * blk
 );
 
@@ -65,14 +70,16 @@ typedef int (
     int piece
 );
 
+#if 0
 typedef int (
-    *func_push_block_f
+    *func_pushblock_f
 )   (
     void *udata,
     bt_peer_t * peer,
     bt_block_t * block,
     void *data
 );
+
 
 typedef int (
     *func_send_f
@@ -81,13 +88,6 @@ typedef int (
     bt_peer_t * peer,
     void *send_data,
     const int len
-);
-
-typedef char *(
-    *func_get_infohash_f
-)    (
-    void *udata,
-    bt_peer_t * peer
 );
 
 typedef int (
@@ -115,6 +115,8 @@ typedef int (
     bt_peer_t * peer
 );
 
+#endif
+
 #if 0
 /*  bt logger */
 typedef struct
@@ -130,31 +132,6 @@ typedef struct
 #endif
 
 /*----------------------------------------------------------------------------*/
-/*  send/receiver */
-typedef struct
-{
-    func_send_f send;
-    func_recv_f recv;
-    func_disconnect_f disconnect;
-    func_connect_f connect;
-} sendreceiver_i;
-
-typedef int (
-    *func_write_block_f
-)   (
-    void *udata,
-    void *caller,
-    const bt_block_t * blk,
-    const void *blkdata
-);
-
-typedef void *(
-    *func_read_block_f
-)    (
-    void *udata,
-    void *caller,
-    const bt_block_t * blk
-);
 
 /*----------------------------------------------------------------------------*/
 typedef int (
@@ -339,14 +316,3 @@ typedef struct
 {
     func_log_f log;
 } bt_logger_i;
-
-/*  block writer/reader */
-typedef struct
-{
-    func_write_block_f write_block;
-
-    func_read_block_f read_block;
-
-    /*  release this block from the holder of it */
-//    func_giveup_block_f giveup_block;
-} bt_blockrw_i;

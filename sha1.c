@@ -20,11 +20,15 @@ A million repetitions of "a"
 
 #include <stdio.h>
 #include <string.h>
-#include <sys/types.h>  /* for u_int*_t */
+
+/* for uint32_t */
+#include <stdint.h>
+//#include <endian.h>
+
+//#include <sys/types.h>  /* for u_int*_t */
 
 #include "sha1.h"
 
-#include <endian.h>
 
 #define rol(value, bits) (((value) << (bits)) | ((value) >> (32 - (bits))))
 
@@ -52,16 +56,16 @@ A million repetitions of "a"
 /* Hash a single 512-bit block. This is the core of the algorithm. */
 
 void SHA1Transform(
-    u_int32_t state[5],
+    uint32_t state[5],
     const unsigned char buffer[64]
 )
 {
-    u_int32_t a, b, c, d, e;
+    uint32_t a, b, c, d, e;
 
     typedef union
     {
         unsigned char c[64];
-        u_int32_t l[16];
+        uint32_t l[16];
     } CHAR64LONG16;
 
 #ifdef SHA1HANDSOFF
@@ -198,12 +202,12 @@ void SHA1Init(
 void SHA1Update(
     SHA1_CTX * context,
     const unsigned char *data,
-    u_int32_t len
+    uint32_t len
 )
 {
-    u_int32_t i;
+    uint32_t i;
 
-    u_int32_t j;
+    uint32_t j;
 
     j = context->count[0];
     if ((context->count[0] += len << 3) < j)
@@ -249,7 +253,7 @@ void SHA1Final(
 
     for (i = 0; i < 2; i++)
     {
-        u_int32_t t = context->count[i];
+        uint32_t t = context->count[i];
 
         int j;
 

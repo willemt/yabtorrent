@@ -37,7 +37,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <stdio.h>
 #include <assert.h>
 
-#include <arpa/inet.h>
+/* for uint32_t */
+#include <stdint.h>
 
 #include <stdbool.h>
 #include <assert.h>
@@ -46,6 +47,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <stdio.h>
 #include <string.h>
 
+#include "block.h"
 #include "bt.h"
 #include "bt_local.h"
 
@@ -97,7 +99,7 @@ void *bt_leeching_choker_new(const int size)
 
     ch = calloc(1, sizeof(choker_t));
     ch->max_unchoked_peers = size;
-    ch->peers = hashmap_new(__peer_hash, __peer_compare);
+    ch->peers = hashmap_new(__peer_hash, __peer_compare, 11);
     ch->peers_unchoked = llqueue_new();
     ch->peers_choked = llqueue_new();
     ch->peers_waiting_for_optimistic_unchoke = llqueue_new();

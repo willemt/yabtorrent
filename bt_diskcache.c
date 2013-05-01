@@ -37,7 +37,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <stdio.h>
 #include <assert.h>
 
-#include <arpa/inet.h>
+/* for uint32_t */
+#include <stdint.h>
 
 #include <stdbool.h>
 #include <assert.h>
@@ -46,8 +47,10 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <stdio.h>
 #include <string.h>
 
+#include "block.h"
 #include "bt.h"
 #include "bt_local.h"
+#include "bt_block_readwriter_i.h"
 
 #include "pseudolru.h"
 
@@ -69,14 +72,12 @@ typedef struct
     bt_blockrw_i *disk;
     void *disk_udata;
 
-    func_log_f func_log;
-    void *logger_data;
-
-    /*  the number of pieces in memory */
-//    int npieces_in_mem;
-
     /*  least recently used piece */
     pseudolru_t *lru_piece;
+
+    /* logger */
+    func_log_f func_log;
+    void *logger_data;
 } diskcache_private_t;
 
 #define priv(x) ((diskcache_private_t*)(x))
@@ -107,7 +108,7 @@ static void __log(
     priv(dc)->func_log(priv(dc)->logger_data, dc, buf);
 }
 
-/*
+/**
  * Get piece as per this piece_idx
  * 
  * @return always return a mpiece for us to read/write memory from/to
@@ -209,6 +210,7 @@ static int __write_block(
     /*  touch piece to show how recent it is */
     pseudolru_put(priv(dc)->lru_piece, (void *) mpce, (void *) mpce);
 
+    /* check if we have enough pieces to write out to disk */
     if (20 < pseudolru_count(priv(dc)->lru_piece))
     {
         int ii;
@@ -242,7 +244,9 @@ static void *__get_piece_data_from_disk(
 /**
  * read data.
  * Check if we have the data in the cache;
- * Otherwise retrieve the memory from the disk */
+ * Otherwise retrieve the memory from the disk
+ * @todo we should let the caller know if pagefaults occur
+ * */
 static void *__read_block(
     void *udata,
     void *caller,
@@ -309,6 +313,8 @@ void bt_diskcache_set_size(
     priv(dc)->piece_length = piece_bytes_size;
 }
 
+/**
+ * Set the blockrw that we want to use to write to disk */
 void bt_diskcache_set_disk_blockrw(
     void *dco,
     bt_blockrw_i * irw,

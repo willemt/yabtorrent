@@ -21,7 +21,7 @@ typedef struct
     int max_peer_connections;
     int max_active_peers;
     int max_cache_mem;
-    int tracker_scrape_interval;
+//    int tracker_scrape_interval;
     /*  don't seed, shutdown when complete */
     int o_shutdown_when_complete;
     /*  the size of the piece, etc */
@@ -37,7 +37,7 @@ typedef struct
     /* 20-byte self-designated ID of the peer */
     char *p_peer_id;
 
-    char *tracker_url;
+//    char *tracker_url;
 } bt_client_cfg_t;
 
 typedef struct
@@ -72,26 +72,6 @@ typedef struct
 
 } bt_net_pwp_funcs_t;
 
-typedef struct
-{
-    int (*tracker_connect) (void **udata,
-                            const char *host, const char *port, char *my_ip);
-
-    int (*tracker_send) (void **udata, const void *send, int len);
-
-    int (*tracker_recv) (void **udata, char **recv, int *rlen);
-
-    int (*tracker_disconnect) (void **udata);
-} bt_net_tracker_funcs_t;
-
-
-/*  bt block */
-typedef struct
-{
-    int piece_idx;
-    int block_byte_offset;
-    int block_len;
-} bt_block_t;
 
 /*  bittorrent piece */
 typedef struct
@@ -126,7 +106,7 @@ void bt_peerconn_send_piece(void *pco, bt_block_t * request);
 /*----------------------------------------------------------------------------*/
 void *bt_client_new();
 
-bt_piece_t *bt_client_get_piece(void *bto, const int piece_idx);
+void *bt_client_get_piece(void *bto, const int piece_idx);
 
 int bt_client_get_num_peers(void *bto);
 

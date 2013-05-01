@@ -41,6 +41,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <stdint.h>
 
+#include "block.h"
 #include "bt.h"
 #include "bt_local.h"
 
@@ -115,9 +116,9 @@ void *bt_rarestfirst_selector_new(
 
     rf = calloc(1, sizeof(rarestfirst_t));
     rf->npieces = npieces;
-    rf->peers = hashmap_new(__peer_hash, __peer_compare);
-    rf->pieces = hashmap_new(__peer_hash, __peer_compare);
-    rf->pieces_polled = hashmap_new(__peer_hash, __peer_compare);
+    rf->peers = hashmap_new(__peer_hash, __peer_compare, 11);
+    rf->pieces = hashmap_new(__peer_hash, __peer_compare, 11);
+    rf->pieces_polled = hashmap_new(__peer_hash, __peer_compare, 11);
 //    rf->piece_heap = heap_new(__cmp_piece, rf);
 //    = llqueue_new();
     return rf;
@@ -203,7 +204,7 @@ void bt_rarestfirst_selector_add_peer(
     if (!pr)
     {
         pr = malloc(sizeof(peer_t));
-        pr->have_pieces = hashmap_new(__peer_hash, __peer_compare);
+        pr->have_pieces = hashmap_new(__peer_hash, __peer_compare, 11);
         hashmap_put(rf->peers, peer, pr);
     }
 }

@@ -41,6 +41,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <getopt.h>
 
+#include "block.h"
 #include "bt.h"
 #include "bt_main.h"
 #include "config.h"
@@ -151,8 +152,8 @@ int main(int argc, char **argv)
 
     /* do configuration */
 
+#if 0
     status = config_read(" yabtc ", " config ");
-
 
     if ((str = config_get(" max_peer_connections ")))
         bt_client_set_max_peer_connections(bt, atoi(str));
@@ -160,6 +161,7 @@ int main(int argc, char **argv)
         bt_client_set_select_timeout_msec(bt, atoi(str));
     if ((str = config_get(" max_cache_mem_mb ")))
         bt_client_set_max_cache_mem(bt, atoi(str));
+#endif
 
     bt_client_set_logging(bt,
                           open("dump_log", O_CREAT | O_TRUNC | O_RDWR,

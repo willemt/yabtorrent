@@ -40,7 +40,11 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <stdio.h>
 #include <assert.h>
 
-#include <arpa/inet.h>
+
+/* for uint32_t */
+#include <stdint.h>
+
+//#include <arpa/inet.h>
 
 #include <stdbool.h>
 #include <assert.h>
@@ -49,8 +53,13 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <stdio.h>
 #include <string.h>
 
+#include "block.h"
+
+#include "bitfield.h"
 #include "bt.h"
+#include "bt_piece.h"
 #include "bt_local.h"
+#include "bt_block_readwriter_i.h"
 
 
 typedef struct
@@ -59,7 +68,6 @@ typedef struct
     bt_piece_t **pieces;
     int piece_length_bytes;
     int tot_file_size_bytes;
-//    bt_filelist_t *fl;
 
     /*  reader and writer of blocks to disk */
     bt_blockrw_i *blockrw;
@@ -124,13 +132,13 @@ void bt_piecedb_set_piece_info(bt_piecedb_t * db, bt_piece_info_t * pinfo)
  * get the best piece to download from this bitfield
  */
 bt_piece_t *bt_piecedb_poll_best_from_bitfield(bt_piecedb_t * db,
-                                               bt_bitfield_t * bf_possibles)
+                                               bitfield_t * bf_possibles)
 {
     int ii;
 
     for (ii = 0; ii < priv(db)->npieces; ii++)
     {
-        if (!bt_bitfield_is_marked(bf_possibles, ii))
+        if (!bitfield_is_marked(bf_possibles, ii))
             continue;
 
         if (!bt_piece_is_fully_requested(priv(db)->pieces[ii]))
@@ -186,11 +194,32 @@ void bt_piecedb_add(bt_piecedb_t * db, const char *sha1)
     priv(db)->npieces += 1;
     priv(db)->pieces =
         realloc(priv(db)->pieces, sizeof(bt_piece_t *) * priv(db)->npieces);
-    pce = bt_piece_new(sha1, size);
+
+    pce = bt_piece_new((const unsigned char*)sha1, size);
+
     priv(db)->pieces[priv(db)->npieces - 1] = pce;
 //    bt_piece_new(piece, sha1, priv(db)->pinfo->piece_len);
     bt_piece_set_idx(pce, priv(db)->npieces - 1);
     bt_piece_set_disk_blockrw(pce, priv(db)->blockrw, priv(db)->blockrw_data);
+}
+
+/**
+ * Mass add pieces to the piece database
+ *
+ * @param pieces A string of 20 byte sha1 hashes. Is always a multiple of 20 bytes in length. 
+ * @param bto the bittorrent client object
+ * */
+void bt_piecedb_add_all(bt_piecedb_t * db, const char *sha1_pieces, int len)
+{
+    int prog;
+
+    for (prog = 1; prog <= len; prog++)
+    {
+        if (0 != prog % 20) continue;
+
+        bt_piecedb_add(db, sha1_pieces);
+        sha1_pieces += 20;
+    }
 }
 
 int bt_piecedb_get_length(bt_piecedb_t * db)
@@ -198,7 +227,26 @@ int bt_piecedb_get_length(bt_piecedb_t * db)
     return priv(db)->npieces;
 }
 
-/*----------------------------------------------------------------------------*/
+/**
+ * @return 1 if all complete, 0 otherwise */
+int bt_piecedb_all_pieces_are_complete(bt_piecedb_t* db)
+{
+    int ii;
+
+    for (ii = 0; ii < bt_piecedb_get_length(db); ii++)
+    {
+        bt_piece_t *pce;
+        
+        pce = bt_piecedb_get(db, ii);
+        if (!bt_piece_is_complete(pce))
+        {
+            return 0;
+        }
+    }
+
+    return 1;
+}
+
 /**
  * print a string of all the downloaded pieces */
 void bt_piecedb_print_pieces_downloaded(bt_piecedb_t * db)
