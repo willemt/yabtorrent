@@ -1,13 +1,16 @@
 typedef struct
 {
     /* name of the topmost directory */
-    char *name;
+//    char *name;
 
     /* the main directory of the file */
-    char *path;
+//    char *path;
 
-//    void **peerconnects;
-//    int npeers;
+    /* the info_hash of the file to be downloaded */
+    char* info_hash;
+
+    /* my peerid */
+    char* my_peer_id;
 
     /*  the piece container */
     bt_piecedb_t *db;
@@ -42,6 +45,9 @@ typedef struct
 //    bt_pwp_cfg_t pwpcfg;
 
     void* cfg;
+
+    /* peer manager */
+    void* pm;
 
     /*  leeching choker */
     void *lchoke;

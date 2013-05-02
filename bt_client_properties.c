@@ -69,60 +69,19 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <time.h>
 
-
-
-/* @} ------------------------------------------------------------------------*/
-/** @name Properties
- * @{ */
-
-/**
- * Set the maximum number of peer connection
- */
-void bt_client_set_max_peer_connections(void *bto, const int npeers)
-{
-    bt_client_t *bt = bto;
-
-    bt->cfg.max_peer_connections = npeers;
-}
-
-/**
- * Set timeout in milliseconds
- */
-void bt_client_set_select_timeout_msec(void *bto, const int val)
-{
-    bt_client_t *bt = bto;
-
-    bt->cfg.select_timeout_msec = val;
-}
-
-/**
- * Set maximum amount of megabytes used by piece cache
- */
-void bt_client_set_max_cache_mem(void *bto, const int val)
-{
-    bt_client_t *bt = bto;
-
-    bt->cfg.max_cache_mem = val;
-}
-
-/**
- * Set the number of completed peers
- */
-#if 0
-void bt_client_set_num_complete_peers(void *bto, const int npeers)
-{
-    bt_client_t *bt = bto;
-
-    bt->ncomplete_peers = npeers;
-}
-#endif
-
 /**
  * Set the failure flag to true
  */
 void bt_client_set_failed(void *bto, const char *reason)
 {
 
+}
+
+void* bt_client_get_config(void *bto)
+{
+    bt_client_t *bt = bto;
+
+    return bt->cfg;
 }
 
 /**
@@ -133,11 +92,14 @@ void bt_client_set_peer_id(void *bto, char *peer_id)
     bt_client_t *bt = bto;
     int ii;
 
-    bt->cfg.p_peer_id = peer_id;
-    for (ii = 0; ii < bt->npeers; ii++)
+    bt->my_peer_id = peer_id;
+
+#if 0
+    for (ii = 0; ii < bt_peermanager_count(bt->pm); ii++)
     {
-        bt_peerconn_set_their_peer_id(bt->peerconnects[ii], peer_id);
+        bt_peerconn_set_my_peer_id(bt->peerconnects[ii], peer_id);
     }
+#endif
 }
 
 /**
@@ -147,48 +109,7 @@ char *bt_client_get_peer_id(void *bto)
 {
     bt_client_t *bt = bto;
 
-    return bt->cfg.p_peer_id;
-}
-
-/**
- * How many pieces are there of this file?
- *
- * <b>Note:</b> bt_read_torrent_file sets this
- * The size of a piece is determined by the publisher of the torrent. A good recommendation is to use a piece size so that the metainfo file does not exceed 70 kilobytes.
- */
-void bt_client_set_npieces(void *bto, int npieces)
-{
-    assert(FALSE);
-// fixed_piece_size = size_of_torrent / number_of_pieces
-    bt_client_t *bt = bto;
-
-    bt->cfg.pinfo.npieces = npieces;
-}
-
-/**
- * Set file download path
- * @see bt_client_read_metainfo_file
- */
-void bt_client_set_path(void *bto, const char *path)
-{
-    bt_client_t *bt = bto;
-
-    bt->path = strdup(path);
-    bt_filedumper_set_cwd(bt->fd, bt->path);
-}
-
-/**
- * Set piece length
- * @see bt_client_read_metainfo_file
- */
-void bt_client_set_piece_length(void *bto, const int len)
-{
-    bt_client_t *bt = bto;
-
-    bt->cfg.pinfo.piece_len = len;
-    bt_piecedb_set_piece_length(bt->db, len);
-    bt_filedumper_set_piece_length(bt->fd, len);
-    bt_diskcache_set_size(bt->dc, len);
+    return bt->my_peer_id;
 }
 
 /**
@@ -213,128 +134,13 @@ void bt_client_set_pwp_net_funcs(void *bto, bt_net_pwp_funcs_t * net)
 }
 
 /**
- * Set shutdown when completed flag
- *
- * If this is set, the client will shutdown when the download is completed.
- *
- * @return 1 on success, 255 if the option doesn't exist, 0 otherwise
- * */
-void bt_client_set_opt_shutdown_when_completed(void *bto, const int flag)
-{
-    bt_client_t *bt = bto;
-
-    bt->cfg.o_shutdown_when_complete = flag;
-}
-
-/**
- * Set a key-value option
- *
- * Options include:
- * pwp_listen_port - The port the client will listen on for PWP connections
- * tracker_interval - Length in seconds that client will communicate with the tracker
- * tracker_url - Set tracker's url
- * infohash - Set the client's infohash
- *
- * @param key The option
- * @param val The value
- * @param val_len Value's length
- *
- */
-int bt_client_set_opt(void *bto,
-                      const char *key, const char *val, const int val_len)
-{
-    bt_client_t *bt = bto;
-
-    if (!strcmp(key, "pwp_listen_port"))
-    {
-        bt->cfg.pwp_listen_port = atoi(val);
-        return 1;
-    }
-#if 0
-    else if (!strcmp(key, "tracker_interval"))
-    {
-        bt->interval = atoi(val);
-        return 1;
-    else if (!strcmp(key, "tracker_url"))
-    {
-        bt->cfg.tracker_url = calloc(1, sizeof(char) * (val_len + 1));
-        strncpy(bt->cfg.tracker_url, val, val_len);
-        return 1;
-    }
-#endif
-    else if (!strcmp(key, "infohash"))
-    {
-        bt->cfg.info_hash = strdup(val);
-        return 1;
-    }
-    else if (!strcmp(key, "tracker_backup"))
-    {
-
-        return 1;
-    }
-
-    return 255;
-}
-
-/**
- * Get a key-value option
- *
- * @return string of value if applicable, otherwise NULL
- */
-char *bt_client_get_opt_string(void *bto, const char *key)
-{
-    bt_client_t *bt = bto;
-
-#if 0
-    if (!strcmp(key, "tracker_url"))
-    {
-        return bt->cfg.tracker_url;
-    }
-    else
-#endif
-    if (!strcmp(key, "infohash"))
-    {
-        return bt->cfg.info_hash;
-    }
-    else
-    {
-        return NULL;
-    }
-}
-
-/**
- * Get a key-value option
- *
- * @return integer of value if applicable, otherwise -1
- */
-int bt_client_get_opt_int(void *bto, const char *key)
-{
-    bt_client_t *bt = bto;
-
-    if (!strcmp(key, "pwp_listen_port"))
-    {
-        return bt->cfg.pwp_listen_port;
-    }
-#if 0
-    else if (!strcmp(key, "tracker_interval"))
-    {
-        return bt->interval;
-    }
-#endif
-    else
-    {
-        return -1;
-    }
-}
-
-/**
  * @return number of peers this client is involved with
  */
 int bt_client_get_num_peers(void *bto)
 {
     bt_client_t *bt = bto;
 
-    return bt->npeers;
+    return bt_peermanager_count(bt->pm);
 }
 
 /**

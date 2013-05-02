@@ -91,17 +91,14 @@ typedef struct
 
     /* for network api */
     int net_peerid;
+
+    /* peer connection */
+    void* pc;
 } bt_peer_t;
 
 /*----------------------------------------------------------------------------*/
 
 char *bt_generate_peer_id();
-
-void bt_set_peer_id(void *bto, char *peer_id);
-
-char *bt_client_get_peer_id(void *bto);
-
-void bt_peerconn_send_piece(void *pco, bt_block_t * request);
 
 /*----------------------------------------------------------------------------*/
 void *bt_client_new();
@@ -112,8 +109,6 @@ int bt_client_get_num_peers(void *bto);
 
 int bt_client_get_num_pieces(void *bto);
 
-char *bt_client_get_tracker_url(void *bto);
-
 int bt_client_get_total_file_size(void *bto);
 
 char *bt_client_get_fail_reason(void *bto);
@@ -122,17 +117,9 @@ int bt_client_get_nbytes_downloaded(void *bto);
 
 int bt_client_is_failed(void *bto);
 
-bt_peer_t *bt_client_add_peer(void *bto,
+void *bt_client_add_peer(void *bto,
                               const char *peer_id,
                               const int peer_id_len,
                               const char *ip, const int ip_len, const int port);
 
-char *bt_client_get_opt_string(void *bto, const char *key);
-
-void bt_client_set_pwp_net_funcs(void *bto, bt_net_pwp_funcs_t * net);
-
-/*----------------------------------------------------------------------------*/
-
-void *bt_tracker_client_new(bt_client_cfg_t * cfg,
-                            void (*metafile) (void *, char *, int len),
-                            void *udata);
+void* bt_client_get_config(void *bto);

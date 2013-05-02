@@ -105,11 +105,16 @@ int main(int argc, char **argv)
     char c;
     int o_verify_download, o_shutdown_when_complete;
     void *bt;
+    char *str;
+    int status;
+    config_t* cfg;
 
     o_verify_download = 0;
     o_shutdown_when_complete = 0;
 
     bt = bt_client_new();
+    cfg = bt_client_get_config(bt);
+    status = config_read(cfg, "yabtc", "config");
 
     // setlocale(LC_ALL, " ");
     //  atexit (close_stdin);
@@ -124,7 +129,7 @@ int main(int argc, char **argv)
 
         case 'p':
             printf("opt: %s\n", optarg);
-            bt_client_set_opt(bt, "pwp_listen_port", optarg, strlen(optarg));
+            config_set_va(cfg,"pwp_listen_port","%*s",optarg, strlen(optarg));
             break;
 
         case 'i':
@@ -141,34 +146,16 @@ int main(int argc, char **argv)
         }
     }
 
-    char *str;
-    int status;
-
     /* do configuration */
 
-    config_t* cfg;
+    config_set_va(cfg,"shutdown_when_complete","%d",o_shutdown_when_complete);
 
-    status = config_read(cfg, " yabtc ", " config ");
-
-#if 0
-    if ((str = config_get(" max_peer_connections ")))
-        bt_client_set_max_peer_connections(bt, atoi(str));
-    if ((str = config_get(" select_timeout_msec ")))
-        bt_client_set_select_timeout_msec(bt, atoi(str));
-    if ((str = config_get(" max_cache_mem_mb ")))
-        bt_client_set_max_cache_mem(bt, atoi(str));
-#endif
-
-    bt_client_set_config(bt, cfg);
+    /* set peer id */
+    bt_client_set_peer_id(bt, bt_generate_peer_id());
 
     bt_client_set_logging(bt,
                           open("dump_log", O_CREAT | O_TRUNC | O_RDWR,
                                0666), __log);
-
-    bt_client_set_opt_shutdown_when_completed(bt, o_shutdown_when_complete);
-
-    bt_client_set_path(bt, ".");
-    bt_client_set_peer_id(bt, bt_generate_peer_id());
 
     if (argc == optind)
     {

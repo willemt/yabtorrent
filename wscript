@@ -8,6 +8,7 @@ contribs = [
 ('CCircularBuffer', 'git@github.com:willemt/CCircularBuffer.git'),
 ('CSparseCounter', 'git@github.com:willemt/CSparseCounter.git'),
 ('CBitstream', 'git@github.com:willemt/CSimpleBitstream.git'),
+('CConfig-re', 'git@github.com:willemt/CConfig-re.git'),
 ('CBTPWPConnection', 'git@github.com:willemt/CBTPWPConnection.git'),
 ('CSparseFileAllocator', 'git@github.com:willemt/CSparseFileAllocator.git'),
 ('CEventTimer', 'git@github.com:willemt/CEventTimer.git'),
@@ -68,10 +69,18 @@ def build(bld):
 
         contrib_dir = '../'
 
+        import sys
+
+        if sys.platform == 'win32':
+            platform = '-D__WINDOWS__'
+        else:
+            platform = ''
+
         bld.shlib(
                 source= [
                     "bt_client.c",
                     "bt_client_properties.c",
+                    "bt_peermanager.c",
                     "bt_sha1.c",
                     "bt_util.c",
                     "bt_piece_db.c",
@@ -96,7 +105,7 @@ def build(bld):
                     contrib_dir+"CPSeudoLRU/pseudolru.c",
                     contrib_dir+"CEventTimer/event_timer.c",
                     contrib_dir+"CBitfield/bitfield.c",
-                    contrib_dir+"CConfig-re/list.c"
+                    contrib_dir+"CConfig-re/list.c",
                     contrib_dir+"CConfig-re/config.c"
                     ],
                 #bt_diskmem.c
@@ -115,12 +124,13 @@ def build(bld):
                     contrib_dir+"CSparseFileAllocator",
                     contrib_dir+"CBitfield",
                     contrib_dir+"CBTPWPConnection",
-                    contrib_dir+"CBitstream"
+                    contrib_dir+"CBitstream",
                     contrib_dir+"CConfig-re"
                    ], 
                 cflags=[
                     '-Werror',
                     '-g',
+                    platform,
                     '-Werror=uninitialized',
                     '-Werror=return-type',
                     '-Wcast-align'],
@@ -154,6 +164,9 @@ def build(bld):
                     '-Werror=uninitialized',
                     '-Werror=return-type'
                     ],
+                includes=[
+                    contrib_dir+"CConfig-re"
+                   ], 
                 use='yabbt')
 
 

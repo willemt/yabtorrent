@@ -47,9 +47,11 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "bitfield.h"
 #include "event_timer.h"
+#include "config.h"
 
 #include "bt.h"
 #include "bt_local.h"
+#include "bt_peermanager.h"
 #include "bt_block_readwriter_i.h"
 #include "bt_filedumper.h"
 #include "bt_diskcache.h"
@@ -100,147 +102,9 @@ static void __log(void *bto, void *src, const char *fmt, ...)
     bt->func_log(bt->log_udata, NULL, buf);
 }
 
-/*
- * peer connections are given this as a callback whenever they want to send
- * information */
-static int __FUNC_peerconn_send_to_peer(void *bto,
-                                        const void* pr,
-                                        const void *data,
-                                        const int len)
+void __FUNC_peerconn_step(void* caller, void* peer, void* udata)
 {
-    const bt_peer_t * peer = pr;
-    bt_client_t *bt = bto;
-
-    return bt->net.peer_send(&bt->net_udata, peer->net_peerid, data, len);
-}
-
-static int __FUNC_peercon_pollblock(void *bto,
-        void* bitfield, bt_block_t * blk)
-{
-
-    bitfield_t * peer_bitfield = bitfield;
-    bt_client_t *bt = bto;
-    bt_piece_t *pce;
-
-    if ((pce = bt_piecedb_poll_best_from_bitfield(bt->db, peer_bitfield)))
-    {
-        assert(!bt_piece_is_complete(pce));
-        assert(!bt_piece_is_fully_requested(pce));
-        bt_piece_poll_block_request(pce, blk);
-        return 0;
-    }
-    else
-    {
-        return -1;
-    }
-}
-
-/*  return how many we've read */
-static int __FUNC_peerconn_recv_from_peer(void *bto,
-        void* pr,
-        char *buf,
-        int *len)
-{
-    bt_client_t *bt = bto;
-    bt_peer_t * peer = pr;
-
-    return bt->net.peer_recv_len(&bt->net_udata, peer->net_peerid, buf, len);
-}
-
-/**
- * Received a block from a peer
- *
- * @param peer : peer received from
- * */
-static int __FUNC_peercon_pushblock(void *bto,
-                                    void* pr,
-                                    bt_block_t * block,
-                                    void *data)
-{
-    bt_peer_t * peer = pr;
-    bt_client_t *bt = bto;
-    bt_piece_t *pce;
-
-    pce = bt_client_get_piece(bt, block->piece_idx);
-
-    assert(pce);
-
-    bt_piece_write_block(pce, NULL, block, data);
-//    bt_filedumper_write_block(bt->fd, block, data);
-
-    if (bt_piece_is_complete(pce))
-    {
-        /*  send have to all peers */
-        if (bt_piece_is_valid(pce))
-        {
-            int ii;
-
-            __log(bt, NULL, "client,piece downloaded,pieceidx=%d\n",
-                  bt_piece_get_idx(pce));
-
-            /* send HAVE messages to all peers */
-            for (ii = 0; ii < bt->npeers; ii++)
-            {
-                void *pc;
-
-                pc = bt->peerconnects[ii];
-                if (!bt_peerconn_is_active(pc))
-                    continue;
-                bt_peerconn_send_have(pc, bt_piece_get_idx(pce));
-            }
-        }
-
-        bt_piecedb_print_pieces_downloaded(bt->db);
-
-        /* dump everything to disk if the whole download is complete */
-        if (bt_piecedb_all_pieces_are_complete(bt))
-        {
-            bt->am_seeding = 1;
-            bt_diskcache_disk_dump(bt->dc);
-        }
-    }
-
-    return 1;
-}
-
-static int __have_peer(void *bto, const char *ip, const int port)
-{
-    bt_client_t *bt = bto;
-    int ii;
-
-    for (ii = 0; ii < bt->npeers; ii++)
-    {
-        bt_peer_t *peer;
-
-        peer = bt_peerconn_get_peer(bt->peerconnects[ii]);
-        if (!strcmp(peer->ip, ip) && atoi(peer->port) == port)
-        {
-            return 1;
-        }
-    }
-    return 0;
-}
-
-static void *__netpeerid_to_peerconn(bt_client_t * bt, const int netpeerid)
-{
-    int ii;
-
-    for (ii = 0; ii < bt->npeers; ii++)
-    {
-        void *pc;
-        bt_peer_t *peer;
-
-        pc = bt->peerconnects[ii];
-
-//        if (!bt_peerconn_is_active(pc))
-//            continue;
-        peer = bt_peerconn_get_peer(pc);
-        if (peer->net_peerid == netpeerid)
-            return pc;
-    }
-
-    assert(FALSE);
-    return NULL;
+    bt_peerconn_step(peer);
 }
 
 /**
@@ -251,7 +115,7 @@ static int __process_peer_msg(void *bto, const int netpeerid)
     bt_client_t *bt = bto;
     void *pc;
 
-    pc = __netpeerid_to_peerconn(bt, netpeerid);
+    pc = bt_peermanager_netpeerid_to_peerconn(bt->pm, netpeerid);
     bt_peerconn_process_msg(pc);
     return 1;
 }
@@ -325,46 +189,6 @@ static void __log_process_info(bt_client_t * bt)
 #endif
 }
 
-static void __FUNC_peerconn_log(void *bto, void *src_peer, const char *buf, ...)
-{
-    bt_client_t *bt = bto;
-
-    bt_peer_t *peer = src_peer;
-
-    char buffer[256];
-
-    sprintf(buffer, "pwp,%s,%s\n", peer->peer_id, buf);
-    bt->func_log(bt->log_udata, NULL, buffer);
-}
-
-static int __FUNC_peerconn_disconnect(void *bto,
-        void* pr, char *reason)
-{
-    bt_peer_t * peer = pr;
-    __log(bto,NULL,"disconnecting,%s\n", reason);
-    return 1;
-}
-
-static int __FUNC_peerconn_connect(void *bto, void *pc, void* pr)
-{
-    bt_peer_t * peer = pr;
-    bt_client_t *bt = bto;
-
-    /* the remote peer will have always send a handshake */
-    if (!bt->net.peer_connect)
-    {
-        return 0;
-    }
-
-    if (0 == bt->net.peer_connect(&bt->net_udata, peer->ip,
-                                  peer->port, &peer->net_peerid))
-    {
-        __log(bto,NULL,"failed connection to peer\n");
-        return 0;
-    }
-
-    return 1;
-}
 
 static int __get_drate(const void *bto, const void *pc)
 {
@@ -415,18 +239,6 @@ static void __leecher_peer_optimistic_unchoke(void *bto)
     eventtimer_push_event(bt->ticker, 30, bt, __leecher_peer_optimistic_unchoke);
 }
 
-static int __FUNC_peerconn_pieceiscomplete(void *bto, void *piece)
-{
-    bt_client_t *bt = bto;
-    bt_piece_t *pce = piece;
-
-    return bt_piece_is_complete(pce);
-}
-
-static void __FUNC_peerconn_write_block_to_stream(void* pce, bt_block_t * blk, byte ** msg)
-{
-    bt_piece_write_block_to_stream(pce, blk, msg);
-}
 
 
 /**
@@ -442,17 +254,38 @@ void *bt_client_new()
 
     bt = calloc(1, sizeof(bt_client_t));
 
+    /* default configuration */
+    config_set_if_not_set(bt->cfg,"infohash", "00000000000000000000");
+    config_set_if_not_set(bt->cfg,"my_ip", "127.0.0.1");
+    config_set_if_not_set(bt->cfg,"pwp_listen_port", "6000");
+    config_set_if_not_set(bt->cfg,"max_peer_connections", "10");
+    config_set_if_not_set(bt->cfg,"select_timeout_msec", "1000");
+    config_set_if_not_set(bt->cfg,"max_active_peers", "4");
+    config_set_if_not_set(bt->cfg,"tracker_scrape_interval", "10");
+    config_set_if_not_set(bt->cfg,"max_pending_requests", "10");
+    /* How many pieces are there of this file
+     * The size of a piece is determined by the publisher of the torrent.
+     * A good recommendation is to use a piece size so that the metainfo file does
+     * not exceed 70 kilobytes.  */
+    config_set_if_not_set(bt->cfg,"npieces", "10");
+    config_set_if_not_set(bt->cfg,"piece_length", "10");
+    config_set_if_not_set(bt->cfg,"download_path", ".");
+    /* Set maximum amount of megabytes used by piece cache */
+    config_set_if_not_set(bt->cfg,"max_cache_mem_bytes", "1000000");
+    /* If this is set, the client will shutdown when the download is completed. */
+    config_set_if_not_set(bt->cfg,"shutdown_when_complete", "0");
+
     /* need to be able to tell the time */
     bt->ticker = eventtimer_new();
 
     /* database for writing pieces */
     bt->db = bt_piecedb_new();
 
-    /* database for dumping pieces to disk */
-    bt->fd = bt_filedumper_new();
-
     /* intermediary between filedumper and DB */
     bt->dc = bt_diskcache_new();
+
+    /* database for dumping pieces to disk */
+    bt->fd = bt_filedumper_new();
 
     /* tracker client */
 //    bt->tc = bt_trackerclient_new(NULL);
@@ -461,16 +294,9 @@ void *bt_client_new()
     /* set network functions */
 //    bt_client_set_pwp_net_funcs(bt, &pwpNetFuncs);
 
-    /* configuration */
-
-    config_set_if_not_set(bt->cfg,"my_ip", "127.0.0.1");
-    config_set_if_not_set(bt->cfg,"pwp_listen_port", "6000");
-    config_set_if_not_set(bt->cfg,"max_peer_connections", "10");
-    config_set_if_not_set(bt->cfg,"select_timeout_msec", "1000");
-    config_set_if_not_set(bt->cfg,"max_active_peers", "4");
-    config_set_if_not_set(bt->cfg,"tracker_scrape_interval", "10");
-    config_set_if_not_set(bt->cfg,"max_pending_requests", "10");
-    config_set_if_not_set(bt->cfg,"shutdown_when_complete", "0");
+    /* peer manager */
+    bt->pm = bt_peermanager_new();
+    bt_peermanager_set_config(bt->pm,bt->cfg);
 
     /*  set leeching choker */
     bt->lchoke = bt_leeching_choker_new(atoi(config_get(bt->cfg,"max_active_peers")));
@@ -599,16 +425,21 @@ void *bt_client_add_peer(void *bto,
                               const int peer_id_len,
                               const char *ip, const int ip_len, const int port)
 {
-    bt_client_t *bt = bto;
+    bt_client_t *me = bto;
+    bt_peer_t* peer;
 
     /*  ensure we aren't adding ourselves as a peer */
-    if (!strncmp(ip, config_get(bt->cfg,"my_ip"), ip_len) &&
-            port == atoi(config_get(bt->cfg,"pwp_listen_port")))
+    if (!strncmp(ip, config_get(me->cfg,"my_ip"), ip_len) &&
+            port == atoi(config_get(me->cfg,"pwp_listen_port")))
     {
         return NULL;
     }
 
-    return bt_peermanager_add(bt->pm,peer_id, peer_id_len, ip, ip_len, port);
+    peer = bt_peermanager_add_peer(me->pm,peer_id, peer_id_len, ip, ip_len, port);
+
+    bt_leeching_choker_add_peer(me->lchoke, peer->pc);
+
+    return peer;
 }
 
 /**
@@ -645,7 +476,7 @@ int bt_client_step(void *bto)
     __log_process_info(bt);
 
     /*  shutdown if we are setup to not seed */
-    if (1 == bt->am_seeding && 1 == atoi(config_get(bt->cfg,"shutdown_when_complete")))
+    if (1 == bt->am_seeding && 1 == config_get_int(bt->cfg,"shutdown_when_complete"))
     {
         return 0;
     }
@@ -656,10 +487,7 @@ int bt_client_step(void *bto)
                        __process_peer_msg, __process_peer_connect, bt);
 
     /*  run each peer connection step */
-    for (ii = 0; ii < bt->npeers; ii++)
-    {
-        bt_peerconn_step(bt->peerconnects[ii]);
-    }
+    bt_peermanager_forall(bt->pm,NULL,NULL,__FUNC_peerconn_step);
 
 //    if (__all_pieces_are_complete(bt))
 //        return 0;
@@ -683,12 +511,6 @@ static void __dumppiece(bt_client_t* bt)
 }
 #endif
 
-void bt_client_set_config(void *bto, void* cfg)
-{
-    bt_client_t *bt = bto;
-
-    bt->cfg = cfg;
-}
 
 /**
  * Used for initiation of downloading
