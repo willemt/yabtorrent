@@ -6,8 +6,8 @@ typedef struct
     /* the main directory of the file */
     char *path;
 
-    void **peerconnects;
-    int npeers;
+//    void **peerconnects;
+//    int npeers;
 
     /*  the piece container */
     bt_piecedb_t *db;
@@ -27,7 +27,7 @@ typedef struct
     void *net_udata;
 
     /* number of complete peers */
-    int ncomplete_peers;
+//    int ncomplete_peers;
 
     char fail_reason[255];
 
@@ -38,12 +38,15 @@ typedef struct
     func_log_f func_log;
     void *log_udata;
 
-    bt_client_cfg_t cfg;
-    bt_pwp_cfg_t pwpcfg;
+//    bt_client_cfg_t cfg;
+//    bt_pwp_cfg_t pwpcfg;
+
+    void* cfg;
 
     /*  leeching choker */
     void *lchoke;
 
     /* timer */
     void *ticker;
+
 } bt_client_t;

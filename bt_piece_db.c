@@ -60,6 +60,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "bt_piece.h"
 #include "bt_local.h"
 #include "bt_block_readwriter_i.h"
+#include "bt_piece_db.h"
 
 
 typedef struct

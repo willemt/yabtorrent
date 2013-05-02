@@ -462,16 +462,18 @@ void *bt_client_new()
 //    bt_client_set_pwp_net_funcs(bt, &pwpNetFuncs);
 
     /* configuration */
-    sprintf(bt->cfg.my_ip, "127.0.0.1");
-    bt->cfg.pwp_listen_port = 6000;
-    bt->cfg.max_peer_connections = 10;
-    bt->cfg.select_timeout_msec = 1000;
-    //bt->cfg.tracker_scrape_interval = 10;
-    bt->cfg.max_active_peers = 4;
-    bt->pwpcfg.max_pending_requests = 10;
+
+    config_set_if_not_set(bt->cfg,"my_ip", "127.0.0.1");
+    config_set_if_not_set(bt->cfg,"pwp_listen_port", "6000");
+    config_set_if_not_set(bt->cfg,"max_peer_connections", "10");
+    config_set_if_not_set(bt->cfg,"select_timeout_msec", "1000");
+    config_set_if_not_set(bt->cfg,"max_active_peers", "4");
+    config_set_if_not_set(bt->cfg,"tracker_scrape_interval", "10");
+    config_set_if_not_set(bt->cfg,"max_pending_requests", "10");
+    config_set_if_not_set(bt->cfg,"shutdown_when_complete", "0");
 
     /*  set leeching choker */
-    bt->lchoke = bt_leeching_choker_new(bt->cfg.max_active_peers);
+    bt->lchoke = bt_leeching_choker_new(atoi(config_get(bt->cfg,"max_active_peers")));
     bt_leeching_choker_set_choker_peer_iface(bt->lchoke, bt,
                                              &iface_choker_peer);
 
@@ -559,7 +561,7 @@ void bt_client_add_pieces(void *bto, const char *pieces, int len)
     bt_piecedb_add_all(bt->db, pieces, len);
 
     /* remember how many pieces there are now */
-    bt->cfg.pinfo.npieces = bt_piecedb_get_length(bt->db);
+    config_set_va(bt->cfg,"npieces","%d",bt_piecedb_get_length(bt->db));
 }
 
 /**
@@ -590,70 +592,23 @@ int bt_client_add_file(void *bto,
 /**
  * Add the peer.
  * Initiate connection with 
- *
  * @return freshly created bt_peer
  */
-bt_peer_t *bt_client_add_peer(void *bto,
+void *bt_client_add_peer(void *bto,
                               const char *peer_id,
                               const int peer_id_len,
                               const char *ip, const int ip_len, const int port)
 {
     bt_client_t *bt = bto;
-    void *pc;
-    bt_peer_t *peer;
 
-    /*  peer is me.. */
-    if (!strncmp(ip, bt->cfg.my_ip, ip_len) && port == bt->cfg.pwp_listen_port)
-    {
-        return NULL;
-    }
-    /* prevent dupes.. */
-    else if (__have_peer(bt, ip, port))
+    /*  ensure we aren't adding ourselves as a peer */
+    if (!strncmp(ip, config_get(bt->cfg,"my_ip"), ip_len) &&
+            port == atoi(config_get(bt->cfg,"pwp_listen_port")))
     {
         return NULL;
     }
 
-    peer = calloc(1, sizeof(bt_peer_t));
-
-    /*  'compact=0'
-     *  doesn't use peerids.. */
-    if (peer_id)
-    {
-        asprintf(&peer->peer_id, "00000000000000000000");
-    }
-    else
-    {
-        asprintf(&peer->peer_id, "", peer_id_len, peer_id);
-    }
-    asprintf(&peer->ip, "%.*s", ip_len, ip);
-    asprintf(&peer->port, "%d", port);
-
-    /* create a peer connection for this peer */
-    pwp_connection_functions_t funcs = {
-        .send = __FUNC_peerconn_send_to_peer,
-        .recv = __FUNC_peerconn_recv_from_peer,
-        .pushblock = __FUNC_peercon_pushblock,
-        .pollblock = __FUNC_peercon_pollblock,
-        .disconnect = __FUNC_peerconn_disconnect,
-        .connect = __FUNC_peerconn_connect,
-        .getpiece = bt_client_get_piece,
-        .write_block_to_stream = __FUNC_peerconn_write_block_to_stream,
-        .piece_is_complete = __FUNC_peerconn_pieceiscomplete,
-    };
-
-    pc = bt_peerconn_new();
-    bt_peerconn_set_piece_info(pc,bt->cfg.pinfo.npieces,bt->cfg.pinfo.piece_len);
-    bt_peerconn_set_peer(pc, peer);
-    bt_peerconn_set_their_peer_id(pc, bt->cfg.p_peer_id);
-    bt_peerconn_set_infohash(pc, bt->cfg.info_hash);
-
-    __log(bto,NULL,"adding peer: ip:%.*s port:%d\n", ip_len, ip, port);
-
-    bt->npeers++;
-    bt->peerconnects = realloc(bt->peerconnects, sizeof(void *) * bt->npeers);
-    bt->peerconnects[bt->npeers - 1] = pc;
-    bt_leeching_choker_add_peer(bt->lchoke, pc);
-    return peer;
+    return bt_peermanager_add(bt->pm,peer_id, peer_id_len, ip, ip_len, port);
 }
 
 /**
@@ -666,10 +621,6 @@ bt_peer_t *bt_client_add_peer(void *bto,
  */
 int bt_client_remove_peer(void *bto, const int peerid)
 {
-//    bt_client_t *bt = bto;
-//    bt->peerconnects[bt->npeers - 1]
-
-//    bt_leeching_choker_add_peer(bt->lchoke, peer);
     return 1;
 }
 
@@ -690,23 +641,18 @@ int bt_client_step(void *bto)
 {
     bt_client_t *bt = bto;
     int ii;
-    time_t seconds;
 
     __log_process_info(bt);
 
-    seconds = time(NULL);
-
     /*  shutdown if we are setup to not seed */
-    if (1 == bt->am_seeding && 1 == bt->cfg.o_shutdown_when_complete)
+    if (1 == bt->am_seeding && 1 == atoi(config_get(bt->cfg,"shutdown_when_complete")))
     {
         return 0;
     }
 
-    //bt_trackerclient_step(bt->tc, seconds);
-
     /*  poll data from peer pwp connections */
     bt->net.peers_poll(&bt->net_udata,
-                       bt->cfg.select_timeout_msec,
+                       atoi(config_get(bt->cfg,"select_timeout_msec")),
                        __process_peer_msg, __process_peer_connect, bt);
 
     /*  run each peer connection step */
@@ -737,6 +683,13 @@ static void __dumppiece(bt_client_t* bt)
 }
 #endif
 
+void bt_client_set_config(void *bto, void* cfg)
+{
+    bt_client_t *bt = bto;
+
+    bt->cfg = cfg;
+}
+
 /**
  * Used for initiation of downloading
  */
@@ -745,7 +698,8 @@ void bt_client_go(void *bto)
     bt_client_t *bt = bto;
     int ii;
 
-    bt->net.peer_listen_open(&bt->net_udata, bt->cfg.pwp_listen_port);
+    bt->net.peer_listen_open(&bt->net_udata,
+            atoi(config_get(bt->cfg,"pwp_listen_port")));
 
     while (1)
     {

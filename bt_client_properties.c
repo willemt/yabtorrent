@@ -108,12 +108,14 @@ void bt_client_set_max_cache_mem(void *bto, const int val)
 /**
  * Set the number of completed peers
  */
+#if 0
 void bt_client_set_num_complete_peers(void *bto, const int npeers)
 {
     bt_client_t *bt = bto;
 
     bt->ncomplete_peers = npeers;
 }
+#endif
 
 /**
  * Set the failure flag to true

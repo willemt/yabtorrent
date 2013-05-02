@@ -56,18 +56,14 @@ char __cfg_bound_iface[32];
 
 static void __log(void *udata, void *src, char *buf)
 {
+    char stamp[32];
     int fd = (unsigned long) udata;
-
     struct timeval tv;
 
     gettimeofday(&tv, NULL);
-
-    char stamp[32];
-
     sprintf(stamp, "%d,%0.2f,", (int) tv.tv_sec, (float) tv.tv_usec / 100000);
     write(fd, stamp, strlen(stamp));
     write(fd, buf, strlen(buf));
-//    printf("%s\n", buf);
 }
 
 static void __usage(int status)
@@ -107,9 +103,7 @@ static struct option const long_opts[] = {
 int main(int argc, char **argv)
 {
     char c;
-
     int o_verify_download, o_shutdown_when_complete;
-
     void *bt;
 
     o_verify_download = 0;
@@ -152,9 +146,11 @@ int main(int argc, char **argv)
 
     /* do configuration */
 
-#if 0
-    status = config_read(" yabtc ", " config ");
+    config_t* cfg;
 
+    status = config_read(cfg, " yabtc ", " config ");
+
+#if 0
     if ((str = config_get(" max_peer_connections ")))
         bt_client_set_max_peer_connections(bt, atoi(str));
     if ((str = config_get(" select_timeout_msec ")))
@@ -163,16 +159,16 @@ int main(int argc, char **argv)
         bt_client_set_max_cache_mem(bt, atoi(str));
 #endif
 
+    bt_client_set_config(bt, cfg);
+
     bt_client_set_logging(bt,
                           open("dump_log", O_CREAT | O_TRUNC | O_RDWR,
                                0666), __log);
 
     bt_client_set_opt_shutdown_when_completed(bt, o_shutdown_when_complete);
-//    if (bt_client_set_func
 
     bt_client_set_path(bt, ".");
     bt_client_set_peer_id(bt, bt_generate_peer_id());
-//    bt_set_log_func(bt,);
 
     if (argc == optind)
     {
@@ -184,21 +180,23 @@ int main(int argc, char **argv)
         exit(EXIT_FAILURE);
     }
 
-//    bt_client_set_download_destination_folder(bt, " downloads
     if (o_verify_download)
     {
 
     }
     else
     {
-#if 0
-        while (0 == bt_client_connect_to_tracker(bt))
-        {
-            sleep(1);
-        }
-#endif
 
-        bt_client_go(bt);
+        while (1)
+        {
+            //bt_trackerclient_step(tc);
+
+            if (0 == bt_client_step(bt))
+                break;
+        }
+
+        __log(bt, NULL, "download is done\n");
+
     }
 
     bt_client_release(bt);

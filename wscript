@@ -96,6 +96,8 @@ def build(bld):
                     contrib_dir+"CPSeudoLRU/pseudolru.c",
                     contrib_dir+"CEventTimer/event_timer.c",
                     contrib_dir+"CBitfield/bitfield.c",
+                    contrib_dir+"CConfig-re/list.c"
+                    contrib_dir+"CConfig-re/config.c"
                     ],
                 #bt_diskmem.c
                 #CCircularBuffer/cbuffer.c
@@ -114,6 +116,7 @@ def build(bld):
                     contrib_dir+"CBitfield",
                     contrib_dir+"CBTPWPConnection",
                     contrib_dir+"CBitstream"
+                    contrib_dir+"CConfig-re"
                    ], 
                 cflags=[
                     '-Werror',
