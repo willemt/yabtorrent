@@ -103,7 +103,7 @@ char *bt_generate_peer_id();
 /*----------------------------------------------------------------------------*/
 void *bt_client_new();
 
-void *bt_client_get_piece(void *bto, const int piece_idx);
+void *bt_client_get_piece(void *bto, const unsigned int piece_idx);
 
 int bt_client_get_num_peers(void *bto);
 

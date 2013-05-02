@@ -368,7 +368,7 @@ int bt_client_read_metainfo_file(void *bto, const char *fname)
  * Obtain this piece from the piece database
  * @return piece specified by piece_idx; otherwise NULL
  */
-void *bt_client_get_piece(void *bto, const int piece_idx)
+void *bt_client_get_piece(void *bto, const unsigned int piece_idx)
 {
     bt_client_t *bt = bto;
 
