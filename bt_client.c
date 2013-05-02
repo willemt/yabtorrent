@@ -239,8 +239,6 @@ static void __leecher_peer_optimistic_unchoke(void *bto)
     eventtimer_push_event(bt->ticker, 30, bt, __leecher_peer_optimistic_unchoke);
 }
 
-
-
 /**
  * Initiliase the bittorrent client
  *
@@ -255,6 +253,8 @@ void *bt_client_new()
     bt = calloc(1, sizeof(bt_client_t));
 
     /* default configuration */
+    bt->cfg = config_new();
+    config_set(bt->cfg,"default", "0");
     config_set_if_not_set(bt->cfg,"infohash", "00000000000000000000");
     config_set_if_not_set(bt->cfg,"my_ip", "127.0.0.1");
     config_set_if_not_set(bt->cfg,"pwp_listen_port", "6000");
@@ -278,21 +278,21 @@ void *bt_client_new()
     /* need to be able to tell the time */
     bt->ticker = eventtimer_new();
 
-    /* database for writing pieces */
-    bt->db = bt_piecedb_new();
-
     /* intermediary between filedumper and DB */
     bt->dc = bt_diskcache_new();
+    bt_diskcache_set_func_log(bt->dc, __log, bt);
+    /* point diskcache to filedumper */
+    bt_diskcache_set_disk_blockrw(bt->dc,
+                                  bt_filedumper_get_blockrw(bt->fd), bt->fd);
+
+    /* database for writing pieces */
+    bt->db = bt_piecedb_new();
+    /* point piece database to diskcache */
+    bt_piecedb_set_diskstorage(bt->db,
+                               bt_diskcache_get_blockrw(bt->dc), bt->dc);
 
     /* database for dumping pieces to disk */
     bt->fd = bt_filedumper_new();
-
-    /* tracker client */
-//    bt->tc = bt_trackerclient_new(NULL);
-//    bt_tracker_set_tracker_response_iface(bt->tc,);
-
-    /* set network functions */
-//    bt_client_set_pwp_net_funcs(bt, &pwpNetFuncs);
 
     /* peer manager */
     bt->pm = bt_peermanager_new();
@@ -302,15 +302,6 @@ void *bt_client_new()
     bt->lchoke = bt_leeching_choker_new(atoi(config_get(bt->cfg,"max_active_peers")));
     bt_leeching_choker_set_choker_peer_iface(bt->lchoke, bt,
                                              &iface_choker_peer);
-
-    /*  set diskcache logger and blockrw */
-    bt_diskcache_set_disk_blockrw(bt->dc,
-                                  bt_filedumper_get_blockrw(bt->fd), bt->fd);
-    bt_diskcache_set_func_log(bt->dc, __log, bt);
-
-    /* point piece database to diskcache */
-    bt_piecedb_set_diskstorage(bt->db,
-                               bt_diskcache_get_blockrw(bt->dc), bt->dc);
 
     /*  start reciprocation timer */
     eventtimer_push_event(bt->ticker, 10, bt, __leecher_peer_reciprocation);

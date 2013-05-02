@@ -5,6 +5,7 @@ def options(opt):
 contribs = [
 ('CBitfield', 'git@github.com:willemt/CBitfield.git'),
 ('CLinkedListQueue', 'git@github.com:willemt/CLinkedListQueue.git'),
+('CBTTrackerClient', 'git@github.com:willemt/CBTTrackerClient.git'),
 ('CCircularBuffer', 'git@github.com:willemt/CCircularBuffer.git'),
 ('CSparseCounter', 'git@github.com:willemt/CSparseCounter.git'),
 ('CBitstream', 'git@github.com:willemt/CSimpleBitstream.git'),
@@ -106,7 +107,7 @@ def build(bld):
                     contrib_dir+"CEventTimer/event_timer.c",
                     contrib_dir+"CBitfield/bitfield.c",
                     contrib_dir+"CConfig-re/list.c",
-                    contrib_dir+"CConfig-re/config.c"
+                    contrib_dir+"CConfig-re/config.c",
                     ],
                 #bt_diskmem.c
                 #CCircularBuffer/cbuffer.c
@@ -125,7 +126,8 @@ def build(bld):
                     contrib_dir+"CBitfield",
                     contrib_dir+"CBTPWPConnection",
                     contrib_dir+"CBitstream",
-                    contrib_dir+"CConfig-re"
+                    contrib_dir+"CConfig-re",
+                    contrib_dir+"CBTTrackerClient"
                    ], 
                 cflags=[
                     '-Werror',
@@ -156,7 +158,12 @@ def build(bld):
 ##        unittest(bld,'test_peer_connection_send.c')
 
         bld.program(
-                source='bt_main.c ',
+                source=[
+                    'bt_main.c',
+                    contrib_dir+"CBTTrackerClient/bt_tracker_client.c",
+                    contrib_dir+"CBTTrackerClient/bt_tracker_client_response_reader.c",
+                    contrib_dir+"CBTTrackerClient/url_encoder.c"
+                    ],
                 target='bt',
                 cflags=[
                     '-g',
@@ -165,7 +172,9 @@ def build(bld):
                     '-Werror=return-type'
                     ],
                 includes=[
-                    contrib_dir+"CConfig-re"
+                    contrib_dir+"CConfig-re",
+                    contrib_dir+"CBTTrackerClient",
+                    contrib_dir+"CHeaplessBencodeReader",
                    ], 
                 use='yabbt')
 

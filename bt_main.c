@@ -44,6 +44,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "block.h"
 #include "bt.h"
 #include "bt_main.h"
+#include "bt_tracker_client.h"
 #include "config.h"
 
 #define PROGRAM_NAME "bt"
@@ -129,7 +130,7 @@ int main(int argc, char **argv)
 
         case 'p':
             printf("opt: %s\n", optarg);
-            config_set_va(cfg,"pwp_listen_port","%*s",optarg, strlen(optarg));
+            config_set_va(cfg,"pwp_listen_port","%.*s",strlen(optarg), optarg);
             break;
 
         case 'i':
@@ -156,6 +157,8 @@ int main(int argc, char **argv)
     bt_client_set_logging(bt,
                           open("dump_log", O_CREAT | O_TRUNC | O_RDWR,
                                0666), __log);
+
+    config_print(cfg);
 
     if (argc == optind)
     {
