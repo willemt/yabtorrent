@@ -51,9 +51,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #define PROGRAM_NAME "bt"
 
-/**
- * The bounded network interface for net communications */
-char __cfg_bound_iface[32];
 
 #include <sys/time.h>
 
@@ -94,6 +91,7 @@ Mandatory arguments to long options are mandatory for short options too. \n\
 static struct option const long_opts[] = {
     { "archive", no_argument, NULL, 'a'},
 //  {" backup ", optional_argument, NULL, 'b'},
+    /* The bounded network interface for net communications */
     { "using-interface", required_argument, NULL, 'i'},
     { "verify-download", no_argument, NULL, 'e'},
     { "shutdown-when-complete", no_argument, NULL, 's'},
@@ -168,20 +166,16 @@ int main(int argc, char **argv)
         case 's':
             o_shutdown_when_complete = 1;
             break;
-
         case 'p':
             config_set_va(cfg,"pwp_listen_port","%.*s",strlen(optarg), optarg);
             break;
-
         case 't':
             config_set_va(cfg,"torrent_file","%.*s",strlen(optarg), optarg);
             o_torrent_file_report_only = 1;
             break;
-
         case 'i':
-            strcpy(__cfg_bound_iface, optarg);
+            config_set_va(cfg,"bounded_iface","%.*s",strlen(optarg), optarg);
             break;
-
         case 'e':
             o_verify_download = 1;
             break;
