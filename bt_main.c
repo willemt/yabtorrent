@@ -102,6 +102,7 @@ static struct option const long_opts[] = {
 
 typedef struct {
     void* bt;
+    void* cfg;
 
 } torrent_reader_t;
 
@@ -114,7 +115,15 @@ int cb_event(void* udata, const char* key)
 
 int cb_event_str(void* udata, const char* key, const char* val, int len)
 {
+    torrent_reader_t* me = udata;
+
     printf("%s %.*s\n", key, len, val);
+
+    if (!strcmp(key,"tracker_url"))
+    {
+        config_set_va(me->cfg,key,"%.*s", len, val);
+    }
+
 
     return 1;
 }
@@ -134,6 +143,8 @@ void __read_torrent_file(void* bt, char* torrent_file)
     char* metainfo;
 
     memset(&r, 0, sizeof(torrent_reader_t));
+    r.bt = bt;
+    r.cfg = bt_client_get_config(bt);
     tf = tfr_new(cb_event, cb_event_str, cb_event_int, &r);
     metainfo = read_file(torrent_file,&len);
     tfr_read_metainfo(tf, metainfo, len);
@@ -199,6 +210,7 @@ int main(int argc, char **argv)
     if (o_torrent_file_report_only)
     {
         __read_torrent_file(bt,config_get(cfg,"torrent_file"));
+        printf("\n");
     }
 
     config_print(cfg);
