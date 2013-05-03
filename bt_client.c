@@ -278,6 +278,9 @@ void *bt_client_new()
     /* need to be able to tell the time */
     bt->ticker = eventtimer_new();
 
+    /* database for dumping pieces to disk */
+    bt->fd = bt_filedumper_new();
+
     /* intermediary between filedumper and DB */
     bt->dc = bt_diskcache_new();
     bt_diskcache_set_func_log(bt->dc, __log, bt);
@@ -291,8 +294,7 @@ void *bt_client_new()
     bt_piecedb_set_diskstorage(bt->db,
                                bt_diskcache_get_blockrw(bt->dc), bt->dc);
 
-    /* database for dumping pieces to disk */
-    bt->fd = bt_filedumper_new();
+
 
     /* peer manager */
     bt->pm = bt_peermanager_new();

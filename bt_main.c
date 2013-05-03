@@ -45,6 +45,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "bt.h"
 #include "bt_main.h"
 #include "bt_tracker_client.h"
+#include "torrentfile_reader.h"
+#include "readfile.h"
 #include "config.h"
 
 #define PROGRAM_NAME "bt"
@@ -100,13 +102,52 @@ static struct option const long_opts[] = {
     { NULL, 0, NULL, 0}
 };
 
+typedef struct {
+    void* bt;
+
+} torrent_reader_t;
+
+int cb_event(void* udata, const char* key)
+{
+    printf("%s\n");
+
+    return 1;
+}
+
+int cb_event_str(void* udata, const char* key, const char* val, int len)
+{
+    printf("%s %.*s\n", key, len, val);
+
+    return 1;
+}
+
+int cb_event_int(void* udata, const char* key, int val)
+{
+    printf("%s %d\n", key, val);
+
+    return 1;
+}
+
+void __read_torrent_file(void* bt, char* torrent_file)
+{
+    torrent_reader_t r;
+    void* tf;
+    int len;
+    char* metainfo;
+
+    memset(&r, 0, sizeof(torrent_reader_t));
+    tf = tfr_new(cb_event, cb_event_str, cb_event_int, &r);
+    metainfo = read_file(torrent_file,&len);
+    tfr_read_metainfo(tf, metainfo, len);
+}
+
 int main(int argc, char **argv)
 {
     char c;
     int o_verify_download, o_shutdown_when_complete, o_torrent_file_report_only;
     void *bt;
     char *str;
-    int status;
+    //int status;
     config_t* cfg;
 
     o_verify_download = 0;
@@ -115,7 +156,7 @@ int main(int argc, char **argv)
 
     bt = bt_client_new();
     cfg = bt_client_get_config(bt);
-    status = config_read(cfg, "yabtc", "config");
+    //status = config_read(cfg, "yabtc", "config");
 
     // setlocale(LC_ALL, " ");
     //  atexit (close_stdin);
@@ -133,12 +174,12 @@ int main(int argc, char **argv)
             break;
 
         case 't':
+            config_set_va(cfg,"torrent_file","%.*s",strlen(optarg), optarg);
             o_torrent_file_report_only = 1;
             break;
 
         case 'i':
             strcpy(__cfg_bound_iface, optarg);
-            printf("interface: %s\n", optarg);
             break;
 
         case 'e':
@@ -160,6 +201,11 @@ int main(int argc, char **argv)
     bt_client_set_logging(bt,
                           open("dump_log", O_CREAT | O_TRUNC | O_RDWR,
                                0666), __log);
+
+    if (o_torrent_file_report_only)
+    {
+        __read_torrent_file(bt,config_get(cfg,"torrent_file"));
+    }
 
     config_print(cfg);
 

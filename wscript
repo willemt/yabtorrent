@@ -130,7 +130,6 @@ def build(bld):
                     contrib_dir+"CBitstream",
                     contrib_dir+"CConfig-re",
                     contrib_dir+"CBTTrackerClient",
-                    contrib_dir+"CTorrentFileReader",
                    ], 
                 cflags=[
                     '-Werror',
@@ -178,6 +177,7 @@ def build(bld):
                     contrib_dir+"CConfig-re",
                     contrib_dir+"CBTTrackerClient",
                     contrib_dir+"CHeaplessBencodeReader",
+                    contrib_dir+"CTorrentFileReader",
                    ], 
                 use='yabbt')
 
