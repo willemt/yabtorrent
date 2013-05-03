@@ -83,28 +83,27 @@ Download torrent indicated by TORRENT_FILE. \n\n\
 Mandatory arguments to long options are mandatory for short options too. \n\
   -i, --using-interface        network interface to use \n\
   -e, --verify-download        check downloaded files and quit \n\
+  -t, --torrent_file_report_only    only report the contents of the torrent file \n\
   -b                                                    \n "), stdout);
         exit(status);
     }
 }
 
 static struct option const long_opts[] = {
-    {
-     "archive", no_argument, NULL, 'a'},
+    { "archive", no_argument, NULL, 'a'},
 //  {" backup ", optional_argument, NULL, 'b'},
-    {
-     "using-interface", required_argument, NULL, 'i'},
-    {"verify-download", no_argument, NULL, 'e'},
-    {"shutdown-when-complete", no_argument, NULL, 's'},
-    {"pwp_listen_port", required_argument, NULL, 'p'},
-    {
-     NULL, 0, NULL, 0}
+    { "using-interface", required_argument, NULL, 'i'},
+    { "verify-download", no_argument, NULL, 'e'},
+    { "shutdown-when-complete", no_argument, NULL, 's'},
+    { "pwp_listen_port", required_argument, NULL, 'p'},
+    { "torrent_file_report_only", required_argument, NULL, 't'},
+    { NULL, 0, NULL, 0}
 };
 
 int main(int argc, char **argv)
 {
     char c;
-    int o_verify_download, o_shutdown_when_complete;
+    int o_verify_download, o_shutdown_when_complete, o_torrent_file_report_only;
     void *bt;
     char *str;
     int status;
@@ -112,6 +111,7 @@ int main(int argc, char **argv)
 
     o_verify_download = 0;
     o_shutdown_when_complete = 0;
+    o_torrent_file_report_only = 0;
 
     bt = bt_client_new();
     cfg = bt_client_get_config(bt);
@@ -129,8 +129,11 @@ int main(int argc, char **argv)
             break;
 
         case 'p':
-            printf("opt: %s\n", optarg);
             config_set_va(cfg,"pwp_listen_port","%.*s",strlen(optarg), optarg);
+            break;
+
+        case 't':
+            o_torrent_file_report_only = 1;
             break;
 
         case 'i':

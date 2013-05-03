@@ -6,6 +6,7 @@ contribs = [
 ('CBitfield', 'git@github.com:willemt/CBitfield.git'),
 ('CLinkedListQueue', 'git@github.com:willemt/CLinkedListQueue.git'),
 ('CBTTrackerClient', 'git@github.com:willemt/CBTTrackerClient.git'),
+('CTorrentFileReader', 'git@github.com:willemt/CTorrentFileReader.git'),
 ('CCircularBuffer', 'git@github.com:willemt/CCircularBuffer.git'),
 ('CSparseCounter', 'git@github.com:willemt/CSparseCounter.git'),
 ('CBitstream', 'git@github.com:willemt/CSimpleBitstream.git'),
@@ -108,6 +109,7 @@ def build(bld):
                     contrib_dir+"CBitfield/bitfield.c",
                     contrib_dir+"CConfig-re/list.c",
                     contrib_dir+"CConfig-re/config.c",
+                    contrib_dir+"CTorrentFileReader/torrentfile_reader.c",
                     ],
                 #bt_diskmem.c
                 #CCircularBuffer/cbuffer.c
@@ -127,7 +129,8 @@ def build(bld):
                     contrib_dir+"CBTPWPConnection",
                     contrib_dir+"CBitstream",
                     contrib_dir+"CConfig-re",
-                    contrib_dir+"CBTTrackerClient"
+                    contrib_dir+"CBTTrackerClient",
+                    contrib_dir+"CTorrentFileReader",
                    ], 
                 cflags=[
                     '-Werror',
