@@ -53,8 +53,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "bt_local.h"
 #include "bt_peermanager.h"
 #include "bt_block_readwriter_i.h"
-#include "bt_filedumper.h"
-#include "bt_diskcache.h"
+//#include "bt_filedumper.h"
+//#include "bt_diskcache.h"
 #include "bt_piece_db.h"
 #include "bt_string.h"
 
@@ -278,6 +278,7 @@ void *bt_client_new()
     /* need to be able to tell the time */
     bt->ticker = eventtimer_new();
 
+#if 0
     /* database for dumping pieces to disk */
     bt->fd = bt_filedumper_new();
 
@@ -287,14 +288,15 @@ void *bt_client_new()
     /* point diskcache to filedumper */
     bt_diskcache_set_disk_blockrw(bt->dc,
                                   bt_filedumper_get_blockrw(bt->fd), bt->fd);
+#endif
 
     /* database for writing pieces */
     bt->db = bt_piecedb_new();
     /* point piece database to diskcache */
+#if 0
     bt_piecedb_set_diskstorage(bt->db,
                                bt_diskcache_get_blockrw(bt->dc), bt->dc);
-
-
+#endif
 
     /* peer manager */
     bt->pm = bt_peermanager_new();
@@ -312,6 +314,13 @@ void *bt_client_new()
     eventtimer_push_event(bt->ticker, 30, bt, __leecher_peer_optimistic_unchoke);
 
     return bt;
+}
+
+void bt_client_set_diskstorage(void* bto, bt_blockrw_i * irw, func_add_file_f func_addfile, void *udata)
+{
+    bt_client_t* bt = bto;
+
+    bt_piecedb_set_diskstorage(bt->db, irw, func_addfile, udata);
 }
 
 /**
@@ -404,7 +413,8 @@ int bt_client_add_file(void *bto,
 
     /* add the file to the filedumper */
     asprintf(&path, "%.*s", fname_len, fname);
-    bt_filedumper_add_file(bt->fd, path, flen);
+    bt_piecedb_add_file(bt->db, path, flen);
+//    bt_filedumper_add_file(bt->fd, path, flen);
     return 1;
 }
 

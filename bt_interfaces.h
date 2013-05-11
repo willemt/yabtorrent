@@ -43,15 +43,6 @@ typedef char *(
 #endif
 
 
-typedef void (
-    *func_log_f
-)    (
-    void *udata,
-    void *src,
-//    bt_peer_t * peer,
-    const char *buf,
-    ...
-);
 
 
 typedef int (

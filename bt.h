@@ -1,4 +1,51 @@
 
+//#include "bt_block_readwriter_i.h"
+
+typedef int (
+    *func_write_block_f
+)   (
+    void *udata,
+    void *caller,
+    const bt_block_t * blk,
+    const void *blkdata
+);
+
+typedef void *(
+    *func_read_block_f
+)    (
+    void *udata,
+    void *caller,
+    const bt_block_t * blk
+);
+
+typedef void *(
+    *func_add_file_f
+)    (
+    void *caller,
+    const char *fname,
+    const int size
+);
+
+typedef void (
+    *func_log_f
+)    (
+    void *udata,
+    void *src,
+//    bt_peer_t * peer,
+    const char *buf,
+    ...
+);
+
+
+typedef struct
+{
+    func_write_block_f write_block;
+
+    func_read_block_f read_block;
+
+    /*  release this block from the holder of it */
+//    func_giveup_block_f giveup_block;
+} bt_blockrw_i;
 
 /*  piece info
  *  this is how this torrent has */

@@ -57,10 +57,10 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "bitfield.h"
 #include "bt.h"
+#include "bt_piece_db.h"
 #include "bt_piece.h"
 #include "bt_local.h"
 #include "bt_block_readwriter_i.h"
-#include "bt_piece_db.h"
 
 
 typedef struct
@@ -73,6 +73,8 @@ typedef struct
     /*  reader and writer of blocks to disk */
     bt_blockrw_i *blockrw;
     void *blockrw_data;
+
+    func_add_file_f func_addfile;
 } bt_piecedb_private_t;
 
 #define priv(x) ((bt_piecedb_private_t*)(x))
@@ -110,7 +112,7 @@ int bt_piecedb_get_tot_file_size(bt_piecedb_t * db)
 }
 
 void bt_piecedb_set_diskstorage(bt_piecedb_t * db,
-                                bt_blockrw_i * irw, void *udata)
+                                bt_blockrw_i * irw, func_add_file_f func_addfile, void *udata)
 {
     assert(irw->write_block);
     assert(irw->read_block);
@@ -119,6 +121,7 @@ void bt_piecedb_set_diskstorage(bt_piecedb_t * db,
 
     priv(db)->blockrw = irw;
     priv(db)->blockrw_data = udata;
+    priv(db)->func_addfile = func_addfile;
 }
 #endif
 
@@ -246,6 +249,15 @@ int bt_piecedb_all_pieces_are_complete(bt_piecedb_t* db)
     }
 
     return 1;
+}
+
+void bt_piecedb_add_file(
+    bt_piecedb_t * db,
+    const char *fname,
+    const int size
+)
+{
+    priv(db)->func_addfile(priv(db)->blockrw_data, fname, size);
 }
 
 /**

@@ -1,5 +1,5 @@
 void bt_diskcache_set_func_log(
-    bt_diskcache_t * dc,
+    void * dco,
     func_log_f log,
     void *udata
 );

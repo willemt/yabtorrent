@@ -43,6 +43,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "block.h"
 #include "bt.h"
+#include "bt_diskcache.h"
+#include "bt_filedumper.h"
 #include "bt_main.h"
 #include "bt_tracker_client.h"
 #include "torrentfile_reader.h"
@@ -119,9 +121,9 @@ int cb_event_str(void* udata, const char* key, const char* val, int len)
 
     printf("%s %.*s\n", key, len, val);
 
-    if (!strcmp(key,"tracker_url"))
+    if (!strcmp(key,"announce"))
     {
-        config_set_va(me->cfg,key,"%.*s", len, val);
+        config_set_va(me->cfg,"tracker_url","%.*s", len, val);
     }
 
 
@@ -206,6 +208,23 @@ int main(int argc, char **argv)
     bt_client_set_logging(bt,
                           open("dump_log", O_CREAT | O_TRUNC | O_RDWR,
                                0666), __log);
+
+    {
+        void* fd, *dc;
+
+        /* database for dumping pieces to disk */
+        fd = bt_filedumper_new();
+
+        /* intermediary between filedumper and DB */
+        dc = bt_diskcache_new();
+        //bt_diskcache_set_func_log(bt->dc, __log, bt);
+
+        /* point diskcache to filedumper */
+        bt_diskcache_set_disk_blockrw(dc, bt_filedumper_get_blockrw(fd), fd);
+        bt_client_set_diskstorage(bt,
+                bt_diskcache_get_blockrw(dc),
+                (void*)bt_filedumper_add_file, dc);
+    }
 
     if (o_torrent_file_report_only)
     {

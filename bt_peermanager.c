@@ -52,11 +52,9 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "bt.h"
 #include "bt_local.h"
 #include "bt_block_readwriter_i.h"
-#include "bt_filedumper.h"
 #include "bt_peermanager.h"
-#include "bt_diskcache.h"
 #include "bt_piece_db.h"
-#include "bt_string.h"
+//#include "bt_string.h"
 
 #include "bt_client_private.h"
 
@@ -95,7 +93,7 @@ int __FUNC_peerconn_send_to_peer(void *bto,
     return bt->net.peer_send(&bt->net_udata, peer->net_peerid, data, len);
 }
 
-int __FUNC_peercon_pollblock(void *bto,
+int __FUNC_peerconn_pollblock(void *bto,
         void* bitfield, bt_block_t * blk)
 {
 
@@ -139,7 +137,7 @@ void __FUNC_peerconn_send_have(void* caller, void* peer, void* udata)
  *
  * @param peer : peer received from
  * */
-int __FUNC_peercon_pushblock(void *bto,
+int __FUNC_peerconn_pushblock(void *bto,
                                     void* pr,
                                     bt_block_t * block,
                                     void *data)
@@ -175,7 +173,7 @@ int __FUNC_peercon_pushblock(void *bto,
         if (bt_piecedb_all_pieces_are_complete(bt))
         {
             bt->am_seeding = 1;
-            bt_diskcache_disk_dump(bt->dc);
+//            bt_diskcache_disk_dump(bt->dc);
         }
     }
 
@@ -331,8 +329,8 @@ void *bt_peermanager_add_peer(void *pm,
     pwp_connection_functions_t funcs = {
         .send = __FUNC_peerconn_send_to_peer,
         .recv = __FUNC_peerconn_recv_from_peer,
-        .pushblock = __FUNC_peercon_pushblock,
-        .pollblock = __FUNC_peercon_pollblock,
+        .pushblock = __FUNC_peerconn_pushblock,
+        .pollblock = __FUNC_peerconn_pollblock,
         .disconnect = __FUNC_peerconn_disconnect,
         .connect = __FUNC_peerconn_connect,
         .getpiece = bt_client_get_piece,

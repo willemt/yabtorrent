@@ -54,11 +54,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "bt.h"
 #include "bt_local.h"
 #include "bt_block_readwriter_i.h"
-#include "bt_filedumper.h"
-#include "bt_diskcache.h"
-//#include "bt_piece_i.h"
 #include "bt_piece_db.h"
-//#include "bt_peer_connection.h"
 #include "bt_string.h"
 
 #include "bt_client_private.h"
@@ -66,8 +62,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
-
-#include <time.h>
 
 /**
  * Set the failure flag to true

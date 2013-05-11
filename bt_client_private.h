@@ -16,13 +16,13 @@ typedef struct
     bt_piecedb_t *db;
 
     /*  disk cache */
-    void *dc;
+//    void *dc;
 
     /*  tracker client */
     void *tc;
 
     /*  file dumper */
-    void *fd;
+//    void *fd;
 
     /* net stuff */
     bt_net_pwp_funcs_t net;
