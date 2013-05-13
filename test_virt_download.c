@@ -7,12 +7,18 @@ typedef struct {
 //    llqueue_t* inbox;
 //    bitstream_t* inbox;
     void* inbox;
-} slot_t;
+    void* bt;
 
+    /* id that we use to identify the client */
+    int id;
+} client_t;
+
+/*8
 typedef struct {
     void* data;
     int len;
 } msg_t;
+*/
 
 int func_send(
     void *udata,
@@ -100,17 +106,37 @@ int func_connect_f(
 
 void* client_setup()
 {
+    client_t* cli;
     void *bt;
     config_t* cfg;
 
-    bt = bt_client_new();
+    cli = malloc(sizeof(client_t));
+
+    /* message inbox */
+    cli->inbox = cbuf_new(16);
+
+    /* bittorrent client */
+    cli->bt = bt = bt_client_new();
     cfg = bt_client_get_config(bt);
     bt_client_set_peer_id(bt, bt_generate_peer_id());
 
-    return bt;
+    /* create disk backend */
+    {
+        void* dc;
+
+        dc = bt_diskmem_new();
+        bt_diskmem_set_size(dc, 1000);
+        bt_client_set_diskstorage(bt, bt_diskmem_get_blockrw(dc), NULL, dc);
+    }
+
+    return cli;
 }
 
 void setup()
 {
+
+    client_setup();
+
+    __peer_to_net
     bt_client_step(bt);
 }

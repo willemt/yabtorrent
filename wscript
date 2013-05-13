@@ -93,6 +93,7 @@ def build(bld):
                     "bt_diskcache.c",
                     "bt_string.c",
                     "bt_networkfuncs_mock.c",
+                    "bt_diskmem.c",
                     "readfile.c",
                     "sha1.c",
                     "bt_selector_rarestfirst.c",
