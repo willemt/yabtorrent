@@ -3,6 +3,8 @@
 #include "linked_list_queue.h"
 #include "cbuffer.h"
 
+void *__clients = NULL;
+
 typedef struct {
 //    llqueue_t* inbox;
 //    bitstream_t* inbox;
@@ -47,6 +49,7 @@ int func_send(
 //    llqueue_offer(s->inbox, m);
 }
 
+#if 0
 static unsigned long __uint_hash(
     const void *e1
 )
@@ -68,17 +71,47 @@ static long __uint_compare(
     return i1 - i2;
 }
 
+#endif
+
+client_t* __get_client_from_id(int id)
+{
+    client_t* cli;
+
+    cli = hashmap_get(__clients, &id);
+
+    return cli;
+}
+
+static unsigned long __int_hash(
+    const void *e1
+)
+{
+    const int *i1 = e1;
+
+    return *i1;
+}
+
+static long __int_compare(
+    const void *e1,
+    const void *e2
+)
+{
+    const int *i1 = e1, *i2 = e2;
+
+    return *i1 - *i2;
+}
+
 
 int func_recv_f(
     void *udata,
-    void * peer,
+    void *peer,
     char *buf,
     int *len
 )
 {
-    slot_t* me;
-    //void* data;
-    //data = malloc(len);
+    client_t* cli;
+
+    cli = __get_client_from_id();
 
     memcpy(buf, cbuf_poll(me->inbox, len), *len);
     cbuf_poll_release(me->inbox, *len)
@@ -104,7 +137,7 @@ int func_connect_f(
 }
 
 
-void* client_setup()
+client_t* client_setup()
 {
     client_t* cli;
     void *bt;
@@ -129,14 +162,39 @@ void* client_setup()
         bt_client_set_diskstorage(bt, bt_diskmem_get_blockrw(dc), NULL, dc);
     }
 
+
+    /* put inside the hashmap */
+    cli->id = hashmap_count(__clients);
+    hashmap_put(__clients,&cli->id,cli);
+
     return cli;
 }
 
+
 void setup()
 {
+    __clients = hashmap_new(__int_hash, __int_compare, 11);
 
-    client_setup();
+    void* a, *b;
 
-    __peer_to_net
-    bt_client_step(bt);
+    hashmap_iterator_t iter;
+
+    hashmap_iterator(__clients, &iter);
+    while (hashmap_iterator_has_next(__clients, &iter))
+    {
+        void* bt, *cfg;
+
+        bt = hashmap_iterator_next(__clients, &iter);
+        cfg = bt_client_get_config(bt);
+        config_set(cfg, "npieces", "1");
+        config_set(cfg, "piece_length", "10");
+        config_set(cfg,"infohash", "00000000000000000000");
+        bt_client_add_pieces(bt, "00000000000000000000", 1);
+    }
+
+    a = client_setup();
+    b = client_setup();
+
+    bt_client_step(a);
+    bt_client_step(b);
 }

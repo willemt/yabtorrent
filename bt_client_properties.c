@@ -117,6 +117,7 @@ void bt_client_set_logging(void *bto, void *udata, func_log_f func)
     bt->log_udata = udata;
 }
 
+#if 0
 /**
  * Set network functions
  */
@@ -126,6 +127,7 @@ void bt_client_set_pwp_net_funcs(void *bto, bt_net_pwp_funcs_t * net)
 
     memcpy(&bt->net, net, sizeof(bt_net_pwp_funcs_t));
 }
+#endif
 
 /**
  * @return number of peers this client is involved with
