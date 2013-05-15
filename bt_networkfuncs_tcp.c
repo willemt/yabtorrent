@@ -51,7 +51,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <getopt.h>
 
 #include "bt.h"
-#include "bt_main.h"
 
 #include <errno.h>
 
@@ -209,63 +208,6 @@ static int __tcpsock_send(const int sock, const char *data, int len)
 /*----------------------------------------------------------------------------*/
 
 /*  @param my_ip: populate this with the interface's ip */
-int tracker_connect(void **udata,
-                    const char *host, const char *port, char *my_ip)
-{
-    net_t *net = *udata;
-
-    int size = sizeof(struct sockaddr_in);
-
-    struct sockaddr_in myAddr;
-
-    unsigned char *ip;
-
-    if (!*udata)
-    {
-        net = *udata = calloc(1, sizeof(net_t));
-    }
-
-    /* connect to tracker  */
-    if (0 == (net->tracker_sock = __tcp_connect(host, port)))
-    {
-        sprintf(my_ip, "");
-        return 0;
-    }
-
-//    printf("tracker socket is on: %d\n", net->tracker_sock);
-
-    /*  who am i? */
-    if (getsockname(net->tracker_sock, (struct sockaddr *) &myAddr, &size) ==
-        -1)
-    {
-        perror("getsockname");
-        exit(1);
-    }
-
-    ip = (void *) &myAddr.sin_addr.s_addr;
-    sprintf(my_ip, "%d.%d.%d.%d", ip[0], ip[1], ip[2], ip[3]);
-//    printf("tracker port: %d\n", htons(myAddr.sin_port));
-//    sprintf(my_port, "%d", myAddr.sin_port);
-    return 1;
-}
-
-int tracker_send(void **udata, const void *data, int len)
-{
-    net_t *net = *udata;
-
-    int ret;
-
-    ret = __tcpsock_send(net->tracker_sock, data, len);
-
-    if (ret < 0)
-    {
-        return -1;
-    }
-    else
-    {
-        return 1;
-    }
-}
 
 int __tcpsock_http_recv(int sock, char **rdata, int *rlen)
 {
@@ -322,19 +264,6 @@ int __tcpsock_http_recv(int sock, char **rdata, int *rlen)
     }
 
 #endif
-
-    return 1;
-}
-
-int tracker_recv(void **udata, char **rdata, int *rlen)
-{
-    net_t *net = *udata;
-
-    return __tcpsock_http_recv(net->tracker_sock, rdata, rlen);
-}
-
-int tracker_disconnect(void **udata)
-{
 
     return 1;
 }
@@ -720,13 +649,6 @@ bt_net_pwp_funcs_t pwpNetFuncs = {
     peer_recv_len,
     peer_disconnect,
     peers_poll,
-    peer_listen_open,
-    NULL
+    peer_listen_open
 };
 
-bt_net_tracker_funcs_t trackerNetFuncs = {
-    tracker_connect,
-    tracker_send,
-    tracker_recv,
-    tracker_disconnect
-};

@@ -134,11 +134,3 @@ bt_net_pwp_funcs_t pwpNetFuncs = {
     peer_listen_open
 };
 
-#if 0
-bt_net_tracker_funcs_t trackerNetFuncs = {
-    tracker_connect,
-    tracker_send,
-    tracker_recv,
-    tracker_disconnect
-};
-#endif
