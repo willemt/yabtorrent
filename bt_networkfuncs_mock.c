@@ -131,8 +131,7 @@ bt_net_pwp_funcs_t pwpNetFuncs = {
     peer_recv_len,
     peer_disconnect,
     peers_poll,
-    peer_listen_open,
-    NULL
+    peer_listen_open
 };
 
 #if 0

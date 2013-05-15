@@ -111,11 +111,13 @@ typedef struct
 
     int (*peer_listen_open) (void **udata, const int port);
 
+#if 0
     int (*peer_listen_poll) (void **udata,
                              int msec_timeout,
                              void (*func_process) (void *,
                                                    int netid,
                                                    char *ip, int), void *data);
+#endif
 
 } bt_net_pwp_funcs_t;
 
