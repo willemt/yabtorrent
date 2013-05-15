@@ -44,8 +44,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <stdarg.h>
 
-//#include <arpa/inet.h>
-
 #include "pwp_connection.h"
 
 #include "bitfield.h"
@@ -117,17 +115,16 @@ void bt_client_set_logging(void *bto, void *udata, func_log_f func)
     bt->log_udata = udata;
 }
 
-#if 0
 /**
- * Set network functions
+ * Set callback functions
  */
-void bt_client_set_pwp_net_funcs(void *bto, bt_net_pwp_funcs_t * net)
+void bt_client_set_funcs(void *bto, bt_client_funcs_t * func, void* caller)
 {
     bt_client_t *bt = bto;
 
-    memcpy(&bt->net, net, sizeof(bt_net_pwp_funcs_t));
+    memcpy(&bt->func, func, sizeof(bt_client_funcs_t));
+    bt->net_udata = caller;
 }
-#endif
 
 /**
  * @return number of peers this client is involved with
@@ -187,6 +184,4 @@ int bt_client_is_failed(void *bto)
 {
     return 0;
 }
-
-/* @} ------------------------------------------------------------------------*/
 
