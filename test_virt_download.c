@@ -6,8 +6,6 @@
 void *__clients = NULL;
 
 typedef struct {
-//    llqueue_t* inbox;
-//    bitstream_t* inbox;
     void* inbox;
     void* bt;
 

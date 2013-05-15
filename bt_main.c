@@ -49,6 +49,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "torrentfile_reader.h"
 #include "readfile.h"
 #include "config.h"
+#include "networkfuncs.h"
 
 #define PROGRAM_NAME "bt"
 
@@ -208,6 +209,21 @@ int main(int argc, char **argv)
                           open("dump_log", O_CREAT | O_TRUNC | O_RDWR,
                                0666), __log);
 
+    /* set network functions */
+    {
+        bt_client_funcs_t func = {
+            .peer_connect = peer_connect,
+            .peer_send =  peer_send,
+            .peer_recv_len =peer_recv_len, 
+            .peer_disconnect =peer_disconnect, 
+            .peers_poll =peers_poll, 
+            .peer_listen_open =peer_listen_open
+        };
+
+        bt_client_set_funcs(bt, &func, NULL);
+    }
+
+    /* set file system backend functions */
     {
         void* fd, *dc;
 
