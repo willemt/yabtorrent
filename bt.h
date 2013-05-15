@@ -36,7 +36,6 @@ typedef void (
     ...
 );
 
-
 typedef struct
 {
     func_write_block_f write_block;
@@ -89,6 +88,12 @@ typedef struct
 
 typedef struct
 {
+    /**
+     * Connect to the peer
+     * @param udata use this memory for the connection. It is up to the callee to alloc memory.
+     * @param host the hostname
+     * @param port the host's port
+     * @param peerid pointer available for the callee to identify the peer */
     int (*peer_connect) (void **udata,
                          const char *host, const char *port, int *peerid);
 
@@ -111,15 +116,7 @@ typedef struct
 
     int (*peer_listen_open) (void **udata, const int port);
 
-#if 0
-    int (*peer_listen_poll) (void **udata,
-                             int msec_timeout,
-                             void (*func_process) (void *,
-                                                   int netid,
-                                                   char *ip, int), void *data);
-#endif
-
-} bt_net_pwp_funcs_t;
+} bt_client_funcs_t;
 
 
 /*  bittorrent piece */
@@ -145,11 +142,9 @@ typedef struct
     void* pc;
 } bt_peer_t;
 
-/*----------------------------------------------------------------------------*/
 
 char *bt_generate_peer_id();
 
-/*----------------------------------------------------------------------------*/
 void *bt_client_new();
 
 void *bt_client_get_piece(void *bto, const unsigned int piece_idx);

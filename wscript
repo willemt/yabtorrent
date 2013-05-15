@@ -92,7 +92,6 @@ def build(bld):
                     "bt_choker_seeder.c",
                     "bt_diskcache.c",
                     "bt_string.c",
-                    "bt_networkfuncs_mock.c",
                     "bt_diskmem.c",
                     "readfile.c",
                     "sha1.c",
@@ -163,6 +162,7 @@ def build(bld):
         bld.program(
                 source=[
                     'bt_main.c',
+                    "networkfuncs_mock.c",
                     contrib_dir+"CBTTrackerClient/bt_tracker_client.c",
                     contrib_dir+"CBTTrackerClient/bt_tracker_client_response_reader.c",
                     contrib_dir+"CBTTrackerClient/url_encoder.c"

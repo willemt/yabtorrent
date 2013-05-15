@@ -45,7 +45,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "bt.h"
 #include "bt_diskcache.h"
 #include "bt_filedumper.h"
-#include "bt_main.h"
 #include "bt_tracker_client.h"
 #include "torrentfile_reader.h"
 #include "readfile.h"

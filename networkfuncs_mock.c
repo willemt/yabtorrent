@@ -39,9 +39,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "block.h"
 #include "bt.h"
-#include "bt_main.h"
-
-#include "cbuffer.h"
 
 /*----------------------------------------------------------------------------*/
 
@@ -125,6 +122,7 @@ int peer_listen_open(void **udata, const int port)
 
 /*----------------------------------------------------------------------------*/
 
+#if 0
 bt_net_pwp_funcs_t pwpNetFuncs = {
     peer_connect,
     peer_send,
@@ -133,4 +131,4 @@ bt_net_pwp_funcs_t pwpNetFuncs = {
     peers_poll,
     peer_listen_open
 };
-
+#endif

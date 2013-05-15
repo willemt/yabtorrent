@@ -90,7 +90,7 @@ int __FUNC_peerconn_send_to_peer(void *bto,
     const bt_peer_t * peer = pr;
     bt_client_t *bt = bto;
 
-    return bt->net.peer_send(&bt->net_udata, peer->net_peerid, data, len);
+    return bt->func.peer_send(&bt->net_udata, peer->net_peerid, data, len);
 }
 
 int __FUNC_peerconn_pollblock(void *bto,
@@ -123,7 +123,7 @@ int __FUNC_peerconn_recv_from_peer(void *bto,
     bt_client_t *bt = bto;
     bt_peer_t * peer = pr;
 
-    return bt->net.peer_recv_len(&bt->net_udata, peer->net_peerid, buf, len);
+    return bt->func.peer_recv_len(&bt->net_udata, peer->net_peerid, buf, len);
 }
 
 void __FUNC_peerconn_send_have(void* caller, void* peer, void* udata)
@@ -206,12 +206,12 @@ int __FUNC_peerconn_connect(void *bto, void *pc, void* pr)
     bt_client_t *bt = bto;
 
     /* the remote peer will have always send a handshake */
-    if (!bt->net.peer_connect)
+    if (!bt->func.peer_connect)
     {
         return 0;
     }
 
-    if (0 == bt->net.peer_connect(&bt->net_udata, peer->ip,
+    if (0 == bt->func.peer_connect(&bt->net_udata, peer->ip,
                                   peer->port, &peer->net_peerid))
     {
         __log(bto,NULL,"failed connection to peer\n");

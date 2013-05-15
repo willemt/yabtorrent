@@ -25,7 +25,8 @@ typedef struct
 //    void *fd;
 
     /* net stuff */
-    bt_net_pwp_funcs_t net;
+    bt_client_funcs_t func;
+//    bt_net_pwp_funcs_t net;
 
     void *net_udata;
 

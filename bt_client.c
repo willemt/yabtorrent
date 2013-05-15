@@ -483,7 +483,7 @@ int bt_client_step(void *bto)
     }
 
     /*  poll data from peer pwp connections */
-    bt->net.peers_poll(&bt->net_udata,
+    bt->func.peers_poll(&bt->net_udata,
                        atoi(config_get(bt->cfg,"select_timeout_msec")),
                        __process_peer_msg, __process_peer_connect, bt);
 
@@ -521,7 +521,7 @@ void bt_client_go(void *bto)
     bt_client_t *bt = bto;
     int ii;
 
-    bt->net.peer_listen_open(&bt->net_udata,
+    bt->func.peer_listen_open(&bt->net_udata,
             atoi(config_get(bt->cfg,"pwp_listen_port")));
 
     while (1)

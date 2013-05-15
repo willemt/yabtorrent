@@ -601,7 +601,7 @@ int peers_poll(void **udata,
 
 /*----------------------------------------------------------------------------*/
 
-/*
+/**
  * open up to listen to peers */
 int peer_listen_open(void **udata, const int port)
 {
@@ -643,6 +643,7 @@ int peer_listen_open(void **udata, const int port)
 
 /*----------------------------------------------------------------------------*/
 
+#if 0
 bt_net_pwp_funcs_t pwpNetFuncs = {
     peer_connect,
     peer_send,
@@ -651,4 +652,4 @@ bt_net_pwp_funcs_t pwpNetFuncs = {
     peers_poll,
     peer_listen_open
 };
-
+#endif
