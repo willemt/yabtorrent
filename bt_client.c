@@ -412,7 +412,6 @@ int bt_client_add_file(void *bto,
     /* add the file to the filedumper */
     asprintf(&path, "%.*s", fname_len, fname);
     bt_piecedb_add_file(bt->db, path, flen);
-//    bt_filedumper_add_file(bt->fd, path, flen);
     return 1;
 }
 
@@ -436,7 +435,11 @@ void *bt_client_add_peer(void *bto,
         return NULL;
     }
 
-    peer = bt_peermanager_add_peer(me->pm,peer_id, peer_id_len, ip, ip_len, port);
+    /* remember the peer */
+    if (!(peer = bt_peermanager_add_peer(me->pm,peer_id, peer_id_len, ip, ip_len, port)))
+    {
+        return NULL;
+    }
 
     bt_leeching_choker_add_peer(me->lchoke, peer->pc);
 

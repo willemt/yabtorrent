@@ -19,3 +19,5 @@ int peers_poll (void **udata,
                                                     int), void *data);
 
 int peer_listen_open (void **udata, const int port);
+
+void* network_setup();

@@ -220,6 +220,7 @@ int main(int argc, char **argv)
             .peer_listen_open =peer_listen_open
         };
 
+        network_setup();
         bt_client_set_funcs(bt, &func, NULL);
     }
 

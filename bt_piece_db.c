@@ -213,7 +213,7 @@ void bt_piecedb_add(bt_piecedb_t * db, const char *sha1)
  * @param pieces A string of 20 byte sha1 hashes. Is always a multiple of 20 bytes in length. 
  * @param bto the bittorrent client object
  * */
-void bt_piecedb_add_all(bt_piecedb_t * db, const char *sha1_pieces, int len)
+void bt_piecedb_add_all(bt_piecedb_t * db, const char *sha1_pieces, const int len)
 {
     int prog;
 
@@ -257,6 +257,7 @@ void bt_piecedb_add_file(
     const int size
 )
 {
+    if (!priv(db)->func_addfile) return;
     priv(db)->func_addfile(priv(db)->blockrw_data, fname, size);
 }
 

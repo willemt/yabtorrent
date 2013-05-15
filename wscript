@@ -1,3 +1,5 @@
+import sys
+
 def options(opt):
         opt.load('compiler_c')
 
@@ -35,6 +37,7 @@ def configure(conf):
 
 
 from waflib.Task import Task
+
 class compiletest(Task):
         def run(self):
                 return self.exec_command('sh ../make-tests.sh %s > %s' % (
@@ -44,9 +47,14 @@ class compiletest(Task):
                 )
 
 def unittest(bld, src):
-        bld(rule='sh ../make-tests.sh ${SRC} > ${TGT}', source=src, target="t"+src)
+        bld(rule='cp ../make-tests.sh .')
+        bld(rule='cp ../test_bt.c .')
+        # collect tests into one area
+        bld(rule='sh make-tests.sh '+src+' > ${TGT}', target="t_"+src)
+
+        # build the test program
         bld.program(
-                source='%s %s CuTest.c' % (src,"t"+src),
+                source='%s %s CuTest.c' % (src,"t_"+src),
                 target=src[:-2],
                 cflags=[
                     '-g',
@@ -56,8 +64,11 @@ def unittest(bld, src):
                 unit_test='yes',
                 includes='.')
 
-        bld(rule='pwd && export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:. && ./${SRC}', source=src[:-2])
-#        bld(rule='export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:. && ./${SRC}', source=src[:-2])#, 'tests_'+src)
+        # run the test
+        if sys.platform == 'win32':
+            bld(rule='${SRC}',source=src[:-2]+'.exe')
+        else:
+            bld(rule='export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:. && '+src[:-2])
 
 
 #def shutdown(bld):
@@ -71,7 +82,6 @@ def build(bld):
 
         contrib_dir = '../'
 
-        import sys
 
         if sys.platform == 'win32':
             platform = '-D__WINDOWS__'
@@ -143,7 +153,6 @@ def build(bld):
 #                use='config bencode',
 #        bld(rule='../tests_bt', target='tests_bt.c')
 
-#        unittest(bld,'test_bt.c')
 #        unittest(bld,'test_bitfield.c')
 #        unittest(bld,'test_bt.c')
 #        unittest(bld,'test_byte_reader.c')
@@ -159,13 +168,16 @@ def build(bld):
 ##        unittest(bld,'test_peer_connection_read.c')
 ##        unittest(bld,'test_peer_connection_send.c')
 
+        unittest(bld,"test_bt.c")
+
         bld.program(
                 source=[
                     'bt_main.c',
                     "networkfuncs_mock.c",
                     contrib_dir+"CBTTrackerClient/bt_tracker_client.c",
                     contrib_dir+"CBTTrackerClient/bt_tracker_client_response_reader.c",
-                    contrib_dir+"CBTTrackerClient/url_encoder.c"
+                    contrib_dir+"CBTTrackerClient/url_encoder.c",
+                    contrib_dir+"CCircularBuffer/cbuffer.c"
                     ],
                 target='bt',
                 cflags=[
@@ -179,8 +191,11 @@ def build(bld):
                     contrib_dir+"CBTTrackerClient",
                     contrib_dir+"CHeaplessBencodeReader",
                     contrib_dir+"CTorrentFileReader",
+                    contrib_dir+"CHashMapViaLinkedList",
+                    contrib_dir+"CCircularBuffer",
                    ], 
                 use='yabbt')
+
 
 
 

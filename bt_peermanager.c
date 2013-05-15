@@ -75,7 +75,7 @@ static void __log(void *bto, void *src, const char *fmt, ...)
 
     va_start(args, fmt);
     vsprintf(buf, fmt, args);
-    printf("%s\n", buf);
+//    printf("%s\n", buf);
 //    bt->func_log(bt->log_udata, NULL, buf);
 }
 
@@ -295,7 +295,7 @@ void *bt_peermanager_netpeerid_to_peerconn(void * pm, const int netpeerid)
  *
  * @return freshly created bt_peer
  */
-void *bt_peermanager_add_peer(void *pm,
+bt_peer_t *bt_peermanager_add_peer(void *pm,
                               const char *peer_id,
                               const int peer_id_len,
                               const char *ip, const int ip_len, const int port)

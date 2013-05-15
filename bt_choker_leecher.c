@@ -111,7 +111,7 @@ void *bt_leeching_choker_new(const int size)
 void bt_leeching_choker_add_peer(void *ckr, void *peer)
 {
     choker_t *ch = ckr;
-    
+
     /* Don't add the same peer again */
     if (hashmap_contains_key(ch->peers, peer))
     {
@@ -119,6 +119,7 @@ void bt_leeching_choker_add_peer(void *ckr, void *peer)
     }
 
     hashmap_put(ch->peers, peer, peer);
+
     llqueue_offer(ch->peers_choked, peer);
     llqueue_offer(ch->peers_waiting_for_optimistic_unchoke, peer);
 }

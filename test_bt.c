@@ -9,6 +9,7 @@
 
 #include <stdint.h>
 
+#include "block.h"
 #include "bt.h"
 #include "bt_local.h"
 
@@ -113,7 +114,7 @@ void TestBT_ClientCantAddSelfAsPeer(
     id = bt_client_new();
     /*  a peer id is required for adding peers */
     bt_client_set_peer_id(id, peerid);
-    bt_client_set_opt(id, "pwp_listen_port", "4000");
+    //bt_client_set_opt(id, "pwp_listen_port", "4000");
     /*  add self */
     bt_client_add_peer(id, peerid, strlen(peerid), ip, strlen(ip), 4000);
     CuAssertTrue(tc, 0 == bt_client_get_num_peers(id));
@@ -165,11 +166,11 @@ void TestBT_SetInfoHash(
 
     id = bt_client_new();
 
-    bt_client_set_opt(id, "infohash", info_hash, 20);
+    //bt_client_set_opt(id, "infohash", info_hash, 20);
 
-    CuAssertTrue(tc,
-                 0 == strcmp(bt_client_get_opt_string(id, "infohash"),
-                             info_hash));
+    CuAssertTrue(tc,0);
+//    CuAssertTrue(tc,
+//                 0 == strcmp(bt_client_get_opt_string(id, "infohash"), info_hash));
 }
 
 void TestBT_GeneratedPeeridIs20BytesLong(
@@ -183,83 +184,6 @@ void TestBT_GeneratedPeeridIs20BytesLong(
     CuAssertTrue(tc, 20 == strlen(peerid));
 }
 
-void TestURL2Host_with_suffix(
-    CuTest * tc
-)
-{
-    char *url;
-
-    url = url2host("http://www.abc.com/other");
-    CuAssertTrue(tc, 0 == strcmp(url, "www.abc.com"));
-    free(url);
-}
-
-void TestURL2Host_without_suffix(
-    CuTest * tc
-)
-{
-    char *url;
-
-    url = url2host("http://www.abc.com");
-    CuAssertTrue(tc, 0 == strcmp(url, "www.abc.com"));
-    free(url);
-}
-
-void TestURL2Host_without_http_prefix(
-    CuTest * tc
-)
-{
-    char *url;
-
-    url = url2host("www.abc.com");
-    CuAssertTrue(tc, 0 == strcmp(url, "www.abc.com"));
-    free(url);
-}
-
-void TestURL2Host_with_port(
-    CuTest * tc
-)
-{
-    char *url;
-
-    url = url2host("www.abc.com:9000");
-    CuAssertTrue(tc, 0 == strcmp(url, "www.abc.com"));
-    free(url);
-}
-
-void TestURL2HostPort_with_suffix(
-    CuTest * tc
-)
-{
-    char *port;
-
-    port = url2port("http://www.abc.com:9000/other");
-    CuAssertTrue(tc, 0 == strcmp(port, "9000"));
-    free(port);
-}
-
-void TestURL2HostPort_without_suffix(
-    CuTest * tc
-)
-{
-    char *port;
-
-    port = url2port("http://www.abc.com:9000");
-    CuAssertTrue(tc, 0 == strcmp(port, "9000"));
-    free(port);
-}
-
-void TestURL2HostPort_without_http_prefix(
-    CuTest * tc
-)
-{
-    char *port;
-
-    port = url2port("www.abc.com:9000");
-    CuAssertTrue(tc, 0 == strcmp(port, "9000"));
-    free(port);
-}
-
 /*----------------------------------------------------------------------------*/
 void TestBT_AddPiece(
     CuTest * tc
@@ -271,7 +195,7 @@ void TestBT_AddPiece(
 
     id = bt_client_new();
 
-    bt_client_add_piece(id, piece);
+    bt_client_add_pieces(id, piece, 1);
     CuAssertTrue(tc, 1 == bt_client_get_num_pieces(id));
 }
 
