@@ -43,7 +43,7 @@ echo \
     CuSuiteRun(suite);
     CuSuiteSummary(suite, output);
     CuSuiteDetails(suite, output);
-//    printf("%s\\n", output->buffer);
+    printf("%s\\n", output->buffer);
 }
 
 int main(int argc, char **argv)

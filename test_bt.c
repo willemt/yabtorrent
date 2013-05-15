@@ -64,9 +64,7 @@ void TestBT_client_add_peer(
 )
 {
     void *id;
-
     char *peerid = "0000000000000";
-
     char *ip = "127.0.0.1";
 
     id = bt_client_new();

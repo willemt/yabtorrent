@@ -48,7 +48,7 @@ class compiletest(Task):
 
 def unittest(bld, src):
         bld(rule='cp ../make-tests.sh .')
-        bld(rule='cp ../test_bt.c .')
+        bld(rule='cp ../%s .' % src)
         # collect tests into one area
         bld(rule='sh make-tests.sh '+src+' > ${TGT}', target="t_"+src)
 
@@ -169,6 +169,7 @@ def build(bld):
 ##        unittest(bld,'test_peer_connection_send.c')
 
         unittest(bld,"test_bt.c")
+        unittest(bld,"test_peermanager.c")
 
         bld.program(
                 source=[
