@@ -203,7 +203,7 @@ int main(int argc, char **argv)
     config_set_va(cfg,"shutdown_when_complete","%d",o_shutdown_when_complete);
 
     /* set peer id */
-    bt_client_set_peer_id(bt, bt_generate_peer_id());
+    //bt_client_set_peer_id(bt, bt_generate_peer_id());
 
     bt_client_set_logging(bt,
                           open("dump_log", O_CREAT | O_TRUNC | O_RDWR,

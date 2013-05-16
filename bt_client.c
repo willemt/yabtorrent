@@ -436,7 +436,7 @@ void *bt_client_add_peer(void *bto,
     }
 
     /* remember the peer */
-    if (!(peer = bt_peermanager_add_peer(me->pm,peer_id, peer_id_len, ip, ip_len, port)))
+    if (!(peer = bt_peermanager_add_peer(me->pm, peer_id, peer_id_len, ip, ip_len, port)))
     {
         return NULL;
     }

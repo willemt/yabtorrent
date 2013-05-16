@@ -205,11 +205,11 @@ int __FUNC_peerconn_connect(void *bto, void *pc, void* pr)
     bt_peer_t * peer = pr;
     bt_client_t *bt = bto;
 
+    assert(bt->func.peer_connect);
+
     /* the remote peer will have always send a handshake */
-    if (!bt->func.peer_connect)
-    {
+    if (NULL == bt->func.peer_connect)
         return 0;
-    }
 
     if (0 == bt->func.peer_connect(&bt->net_udata, peer->ip,
                                   peer->port, &peer->net_peerid))
@@ -286,6 +286,20 @@ void *bt_peermanager_netpeerid_to_peerconn(void * pm, const int netpeerid)
     return NULL;
 }
 
+pwp_connection_functions_t funcs = {
+    .send = __FUNC_peerconn_send_to_peer,
+    .recv = __FUNC_peerconn_recv_from_peer,
+    .pushblock = __FUNC_peerconn_pushblock,
+    .pollblock = __FUNC_peerconn_pollblock,
+    .disconnect = __FUNC_peerconn_disconnect,
+    .connect = __FUNC_peerconn_connect,
+    .getpiece = bt_client_get_piece,
+    .write_block_to_stream = __FUNC_peerconn_write_block_to_stream,
+    .piece_is_complete = __FUNC_peerconn_pieceiscomplete,
+    .log = NULL
+};
+
+
 /**
  * Add the peer.
  * Initiate connection with 
@@ -317,23 +331,12 @@ bt_peer_t *bt_peermanager_add_peer(void *pm,
     }
     else
     {
-        asprintf(&peer->peer_id, "", peer_id_len, peer_id);
+        asprintf(&peer->peer_id, "");//, peer_id_len, peer_id);
     }
     asprintf(&peer->ip, "%.*s", ip_len, ip);
     asprintf(&peer->port, "%d", port);
 
     /* create a peer connection for this peer */
-    pwp_connection_functions_t funcs = {
-        .send = __FUNC_peerconn_send_to_peer,
-        .recv = __FUNC_peerconn_recv_from_peer,
-        .pushblock = __FUNC_peerconn_pushblock,
-        .pollblock = __FUNC_peerconn_pollblock,
-        .disconnect = __FUNC_peerconn_disconnect,
-        .connect = __FUNC_peerconn_connect,
-        .getpiece = bt_client_get_piece,
-        .write_block_to_stream = __FUNC_peerconn_write_block_to_stream,
-        .piece_is_complete = __FUNC_peerconn_pieceiscomplete,
-    };
 
     peer->pc = pc = bt_peerconn_new();
     bt_peerconn_set_functions(pc, &funcs, me->caller);
@@ -344,6 +347,7 @@ bt_peer_t *bt_peermanager_add_peer(void *pm,
 //    bt_peerconn_set_my_peer_id(pc, );
 //    bt_peerconn_set_their_peer_id(pc, );
     bt_peerconn_set_infohash(pc, config_get(me->cfg,"infohash"));
+    bt_peerconn_set_my_peer_id(pc, strdup(peer->peer_id));
 
 //    __log(bto,NULL,"adding peer: ip:%.*s port:%d\n", ip_len, ip, port);
 

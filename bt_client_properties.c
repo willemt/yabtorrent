@@ -76,6 +76,7 @@ void* bt_client_get_config(void *bto)
     return bt->cfg;
 }
 
+#if 0
 /**
  * Set the client's peer id
  */
@@ -93,6 +94,7 @@ void bt_client_set_peer_id(void *bto, char *peer_id)
     }
 #endif
 }
+#endif
 
 /**
  * Get the client's peer id

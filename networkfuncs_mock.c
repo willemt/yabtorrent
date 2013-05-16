@@ -100,7 +100,7 @@ client_t* client_setup()
     /* bittorrent client */
     cli->bt = bt = bt_client_new();
     cfg = bt_client_get_config(bt);
-    bt_client_set_peer_id(bt, bt_generate_peer_id());
+    //bt_client_set_peer_id(bt, bt_generate_peer_id());
 
     /* create disk backend */
     {
@@ -154,9 +154,12 @@ void* network_setup()
         bt = cli->bt;
         cfg = bt_client_get_config(bt);
         config_set(cfg, "npieces", "1");
-        config_set(cfg, "piece_length", "10");
+        config_set(cfg, "piece_length", "5");
         config_set(cfg, "infohash", "00000000000000000000");
+        config_set(cfg, "my_peerid", "00000000000000000000");
         bt_client_add_pieces(bt, "00000000000000000000", 1);
+        bt_client_add_pieces(bt, "00000000000000000000", 1);
+        //bt_client_set_peer_id(bt, "00000000000000000000");
     }
 #endif
 
@@ -174,7 +177,7 @@ void* network_setup()
 int peer_connect(void **udata, const char *host, const char *port, int *peerid)
 {
     printf("connecting\n");
-    *peerid = 1;
+//    *peerid = 1;
     return 1;
 }
 
@@ -187,10 +190,10 @@ int peer_send(void **udata,
 {
     client_t* me;
 
-    printf("sending\n");
+    printf("sending: peerid:%d len:%d\n", peerid, len);
 
     me = __get_client_from_id(peerid);
-    cbuf_offer(me->inbox, send_data, len);
+    //cbuf_offer(me->inbox, send_data, len);
     return 1;
 }
 
@@ -199,13 +202,21 @@ int peer_send(void **udata,
 int peer_recv_len(void **udata, const int peerid, char *buf, int *len)
 {
     client_t* me;
-
-    printf("receiving\n");
+    void* data;
 
     me = __get_client_from_id(peerid);
 
-    memcpy(buf, cbuf_poll(me->inbox, (unsigned int)len), *len);
+    printf("receiving: inbox:%d peer:%d %dB\n", cbuf_get_spaceused(me->inbox), peerid, *len);
+
+    data = cbuf_poll(me->inbox, (unsigned int)len);
+
+    /* we can't poll enough data */
+    if (!data)
+        return 0;
+
+    memcpy(buf,  data, *len);
     //cbuf_poll_release(me->inbox, *len);
+
     return 1;
 }
 
