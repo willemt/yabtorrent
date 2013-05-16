@@ -1,20 +1,3 @@
-/*
- * =====================================================================================
- *
- *       Filename:  test_filedumper.c
- *
- *    Description:  
- *
- *        Version:  1.0
- *        Created:  08/06/11 15:41:52
- *       Revision:  none
- *       Compiler:  gcc
- *
- *         Author:  YOUR NAME (), 
- *        Company:  
- *
- * =====================================================================================
- */
 
 #include <stdbool.h>
 #include <assert.h>
@@ -26,7 +9,9 @@
 
 #include <stdint.h>
 
+#include "block.h"
 #include "bt.h"
+#include "bt_filedumper.h"
 #include "bt_local.h"
 
 typedef struct
@@ -76,10 +61,11 @@ void Testfiledumper_WriteBlock(
     CuTest * tc
 )
 {
+    CuAssertTrue(tc, 0);
 #if 0
     __writer_t writer;
 
-    bt_filedumper_t *fl;
+    void *fl;
 
     bt_block_t blk;
 
@@ -109,10 +95,11 @@ void Testfiledumper_ReadBlock(
     CuTest * tc
 )
 {
+    CuAssertTrue(tc, 0);
 #if 0
     __writer_t writer;
 
-    bt_filedumper_t *fl;
+    void *fl;
 
     bt_block_t blk;
 
@@ -140,10 +127,11 @@ void Testfiledumper_PieceSha1(
     CuTest * tc
 )
 {
+    CuAssertTrue(tc, 0);
 #if 0
     __writer_t writer;
 
-    bt_filedumper_t *fl;
+    void *fl;
 
     int file;
 
@@ -178,7 +166,7 @@ void Testfiledumper_new_is_Empty(
     CuTest * tc
 )
 {
-    bt_filedumper_t *fl;
+    void *fl;
 
     fl = bt_filedumper_new();
     CuAssertTrue(tc, NULL != fl);
@@ -188,7 +176,7 @@ void Testfiledumper_Add_File_gets_added(
     CuTest * tc
 )
 {
-    bt_filedumper_t *fl;
+    void *fl;
 
     fl = bt_filedumper_new();
     CuAssertTrue(tc, 0 == bt_filedumper_get_nfiles(fl));
@@ -201,7 +189,7 @@ void Testfiledumper_Get_file_From_Block(
     CuTest * tc
 )
 {
-    bt_filedumper_t *fl;
+    void *fl;
 
     bt_block_t blk;
 
@@ -224,7 +212,7 @@ void Testfiledumper_Added_Filepath_can_be_gotten_by_idx(
     CuTest * tc
 )
 {
-    bt_filedumper_t *fl;
+    void *fl;
 
     fl = bt_filedumper_new();
     bt_filedumper_add_file(fl, "test.xml", 100);
@@ -236,10 +224,11 @@ void Txestfiledumper_WriteBlock_cant_happen_if_file_too_small(
     CuTest * tc
 )
 {
+    CuAssertTrue(tc, 0);
 #if 0
     __writer_t writer;
 
-    bt_filedumper_t *fl;
+    void *fl;
 
     bt_block_t blk;
 

@@ -156,7 +156,6 @@ def build(bld):
 #        unittest(bld,'test_bitfield.c')
 #        unittest(bld,'test_bt.c')
 #        unittest(bld,'test_byte_reader.c')
-#        unittest(bld,'test_filedumper.c')
 ##        unittest(bld,'test_metafile.c')
 #        unittest(bld,'test_piece.c')
 #        unittest(bld,'test_piece_db.c')
@@ -170,6 +169,7 @@ def build(bld):
         unittest(bld,'test_choker_leecher.c')
         unittest(bld,'test_choker_seeder.c')
         unittest(bld,'test_rarestfirst.c')
+        unittest(bld,'test_filedumper.c')
 
         bld.program(
                 source=[
