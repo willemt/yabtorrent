@@ -8,3 +8,11 @@ void bt_piecedb_add_file(
     bt_piecedb_t * db,
     const char *fname,
     const int size);
+
+char *bt_piece_get_hash(bt_piece_t * me);
+
+void *bt_piece_read_block(
+    void *pceo,
+    void *caller,
+    const bt_block_t * blk
+);

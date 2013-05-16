@@ -1,21 +1,3 @@
-/*
- * =====================================================================================
- *
- *       Filename:  test_piece_db.c
- *
- *    Description:  
- *
- *        Version:  1.0
- *        Created:  05/15/11 17:40:21
- *       Revision:  none
- *       Compiler:  gcc
- *
- *         Author:  YOUR NAME (), 
- *        Company:  
- *
- * =====================================================================================
- */
-
 
 #include <stdbool.h>
 #include <assert.h>
@@ -27,7 +9,12 @@
 
 #include <stdint.h>
 
+#include "bitfield.h"
+
+#include "block.h"
 #include "bt.h"
+#include "bt_piece_db.h"
+#include "bt_piece.h"
 #include "bt_local.h"
 
 void TestBTpiecedb_new_is_empty(
@@ -102,9 +89,9 @@ void TestBTPieceDB_dont_poll_piece_that_peer_doesnt_have(
 
     bt_block_t blk;
 
-    bt_bitfield_t bf;
+    bitfield_t bf;
 
-    bt_bitfield_init(&bf, 4);
+    bitfield_init(&bf, 4);
     db = bt_piecedb_new();
     bt_piecedb_set_piece_length(db, 40);
     bt_piecedb_add(db, "00000000000000000000");
@@ -127,10 +114,10 @@ void TestBTPieceDB_poll_best_from_bitfield(
 
     bt_block_t blk;
 
-    bt_bitfield_t bf;
+    bitfield_t bf;
 
-    bt_bitfield_init(&bf, 4);
-    bt_bitfield_mark(&bf, 3);
+    bitfield_init(&bf, 4);
+    bitfield_mark(&bf, 3);
     db = bt_piecedb_new();
     bt_piecedb_set_piece_length(db, 40);
     bt_piecedb_add(db, "00000000000000000000");

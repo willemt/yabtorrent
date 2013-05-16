@@ -46,15 +46,22 @@ class compiletest(Task):
                         )
                 )
 
-def unittest(bld, src):
+def unittest(bld, src, ccflag=None):
         bld(rule='cp ../make-tests.sh .')
         bld(rule='cp ../%s .' % src)
         # collect tests into one area
         bld(rule='sh make-tests.sh '+src+' > ${TGT}', target="t_"+src)
 
+        contrib_dir = '../../'
+
         # build the test program
         bld.program(
-                source='%s %s CuTest.c' % (src,"t_"+src),
+                source=[
+                    src,
+                    "t_"+src,
+                    'CuTest.c',
+                    contrib_dir+"CBitfield/bitfield.c",
+                ],
                 target=src[:-2],
                 cflags=[
                     '-g',
@@ -62,7 +69,11 @@ def unittest(bld, src):
                 ],
                 use='yabbt',
                 unit_test='yes',
-                includes='.')
+                includes=[
+                    '.',
+                    contrib_dir+"CBitfield"
+                ]
+                )
 
         # run the test
         if sys.platform == 'win32':
@@ -150,26 +161,14 @@ def build(bld):
                     '-Wcast-align'],
                 )
 
-#                use='config bencode',
-#        bld(rule='../tests_bt', target='tests_bt.c')
-
-#        unittest(bld,'test_bitfield.c')
-#        unittest(bld,'test_bt.c')
-#        unittest(bld,'test_byte_reader.c')
-##        unittest(bld,'test_metafile.c')
-#        unittest(bld,'test_piece.c')
-#        unittest(bld,'test_piece_db.c')
-##        unittest(bld,'test_pwp_event_manager.c')
-#        unittest(bld,'test_peer_connection.c')
-##        unittest(bld,'test_peer_connection_read.c')
-##        unittest(bld,'test_peer_connection_send.c')
-
         unittest(bld,"test_bt.c")
         unittest(bld,"test_peermanager.c")
         unittest(bld,'test_choker_leecher.c')
         unittest(bld,'test_choker_seeder.c')
         unittest(bld,'test_rarestfirst.c')
         unittest(bld,'test_filedumper.c')
+        unittest(bld,'test_piece.c',ccflag='-I../'+contrib_dir+"CBitfield")
+        unittest(bld,'test_piece_db.c')
 
         bld.program(
                 source=[

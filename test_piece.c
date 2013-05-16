@@ -1,21 +1,3 @@
-/*
- * =====================================================================================
- *
- *       Filename:  test_piece.c
- *
- *    Description:  
- *
- *        Version:  1.0
- *        Created:  05/15/11 18:17:44
- *       Revision:  none
- *       Compiler:  gcc
- *
- *         Author:  YOUR NAME (), 
- *        Company:  
- *
- * =====================================================================================
- */
-
 
 #include <stdbool.h>
 #include <assert.h>
@@ -27,7 +9,15 @@
 
 #include <stdint.h>
 
+#include "block.h"
 #include "bt.h"
+#include "bitfield.h"
+
+/* used for disk memory backend */
+#include "bt_diskmem.h"
+
+#include "bt_piece_db.h"
+#include "bt_piece.h"
 #include "bt_local.h"
 
 #define HASH_EXAMPLE "00000000000000000000"
