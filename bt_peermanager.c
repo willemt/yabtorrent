@@ -236,15 +236,12 @@ void __FUNC_peerconn_write_block_to_stream(void* pce, bt_block_t * blk, byte ** 
 
 //-----------------------------------------------------------------------------
 
-
-
-
-
 typedef struct {
 
     void **peerconnects;
     int npeers;
     void* cfg;
+    void* caller;
 
 } bt_peermanager_t;
 
@@ -339,6 +336,7 @@ bt_peer_t *bt_peermanager_add_peer(void *pm,
     };
 
     peer->pc = pc = bt_peerconn_new();
+    bt_peerconn_set_functions(pc, &funcs, me->caller);
     bt_peerconn_set_piece_info(pc,
             config_get_int(me->cfg,"npieces"),
             config_get_int(me->cfg,"piece_length"));
@@ -405,10 +403,11 @@ void bt_peermanager_set_config(void* pm, void* cfg)
     me->cfg = cfg;
 }
 
-void* bt_peermanager_new()
+void* bt_peermanager_new(void* caller)
 {
     bt_peermanager_t* me;
 
     me = calloc(1,sizeof(bt_peermanager_t));
+    me->caller = caller;
     return me;
 }

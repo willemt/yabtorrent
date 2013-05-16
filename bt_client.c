@@ -297,7 +297,7 @@ void *bt_client_new()
 #endif
 
     /* peer manager */
-    bt->pm = bt_peermanager_new();
+    bt->pm = bt_peermanager_new(bt);
     bt_peermanager_set_config(bt->pm,bt->cfg);
 
     /*  set leeching choker */
