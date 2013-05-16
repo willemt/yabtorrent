@@ -162,14 +162,14 @@ def build(bld):
 #        unittest(bld,'test_piece_db.c')
 ##        unittest(bld,'test_pwp_event_manager.c')
 #        unittest(bld,'test_peer_connection.c')
-#        unittest(bld,'test_choker_leecher.c')
-#        unittest(bld,'test_choker_seeder.c')
-#        unittest(bld,'test_rarestfirst.c')
 ##        unittest(bld,'test_peer_connection_read.c')
 ##        unittest(bld,'test_peer_connection_send.c')
 
         unittest(bld,"test_bt.c")
         unittest(bld,"test_peermanager.c")
+        unittest(bld,'test_choker_leecher.c')
+        unittest(bld,'test_choker_seeder.c')
+        unittest(bld,'test_rarestfirst.c')
 
         bld.program(
                 source=[
@@ -200,3 +200,4 @@ def build(bld):
 
 
 
+# vim: set syntax=python:

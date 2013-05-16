@@ -1,21 +1,3 @@
-/*
- * =====================================================================================
- *
- *       Filename:  test_choker.c
- *
- *    Description:  
- *
- *        Version:  1.0
- *        Created:  09/29/11 23:13:16
- *       Revision:  none
- *       Compiler:  gcc
- *
- *         Author:  YOUR NAME (), 
- *        Company:  
- *
- * =====================================================================================
- */
-
 
 #include <stdbool.h>
 #include <assert.h>
@@ -27,6 +9,7 @@
 
 #include <stdint.h>
 
+#include "block.h"
 #include "bt.h"
 #include "bt_local.h"
 
