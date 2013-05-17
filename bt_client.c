@@ -113,7 +113,9 @@ static int __process_peer_msg(void *bto, const int netpeerid)
     bt_client_t *bt = bto;
     void *pc;
 
+    /* get the peer that this message is for using the netpeerid*/
     pc = bt_peermanager_netpeerid_to_peerconn(bt->pm, netpeerid);
+
     bt_peerconn_process_msg(pc);
     return 1;
 }

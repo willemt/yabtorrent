@@ -163,7 +163,8 @@ void* network_setup()
     }
 #endif
 
-    bt_client_add_peer(a->bt,NULL,0,"0",0,0);
+    bt_client_add_peer(a->bt,NULL,0,"1",1,0);
+    bt_client_add_peer(b->bt,NULL,0,"0",1,0);
 
     bt_client_step(a->bt);
 
@@ -176,7 +177,7 @@ void* network_setup()
 
 int peer_connect(void **udata, const char *host, const char *port, int *peerid)
 {
-    printf("connecting\n");
+    printf("connecting peerid:%d host:%s\n", *peerid, host);
 //    *peerid = 1;
     return 1;
 }
