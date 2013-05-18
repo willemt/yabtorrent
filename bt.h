@@ -105,10 +105,18 @@ typedef struct
 
     int (*peer_disconnect) (void **udata, int peerid);
 
+    /**
+     *
+     *
+     */
     int (*peers_poll) (void **udata,
                        const int msec_timeout,
-                       int (*func_process) (void *,
-                                            int),
+                       /**
+                        * @param caller: the system caller
+                        * @param netid: peer ID 
+                        */
+                       int (*func_process) (void *caller,
+                                            int netid),
                        void (*func_process_connection) (void *,
                                                         int netid,
                                                         char *ip,

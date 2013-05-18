@@ -166,9 +166,13 @@ void* network_setup()
     bt_client_add_peer(a->bt,NULL,0,"1",1,0);
     bt_client_add_peer(b->bt,NULL,0,"0",1,0);
 
-    bt_client_step(a->bt);
+    int ii;
 
-    bt_client_step(b->bt);
+    for (ii=0; ii<10; ii++)
+    {
+        bt_client_step(a->bt);
+        bt_client_step(b->bt);
+    }
 
     return NULL;
 }
@@ -238,7 +242,38 @@ int peers_poll(void **udata,
                                                 int netid,
                                                 char *ip, int), void *data)
 {
+    client_t* me;
+    hashmap_iterator_t iter;
+
+    void* data;
+
+    hashmap_iterator(__clients, &iter);
+    while (hashmap_iterator_has_next(__clients, &iter))
+    {
+        void* bt, *cfg;
+        client_t* cli;
+
+        cli = hashmap_iterator_next_value(__clients, &iter);
+        bt = cli->bt;
+
+        if (0 < cbuf_get_spaceused(me->inbox))
+        {
+//            func_process_connection(*udata, k
+
+        }
+    }
+
+    me = __get_client_from_id(peerid);
     printf("polling\n");
+    printf("receiving: inbox:%d peer:%d %dB\n", cbuf_get_spaceused(me->inbox), peerid, *len);
+    data = cbuf_poll(me->inbox, (unsigned int)len);
+    /* we can't poll enough data */
+    if (!data)
+        return 0;
+
+    memcpy(buf,  data, *len);
+    //cbuf_poll_release(me->inbox, *len);
+
     return 1;
 }
 
