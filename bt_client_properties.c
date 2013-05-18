@@ -99,12 +99,14 @@ void bt_client_set_peer_id(void *bto, char *peer_id)
 /**
  * Get the client's peer id
  */
+#if 0
 char *bt_client_get_peer_id(void *bto)
 {
     bt_client_t *bt = bto;
 
     return bt->my_peer_id;
 }
+#endif
 
 /**
  * Set the logging function

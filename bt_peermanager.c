@@ -67,16 +67,22 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 static void __log(void *bto, void *src, const char *fmt, ...)
 {
     bt_client_t *bt = bto;
-    char buf[1024];
+    char buf[1024], *p;
     va_list args;
+
+    p = buf;
 
     if (!bt->func_log)
         return;
 
+    sprintf(p, "%s,", config_get(bt->cfg,"my_peerid"));
+
+    p += strlen(buf);
+
     va_start(args, fmt);
-    vsprintf(buf, fmt, args);
+    vsprintf(p, fmt, args);
 //    printf("%s\n", buf);
-//    bt->func_log(bt->log_udata, NULL, buf);
+    bt->func_log(bt->log_udata, NULL, buf);
 }
 
 /*
@@ -160,7 +166,7 @@ int __FUNC_peerconn_pushblock(void *bto,
         {
             int ii;
 
-            __log(bt, NULL, "client,piece downloaded,pieceidx=%d\n",
+            __log(bt, NULL, "client,piece downloaded,pieceidx=%d",
                   bt_piece_get_idx(pce));
 
             /* send HAVE messages to all peers */
@@ -188,7 +194,7 @@ void __FUNC_peerconn_log(void *bto, void *src_peer, const char *buf, ...)
 
     char buffer[256];
 
-    sprintf(buffer, "pwp,%s,%s\n", peer->peer_id, buf);
+    sprintf(buffer, "pwp,%s,%s", peer->peer_id, buf);
     bt->func_log(bt->log_udata, NULL, buffer);
 }
 
@@ -196,7 +202,7 @@ int __FUNC_peerconn_disconnect(void *bto,
         void* pr, char *reason)
 {
     bt_peer_t * peer = pr;
-    __log(bto,NULL,"disconnecting,%s\n", reason);
+    __log(bto,NULL,"disconnecting,%s", reason);
     return 1;
 }
 
@@ -214,7 +220,7 @@ int __FUNC_peerconn_connect(void *bto, void *pc, void* pr)
     if (0 == bt->func.peer_connect(&bt->net_udata, peer->ip,
                                   peer->port, &peer->net_peerid))
     {
-        __log(bto,NULL,"failed connection to peer\n");
+        __log(bto,NULL,"failed connection to peer");
         return 0;
     }
 
@@ -296,7 +302,7 @@ pwp_connection_functions_t funcs = {
     .getpiece = bt_client_get_piece,
     .write_block_to_stream = __FUNC_peerconn_write_block_to_stream,
     .piece_is_complete = __FUNC_peerconn_pieceiscomplete,
-    .log = NULL
+    .log = __log
 };
 
 
