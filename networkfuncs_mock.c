@@ -177,6 +177,7 @@ client_t* client_setup(int log)
     cli->bt = bt = bt_client_new();
     cfg = bt_client_get_config(bt);
     //bt_client_set_peer_id(bt, bt_generate_peer_id());
+    //bt_peerconn_set_my_peer_id
 
     /* create disk backend */
     {
@@ -243,8 +244,8 @@ void* network_setup()
     }
 #endif
 
-    bt_client_add_peer(a->bt,NULL,0,"1",1,0);
-    //bt_client_add_peer(b->bt,NULL,0,"0",1,0);
+    //bt_client_add_peer(a->bt,NULL,0,"1",1,0);
+    bt_client_add_peer(b->bt,NULL,0,"0",1,0);
 
     int ii;
 

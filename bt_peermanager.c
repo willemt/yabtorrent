@@ -351,9 +351,9 @@ bt_peer_t *bt_peermanager_add_peer(void *pm,
             config_get_int(me->cfg,"piece_length"));
     bt_peerconn_set_peer(pc, peer);
 //    bt_peerconn_set_my_peer_id(pc, );
-//    bt_peerconn_set_their_peer_id(pc, );
     bt_peerconn_set_infohash(pc, config_get(me->cfg,"infohash"));
-    bt_peerconn_set_my_peer_id(pc, strdup(peer->peer_id));
+    bt_peerconn_set_my_peer_id(pc, config_get(me->cfg,"my_peerid"));;
+    bt_peerconn_set_their_peer_id(pc, strdup(peer->peer_id));
 
 //    __log(bto,NULL,"adding peer: ip:%.*s port:%d\n", ip_len, ip, port);
 
