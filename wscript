@@ -5,23 +5,23 @@ def options(opt):
 
 
 contribs = [
-('CBitfield', 'git@github.com:willemt/CBitfield.git'),
-('CLinkedListQueue', 'git@github.com:willemt/CLinkedListQueue.git'),
-('CBTTrackerClient', 'git@github.com:willemt/CBTTrackerClient.git'),
-('CBitstream', 'git@github.com:willemt/CSimpleBitstream.git'),
-('CTorrentFileReader', 'git@github.com:willemt/CTorrentFileReader.git'),
-('CCircularBuffer', 'git@github.com:willemt/CCircularBuffer.git'),
-('CSparseCounter', 'git@github.com:willemt/CSparseCounter.git'),
-('CBitstream', 'git@github.com:willemt/CSimpleBitstream.git'),
-('CConfig-re', 'git@github.com:willemt/CConfig-re.git'),
-('CBTPWPConnection', 'git@github.com:willemt/CBTPWPConnection.git'),
-('CSparseFileAllocator', 'git@github.com:willemt/CSparseFileAllocator.git'),
-('CEventTimer', 'git@github.com:willemt/CEventTimer.git'),
-('CHeaplessBencodeReader', 'git@github.com:willemt/CHeaplessBencodeReader.git'),
-('CHashMapViaLinkedList','git@github.com:willemt/CHashMapViaLinkedList.git'),
-('CMeanQueue','git@github.com:willemt/CMeanQueue.git'),
-('CHeap','git@github.com:willemt/CHeap.git'),
-('CPSeudoLRU','git@github.com:willemt/CPseudoLRU.git')]
+('CBitfield', 'http://github.com/willemt/CBitfield.git'),
+('CLinkedListQueue', 'http://github.com/willemt/CLinkedListQueue.git'),
+('CBTTrackerClient', 'http://github.com/willemt/CBTTrackerClient.git'),
+('CBitstream', 'http://github.com/willemt/CSimpleBitstream.git'),
+('CTorrentFileReader', 'http://github.com/willemt/CTorrentFileReader.git'),
+('CCircularBuffer', 'http://github.com/willemt/CCircularBuffer.git'),
+('CSparseCounter', 'http://github.com/willemt/CSparseCounter.git'),
+('CBitstream', 'http://github.com/willemt/CSimpleBitstream.git'),
+('CConfig-re', 'http://github.com/willemt/CConfig-re.git'),
+('CBTPWPConnection', 'http://github.com/willemt/CBTPWPConnection.git'),
+('CSparseFileAllocator', 'http://github.com/willemt/CSparseFileAllocator.git'),
+('CEventTimer', 'http://github.com/willemt/CEventTimer.git'),
+('CHeaplessBencodeReader', 'http://github.com/willemt/CHeaplessBencodeReader.git'),
+('CHashMapViaLinkedList', 'http://github.com/willemt/CHashMapViaLinkedList.git'),
+('CMeanQueue', 'http://github.com/willemt/CMeanQueue.git'),
+('CHeap', 'http://github.com/willemt/CHeap.git'),
+('CPSeudoLRU', 'http://github.com/willemt/CPseudoLRU.git')]
 
 #bld(rule='mkdir clinkedlistqueue && git pull git@github.com:willemt/CLinkedListQueue.git', always=True)
 
@@ -85,7 +85,7 @@ def unittest(bld, src, ccflag=None):
         if sys.platform == 'win32':
             bld(rule='${SRC}',source=src[:-2]+'.exe')
         else:
-            bld(rule='export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:. && '+src[:-2])
+            bld(rule='pwd && export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:. && ./'+src[:-2])
 
 
 #def shutdown(bld):
@@ -97,9 +97,10 @@ def unittest(bld, src, ccflag=None):
 
 def build(bld):
 
-
         if sys.platform == 'win32':
             platform = '-D__WINDOWS__'
+	elif sys.platform == 'linux2':
+            platform = '-D__LINUX__'
         else:
             platform = ''
 

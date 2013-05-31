@@ -26,15 +26,18 @@ typedef void *(
     const int size
 );
 
+
+#ifndef HAVE_FUNC_LOG
+#define HAVE_FUNC_LOG
 typedef void (
     *func_log_f
 )    (
     void *udata,
     void *src,
-//    bt_peer_t * peer,
     const char *buf,
     ...
 );
+#endif
 
 typedef struct
 {

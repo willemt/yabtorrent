@@ -33,26 +33,9 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 /*----------------------------------------------------------------------------*/
 
+
+
 #if 0
-typedef char *(
-    *func_get_infohash_f
-)    (
-    void *udata,
-    bt_peer_t * peer
-);
-#endif
-
-
-
-
-typedef int (
-    *func_pollblock_f
-)   (
-    void *udata,
-    void * peers_bitfield,
-    bt_block_t * blk
-);
-
 typedef int (
     *func_have_f
 )   (
@@ -60,67 +43,9 @@ typedef int (
     bt_peer_t * peer,
     int piece
 );
-
-#if 0
-typedef int (
-    *func_pushblock_f
-)   (
-    void *udata,
-    bt_peer_t * peer,
-    bt_block_t * block,
-    void *data
-);
-
-
-typedef int (
-    *func_send_f
-)   (
-    void *udata,
-    bt_peer_t * peer,
-    void *send_data,
-    const int len
-);
-
-typedef int (
-    *func_recv_f
-)   (
-    void *udata,
-    bt_peer_t * peer,
-    char *buf,
-    int *len
-);
-
-typedef int (
-    *func_disconnect_f
-)   (
-    void *udata,
-    bt_peer_t * peer,
-    char *reason
-);
-
-typedef int (
-    *func_connect_f
-)   (
-    void *bto,
-    void *pc,
-    bt_peer_t * peer
-);
-
 #endif
 
-#if 0
-/*  bt logger */
-typedef struct
-{
-    void *udata;
-    void (
-    *func
-    )    (
-    void *,
-    char *
-    );
-} bt_logger_t;
-#endif
+
 
 /*----------------------------------------------------------------------------*/
 
@@ -131,12 +56,15 @@ typedef int (
     void *
 );
 
+#ifndef HAVE_FUNC_GET_INT
+#define HAVE_FUNC_GET_INT
 typedef int (
     *func_get_int_f
 )   (
     void *,
     void *pr
 );
+#endif
 
 typedef int (
     *func_get_int_const_f
