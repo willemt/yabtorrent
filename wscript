@@ -1,4 +1,4 @@
-import sys
+import sys, os
 
 def options(opt):
         opt.load('compiler_c')
@@ -8,6 +8,7 @@ contribs = [
 ('CBitfield', 'git@github.com:willemt/CBitfield.git'),
 ('CLinkedListQueue', 'git@github.com:willemt/CLinkedListQueue.git'),
 ('CBTTrackerClient', 'git@github.com:willemt/CBTTrackerClient.git'),
+('CBitstream', 'git@github.com:willemt/CSimpleBitstream.git'),
 ('CTorrentFileReader', 'git@github.com:willemt/CTorrentFileReader.git'),
 ('CCircularBuffer', 'git@github.com:willemt/CCircularBuffer.git'),
 ('CSparseCounter', 'git@github.com:willemt/CSparseCounter.git'),
@@ -29,11 +30,17 @@ def configure(conf):
 
     # Get the required contributions via GIT
     for c in contribs:
-        print "Git pulling %s..." % c[1]
+        print "Pulling via git %s..." % c[1]
         #conf.exec_command("mkdir %s" % c[0])
         #conf.exec_command("git init", cwd=c[0])
         #conf.exec_command("git pull %s" % c[1], cwd=c[0])
-        conf.exec_command("git clone %s" % "../"+c[0])
+        if not os.path.exists("../"+c[0]):
+#            conf.exec_command("git clone %s" % "../"+c[0])
+            conf.env.CONTRIB_PATH = './'
+            conf.exec_command("git clone %s %s" % (c[1],c[0],))
+        else:
+            conf.env.CONTRIB_PATH = '../../'
+            
 
 
 from waflib.Task import Task
@@ -52,7 +59,6 @@ def unittest(bld, src, ccflag=None):
         # collect tests into one area
         bld(rule='sh make-tests.sh '+src+' > ${TGT}', target="t_"+src)
 
-        contrib_dir = '../../'
 
         # build the test program
         bld.program(
@@ -60,7 +66,7 @@ def unittest(bld, src, ccflag=None):
                     src,
                     "t_"+src,
                     'CuTest.c',
-                    contrib_dir+"CBitfield/bitfield.c",
+                    bld.env.CONTRIB_PATH+"CBitfield/bitfield.c",
                 ],
                 target=src[:-2],
                 cflags=[
@@ -71,7 +77,7 @@ def unittest(bld, src, ccflag=None):
                 unit_test='yes',
                 includes=[
                     '.',
-                    contrib_dir+"CBitfield"
+                    bld.env.CONTRIB_PATH+"CBitfield"
                 ]
                 )
 
@@ -90,8 +96,6 @@ def unittest(bld, src, ccflag=None):
 #    unittest.print_results()
 
 def build(bld):
-
-        contrib_dir = '../'
 
 
         if sys.platform == 'win32':
@@ -117,40 +121,40 @@ def build(bld):
                     "readfile.c",
                     "sha1.c",
                     "bt_selector_rarestfirst.c",
-                    contrib_dir+"CHeap/heap.c",
-                    contrib_dir+"CHeaplessBencodeReader/bencode.c",
-                    contrib_dir+"CHashMapViaLinkedList/linked_list_hashmap.c",
-                    contrib_dir+"CLinkedListQueue/linked_list_queue.c",
-                    contrib_dir+"CBitstream/bitstream.c",
-                    contrib_dir+"CBTPWPConnection/pwp_connection.c",
-                    contrib_dir+"CSparseFileAllocator/sparsefile_allocator.c",
-                    contrib_dir+"CSparseCounter/sparse_counter.c",
-                    contrib_dir+"CPSeudoLRU/pseudolru.c",
-                    contrib_dir+"CEventTimer/event_timer.c",
-                    contrib_dir+"CBitfield/bitfield.c",
-                    contrib_dir+"CConfig-re/list.c",
-                    contrib_dir+"CConfig-re/config.c",
-                    contrib_dir+"CTorrentFileReader/torrentfile_reader.c",
+                    bld.env.CONTRIB_PATH+"CHeap/heap.c",
+                    bld.env.CONTRIB_PATH+"CHeaplessBencodeReader/bencode.c",
+                    bld.env.CONTRIB_PATH+"CHashMapViaLinkedList/linked_list_hashmap.c",
+                    bld.env.CONTRIB_PATH+"CLinkedListQueue/linked_list_queue.c",
+                    bld.env.CONTRIB_PATH+"CBitstream/bitstream.c",
+                    bld.env.CONTRIB_PATH+"CBTPWPConnection/pwp_connection.c",
+                    bld.env.CONTRIB_PATH+"CSparseFileAllocator/sparsefile_allocator.c",
+                    bld.env.CONTRIB_PATH+"CSparseCounter/sparse_counter.c",
+                    bld.env.CONTRIB_PATH+"CPSeudoLRU/pseudolru.c",
+                    bld.env.CONTRIB_PATH+"CEventTimer/event_timer.c",
+                    bld.env.CONTRIB_PATH+"CBitfield/bitfield.c",
+                    bld.env.CONTRIB_PATH+"CConfig-re/list.c",
+                    bld.env.CONTRIB_PATH+"CConfig-re/config.c",
+                    bld.env.CONTRIB_PATH+"CTorrentFileReader/torrentfile_reader.c",
                     ],
                 #bt_diskmem.c
                 #CCircularBuffer/cbuffer.c
                 #use='config',
                 target='yabbt',
                 includes=[
-                    contrib_dir+"CHeaplessBencodeReader",
-                    contrib_dir+"CLinkedListQueue",
-                    contrib_dir+"CHashMapViaLinkedList",
-                    contrib_dir+"CHeap",
-                    contrib_dir+"CPSeudoLRU",
-                    contrib_dir+"CCircularBuffer",
-                    contrib_dir+"CEventTimer",
-                    contrib_dir+"CSparseCounter",
-                    contrib_dir+"CSparseFileAllocator",
-                    contrib_dir+"CBitfield",
-                    contrib_dir+"CBTPWPConnection",
-                    contrib_dir+"CBitstream",
-                    contrib_dir+"CConfig-re",
-                    contrib_dir+"CBTTrackerClient",
+                    bld.env.CONTRIB_PATH+"CHeaplessBencodeReader",
+                    bld.env.CONTRIB_PATH+"CLinkedListQueue",
+                    bld.env.CONTRIB_PATH+"CHashMapViaLinkedList",
+                    bld.env.CONTRIB_PATH+"CHeap",
+                    bld.env.CONTRIB_PATH+"CPSeudoLRU",
+                    bld.env.CONTRIB_PATH+"CCircularBuffer",
+                    bld.env.CONTRIB_PATH+"CEventTimer",
+                    bld.env.CONTRIB_PATH+"CSparseCounter",
+                    bld.env.CONTRIB_PATH+"CSparseFileAllocator",
+                    bld.env.CONTRIB_PATH+"CBitfield",
+                    bld.env.CONTRIB_PATH+"CBTPWPConnection",
+                    bld.env.CONTRIB_PATH+"CBitstream",
+                    bld.env.CONTRIB_PATH+"CConfig-re",
+                    bld.env.CONTRIB_PATH+"CBTTrackerClient",
                    ], 
                 cflags=[
                     '-Werror',
@@ -167,17 +171,17 @@ def build(bld):
         unittest(bld,'test_choker_seeder.c')
         unittest(bld,'test_rarestfirst.c')
         unittest(bld,'test_filedumper.c')
-        unittest(bld,'test_piece.c',ccflag='-I../'+contrib_dir+"CBitfield")
+        unittest(bld,'test_piece.c',ccflag='-I../'+bld.env.CONTRIB_PATH+"CBitfield")
         unittest(bld,'test_piece_db.c')
 
         bld.program(
                 source=[
                     'bt_main.c',
                     "networkfuncs_mock.c",
-                    contrib_dir+"CBTTrackerClient/bt_tracker_client.c",
-                    contrib_dir+"CBTTrackerClient/bt_tracker_client_response_reader.c",
-                    contrib_dir+"CBTTrackerClient/url_encoder.c",
-                    contrib_dir+"CCircularBuffer/cbuffer.c"
+                    bld.env.CONTRIB_PATH+"CBTTrackerClient/bt_tracker_client.c",
+                    bld.env.CONTRIB_PATH+"CBTTrackerClient/bt_tracker_client_response_reader.c",
+                    bld.env.CONTRIB_PATH+"CBTTrackerClient/url_encoder.c",
+                    bld.env.CONTRIB_PATH+"CCircularBuffer/cbuffer.c"
                     ],
                 target='bt',
                 cflags=[
@@ -187,16 +191,16 @@ def build(bld):
                     '-Werror=return-type'
                     ],
                 includes=[
-                    contrib_dir+"CConfig-re",
-                    contrib_dir+"CBTTrackerClient",
-                    contrib_dir+"CHeaplessBencodeReader",
-                    contrib_dir+"CTorrentFileReader",
-                    contrib_dir+"CHashMapViaLinkedList",
-                    contrib_dir+"CCircularBuffer",
+                    bld.env.CONTRIB_PATH+"CConfig-re",
+                    bld.env.CONTRIB_PATH+"CBTTrackerClient",
+                    bld.env.CONTRIB_PATH+"CHeaplessBencodeReader",
+                    bld.env.CONTRIB_PATH+"CTorrentFileReader",
+                    bld.env.CONTRIB_PATH+"CHashMapViaLinkedList",
+                    bld.env.CONTRIB_PATH+"CCircularBuffer",
                    ], 
                 use='yabbt')
 
 
 
 
-# vim: set syntax=python:
+
