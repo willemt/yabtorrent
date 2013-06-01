@@ -143,6 +143,7 @@ int bt_client_get_num_peers(void *bto)
 /**
  * @return number of pieces in this torrent
  */
+#if 0
 int bt_client_get_num_pieces(void *bto)
 {
     bt_client_t *bt = bto;
@@ -160,6 +161,7 @@ int bt_client_get_total_file_size(void *bto)
 
     return bt_piecedb_get_tot_file_size(bt->db);
 }
+#endif
 
 /**
  * @return reason for failure

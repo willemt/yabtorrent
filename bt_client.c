@@ -283,25 +283,8 @@ void *bt_client_new()
     /* need to be able to tell the time */
     bt->ticker = eventtimer_new();
 
-#if 0
-    /* database for dumping pieces to disk */
-    bt->fd = bt_filedumper_new();
-
-    /* intermediary between filedumper and DB */
-    bt->dc = bt_diskcache_new();
-    bt_diskcache_set_func_log(bt->dc, __log, bt);
-    /* point diskcache to filedumper */
-    bt_diskcache_set_disk_blockrw(bt->dc,
-                                  bt_filedumper_get_blockrw(bt->fd), bt->fd);
-#endif
-
     /* database for writing pieces */
     bt->db = bt_piecedb_new();
-    /* point piece database to diskcache */
-#if 0
-    bt_piecedb_set_diskstorage(bt->db,
-                               bt_diskcache_get_blockrw(bt->dc), bt->dc);
-#endif
 
     /* peer manager */
     bt->pm = bt_peermanager_new(bt);
@@ -386,6 +369,7 @@ void *bt_client_get_piece(void *bto, const unsigned int piece_idx)
  * Mass add pieces to the piece database
  * @param pieces A string of 20 byte sha1 hashes. Is always a multiple of 20 bytes in length. 
  * @param bto the bittorrent client object
+ * @param len: total length of combine hash string
  * */
 void bt_client_add_pieces(void *bto, const char *pieces, int len)
 {
@@ -394,7 +378,7 @@ void bt_client_add_pieces(void *bto, const char *pieces, int len)
     bt_piecedb_add_all(bt->db, pieces, len);
 
     /* remember how many pieces there are now */
-    config_set_va(bt->cfg,"npieces","%d",bt_piecedb_get_length(bt->db));
+    config_set_va(bt->cfg, "npieces", "%d", bt_piecedb_get_length(bt->db));
 }
 
 /**
@@ -419,6 +403,7 @@ int bt_client_add_file(void *bto,
     /* add the file to the filedumper */
     asprintf(&path, "%.*s", fname_len, fname);
     bt_piecedb_add_file(bt->db, path, flen);
+
     return 1;
 }
 
@@ -500,6 +485,8 @@ int bt_client_step(void *bto)
     /*  run each peer connection step */
     bt_peermanager_forall(bt->pm,NULL,NULL,__FUNC_peerconn_step);
 
+    bt_piecedb_print_pieces_downloaded(bt->db);
+
 //    if (__all_pieces_are_complete(bt))
 //        return 0;
     return 1;
@@ -522,6 +509,12 @@ static void __dumppiece(bt_client_t* bt)
 }
 #endif
 
+/**
+ * Validate the client's already downloaded pieces */
+void bt_client_validate_downloaded_pieces(void* bto)
+{
+//    bt_piecedb_print_pieces_downloaded();
+}
 
 /**
  * Used for initiation of downloading

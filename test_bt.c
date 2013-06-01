@@ -187,7 +187,8 @@ void TestBT_GeneratedPeeridIs20BytesLong(
 }
 
 /*----------------------------------------------------------------------------*/
-void TestBT_AddPiece(
+#if 0
+void TxestBT_AddPiece(
     CuTest * tc
 )
 {
@@ -200,6 +201,7 @@ void TestBT_AddPiece(
     bt_client_add_pieces(id, piece, 1);
     CuAssertTrue(tc, 1 == bt_client_get_num_pieces(id));
 }
+#endif
 
 #if 0
 void TxestBT_AddPieceLastPieceIsProperlySized(
@@ -220,7 +222,8 @@ void TxestBT_AddPieceLastPieceIsProperlySized(
 
 /*----------------------------------------------------------------------------*/
 
-void TestBT_AddingFileIncreasesTotalFileSize(
+#if 0
+void TxestBT_AddingFileIncreasesTotalFileSize(
     CuTest * tc
 )
 {
@@ -234,6 +237,7 @@ void TestBT_AddingFileIncreasesTotalFileSize(
     bt_client_add_file(id, "test2.xml", strlen("test2.xml"), 100);
     CuAssertTrue(tc, 200 == bt_client_get_total_file_size(id));
 }
+#endif
 
 #if 0
 void TxestBTClient_downtracker(

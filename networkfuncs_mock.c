@@ -265,7 +265,7 @@ client_t* client_setup(int log, int id)
 
     /* put inside the hashmap */
     cli->peerid = id;//hashmap_count(__clients);
-    hashmap_put(__clients,&cli->peerid,cli);
+    hashmap_put(__clients, &cli->peerid, cli);
     printf("created client: %d, %s\n",
             cli->peerid, config_get(cfg, "my_peerid"));
 
@@ -285,7 +285,6 @@ void* network_setup()
     a = client_setup(log, 1);
     b = client_setup(log, 2);
 
-#if 1
     for (
         hashmap_iterator(__clients, &iter);
         hashmap_iterator_has_next(__clients, &iter);
@@ -295,16 +294,18 @@ void* network_setup()
         client_t* cli;
 
         cli = hashmap_iterator_next_value(__clients, &iter);
+
+        printf("client: %d\n", cli->peerid);
+
         bt = cli->bt;
         cfg = bt_client_get_config(bt);
         config_set(cfg, "npieces", "1");
         config_set(cfg, "piece_length", "5");
         config_set(cfg, "infohash", "00000000000000000000");
-        bt_client_add_pieces(bt, "00000000000000000000", 1);
+        bt_client_add_pieces(bt, "00000000000000000000", 20);
 //        bt_client_add_pieces(bt, "00000000000000000000", 1);
         //bt_client_set_peer_id(bt, "00000000000000000000");
     }
-#endif
 
     //bt_client_add_peer(a->bt,NULL,0,"1",1,0);
     bt_client_add_peer(b->bt,NULL,0,"1",1,0);
@@ -316,10 +317,7 @@ void* network_setup()
         printf("\nStep %d:\n", ii+1);
         bt_client_step(a->bt);
         bt_client_step(b->bt);
-
-
         __print_client_contents();
-
     }
 
     return NULL;

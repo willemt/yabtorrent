@@ -40,18 +40,10 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <stdio.h>
 #include <assert.h>
 
-
 /* for uint32_t */
 #include <stdint.h>
 
-//#include <arpa/inet.h>
-
 #include <stdbool.h>
-#include <assert.h>
-#include <setjmp.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
 
 #include "block.h"
 
@@ -125,13 +117,6 @@ void bt_piecedb_set_diskstorage(bt_piecedb_t * db,
 }
 #endif
 
-#if 0
-void bt_piecedb_set_piece_info(bt_piecedb_t * db, bt_piece_info_t * pinfo)
-{
-    priv(db)->pinfo = pinfo;
-}
-#endif
-
 /*
  * get the best piece to download from this bitfield
  */
@@ -194,7 +179,7 @@ void bt_piecedb_add(bt_piecedb_t * db, const char *sha1)
 //    pce = malloc(sizeof(bt_piece_t));
     int size = __figure_out_new_piece_size(db);
 
-//    printf("adding piece: %d bytes %d\n", size, priv(db)->tot_file_size_bytes);
+    printf("adding piece: %d bytes %d\n", size, priv(db)->tot_file_size_bytes);
     priv(db)->npieces += 1;
     priv(db)->pieces =
         realloc(priv(db)->pieces, sizeof(bt_piece_t *) * priv(db)->npieces);
@@ -242,6 +227,7 @@ int bt_piecedb_all_pieces_are_complete(bt_piecedb_t* db)
         bt_piece_t *pce;
         
         pce = bt_piecedb_get(db, ii);
+
         if (!bt_piece_is_complete(pce))
         {
             return 0;
@@ -267,7 +253,7 @@ void bt_piecedb_print_pieces_downloaded(bt_piecedb_t * db)
 {
     int ii, counter, is_complete = 1;
 
-    printf("pieces downloaded: ");
+    printf("pieces (%d) downloaded: ", bt_piecedb_get_length(db));
 
     for (ii = 0, counter = 20;
          ii < bt_piecedb_get_length(db); ii++, counter += 1)
