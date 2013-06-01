@@ -86,7 +86,7 @@ def unittest(bld, src, ccflag=None):
         if sys.platform == 'win32':
             bld(rule='${SRC}',source=src[:-2]+'.exe')
         else:
-            bld(rule='export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:. && '+src[:-2])
+            bld(rule='pwd && export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:. && ./'+src[:-2])
 
 
 #def shutdown(bld):
@@ -98,9 +98,10 @@ def unittest(bld, src, ccflag=None):
 
 def build(bld):
 
-
         if sys.platform == 'win32':
             platform = '-D__WINDOWS__'
+	elif sys.platform == 'linux2':
+            platform = '-D__LINUX__'
         else:
             platform = ''
 
