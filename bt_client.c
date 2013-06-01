@@ -126,10 +126,15 @@ static void __process_peer_connect(void *bto,
 {
     bt_client_t *bt = bto;
     bt_peer_t *peer;
+    void *pc;
 
     peer = bt_client_add_peer(bt, NULL, 0, ip, strlen(ip), port);
     peer->net_peerid = netpeerid;
-//    pc = __netpeerid_to_peerconn(bt, netpeerid);
+    /* get the peer that this message is for using the netpeerid*/
+    pc = bt_peermanager_netpeerid_to_peerconn(bt->pm, netpeerid);
+    bt_peerconn_connected(pc);
+
+    __log(bto,NULL,"CONNECTED: peerid:%d ip:%s", netpeerid, ip);
 }
 
 static void __log_process_info(bt_client_t * bt)
@@ -348,7 +353,7 @@ int bt_client_read_metainfo_file(void *bto, const char *fname)
 
     if (!(contents = read_file(fname, &len)))
     {
-        __log(bto,NULL,"ERROR: torrent file: %s can't be read\n", fname);
+        __log(bto,NULL,"ERROR: torrent file: %s can't be read", fname);
         return 0;
     }
 
@@ -535,7 +540,7 @@ void bt_client_go(void *bto)
             break;
     }
 
-    __log(bt, NULL, "download is done\n");
+    __log(bt, NULL, "download is done");
 
     //__dumppiece(bt);
 }

@@ -97,26 +97,48 @@ typedef struct
     int (*peer_connect) (void **udata,
                          const char *host, const char *port, int *peerid);
 
+    /**
+     * Send data to peer
+     *
+     * @param peerid : the peer's network ID
+     * @param send_data : data to be sent
+     * @param len : length of data to be sent */
     int (*peer_send) (void **udata,
                       const int peerid,
                       const unsigned char *send_data, const int len);
 
-    int (*peer_recv_len) (void **udata, int peerid, char *recv, int *len);
+    /**
+     * Receive data
+     * @param buf : the buffer for holding the data
+     * @param len IN: data len expected to receive; Out: data len received */
+    int (*peer_recv_len) (void **udata, int peerid, char *buf, int *len);
 
+    /**
+     * Drop the connection for this peer
+     */
     int (*peer_disconnect) (void **udata, int peerid);
 
     /**
-     *
-     *
+     * Call the network stack and receive packets for our peers
      */
     int (*peers_poll) (void **udata,
                        const int msec_timeout,
                        /**
-                        * @param caller: the system caller
+                        * We've received data from the peer.
+                        * Announce this to the caller.
+                        *
+                        * @param caller: the caller
                         * @param netid: peer ID 
                         */
                        int (*func_process) (void *caller,
                                             int netid),
+                       /**
+                        * We've determined that we are now connected.
+                        * Announce the connection to the caller.
+                        *
+                        * @param caller: the caller
+                        * @param netid: peer ID 
+                        */
                        void (*func_process_connection) (void *,
                                                         int netid,
                                                         char *ip,

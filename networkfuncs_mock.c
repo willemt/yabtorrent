@@ -46,10 +46,19 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "bt_diskmem.h"
 #include "config.h"
 #include "linked_list_hashmap.h"
-#include "cbuffer.h"
+#include "bipbuffer.h"
 
 #include <fcntl.h>
 #include <sys/time.h>
+
+/* connect status */
+typedef enum {
+    /* not connected from our side, we need to accept the connection */
+    CS_NONE,
+    CS_REQUESTED,
+    /*  connected */
+    CS_CONNECTED
+} connect_status_e;
 
 /**
  * Each client has many connections.
@@ -60,9 +69,7 @@ typedef struct {
     /* id that we use to identify the peer */
     int peerid;
 
-    /* 0 = not connected from our side, we need to accept the connection
-     * 1 = connected */
-    int connect_status;
+    connect_status_e connect_status;
 } client_connection_t;
 
 /* 
@@ -82,9 +89,51 @@ typedef struct {
 
 void *__clients = NULL;
 
+void __print_client_contents()
+{
+    hashmap_iterator_t iter;
+
+    for (
+        hashmap_iterator(__clients, &iter);
+        hashmap_iterator_has_next(__clients, &iter);
+        )
+    {
+        void* bt, *cfg;
+        client_t* cli;
+        hashmap_iterator_t iter_connects;
+
+        cli = hashmap_iterator_next_value(__clients, &iter);
+
+        /* loop throught each connection for this peer */
+        for (
+            hashmap_iterator(cli->connections, &iter_connects);
+            hashmap_iterator_has_next(cli->connections, &iter_connects);
+            )
+        {
+            client_connection_t* cn;
+            int jj;
+
+            cn = hashmap_iterator_next_value(cli->connections, &iter_connects);
+            printf("cli: %d peerid: %d inbox: %dB ",
+                    cli->peerid, cn->peerid, bipbuf_get_spaceused(cn->inbox));
+
+#if 0
+            void* data;
+            data = bipbuf_peek(cn->inbox);
+            for (jj=0; jj<bipbuf_get_spaceused(cn->inbox); jj++)
+            {
+                printf("%c", ((char*)data)[jj]);
+            }
+#endif
+            printf("\n");
+
+        }
+    }
+}
+
 /**
  * Create a connection to this peer */
-static void __client_create_connection(client_t* cli, int peerid)
+static void __client_create_connection(client_t* cli, const int peerid)
 {
     client_connection_t* cn;
 
@@ -94,10 +143,9 @@ static void __client_create_connection(client_t* cli, int peerid)
         return;
     }
 
-    cn = calloc(0,sizeof(client_connection_t));
-
     /* message inbox */
-    cn->inbox = cbuf_new(16);
+    cn = calloc(0,sizeof(client_connection_t));
+    cn->inbox = bipbuf_new(1000);
     cn->peerid = peerid;
     cn->connect_status = 0;
 
@@ -111,12 +159,22 @@ static void __client_create_connection(client_t* cli, int peerid)
 static void __offer_inbox(client_t* me, const void* send_data, int len, int peerid)
 {
     client_connection_t* cn;
+    int ii;
 
     cn = hashmap_get(me->connections, &peerid);
 
     assert(cn);
 
-    cbuf_offer(cn->inbox, send_data, len);
+    bipbuf_offer(cn->inbox, send_data, len);
+
+//    printf("|inbox me:%d rawpeer:%d peer:%d inbox:%d %dB",
+//            me->peerid, peerid, cn->peerid, bipbuf_get_spaceused(cn->inbox), len);
+
+//    for (ii=0; ii<len; ii++)
+//        printf("%c", ((char*)send_data)[ii]);
+ //   printf("\n");
+
+//    __print_client_contents();
 }
 
 client_t* __get_client_from_id(int peerid)
@@ -165,7 +223,7 @@ static void __log(void *udata, void *src, char *buf)
     write(fd, "\n", 1);
 }
 
-client_t* client_setup(int log)
+client_t* client_setup(int log, int id)
 {
     client_t* cli;
     void *bt;
@@ -173,9 +231,11 @@ client_t* client_setup(int log)
 
     cli = calloc(0,sizeof(client_t));
     cli->connections = hashmap_new(__int_hash, __int_compare, 11);
+
     /* bittorrent client */
     cli->bt = bt = bt_client_new();
     cfg = bt_client_get_config(bt);
+    config_set(cfg, "my_peerid", bt_generate_peer_id());
     //bt_client_set_peer_id(bt, bt_generate_peer_id());
     //bt_peerconn_set_my_peer_id
 
@@ -204,9 +264,10 @@ client_t* client_setup(int log)
     }
 
     /* put inside the hashmap */
-    cli->peerid = hashmap_count(__clients);
+    cli->peerid = id;//hashmap_count(__clients);
     hashmap_put(__clients,&cli->peerid,cli);
-    printf("created client: %d\n", cli->peerid);
+    printf("created client: %d, %s\n",
+            cli->peerid, config_get(cfg, "my_peerid"));
 
     return cli;
 }
@@ -221,12 +282,14 @@ void* network_setup()
 
     log = open("dump_log", O_CREAT | O_TRUNC | O_RDWR, 0666);
 
-    a = client_setup(log);
-    b = client_setup(log);
+    a = client_setup(log, 1);
+    b = client_setup(log, 2);
 
 #if 1
-    hashmap_iterator(__clients, &iter);
-    while (hashmap_iterator_has_next(__clients, &iter))
+    for (
+        hashmap_iterator(__clients, &iter);
+        hashmap_iterator_has_next(__clients, &iter);
+        )
     {
         void* bt, *cfg;
         client_t* cli;
@@ -237,7 +300,6 @@ void* network_setup()
         config_set(cfg, "npieces", "1");
         config_set(cfg, "piece_length", "5");
         config_set(cfg, "infohash", "00000000000000000000");
-        config_set(cfg, "my_peerid", bt_generate_peer_id());
         bt_client_add_pieces(bt, "00000000000000000000", 1);
 //        bt_client_add_pieces(bt, "00000000000000000000", 1);
         //bt_client_set_peer_id(bt, "00000000000000000000");
@@ -245,15 +307,19 @@ void* network_setup()
 #endif
 
     //bt_client_add_peer(a->bt,NULL,0,"1",1,0);
-    bt_client_add_peer(b->bt,NULL,0,"0",1,0);
+    bt_client_add_peer(b->bt,NULL,0,"1",1,0);
 
     int ii;
 
-    for (ii=0; ii<1000; ii++)
+    for (ii=0; ii<10; ii++)
     {
-//        printf("\nStep %d:\n", ii+1);
+        printf("\nStep %d:\n", ii+1);
         bt_client_step(a->bt);
         bt_client_step(b->bt);
+
+
+        __print_client_contents();
+
     }
 
     return NULL;
@@ -269,7 +335,7 @@ int peer_connect(void **udata, const char *host, const char *port, int *peerid)
     /* peerid is IP address */
     *peerid = atoi(host);
 
-    printf("connecting me:%d peerid:%d host:%s\n", me->peerid, *peerid, host);
+//    printf("connecting me:%d peerid:%d host:%s\n", me->peerid, *peerid, host);
 
     you = __get_client_from_id(*peerid);
     __client_create_connection(you, me->peerid);
@@ -287,7 +353,7 @@ int peer_send(void **udata,
     client_t* me = *udata;
     client_t* you;
 
-    //printf("send me:%d peer:%d len:%d\n", me->peerid, peerid, len);
+//    printf("send me:%d peer:%d len:%d\n", me->peerid, peerid, len);
 
     /* put onto the sendee's inbox */
     you = __get_client_from_id(peerid);
@@ -310,19 +376,15 @@ int peer_recv_len(void **udata, const int peerid, char *buf, int *len)
     assert(cn);
     assert(cn->inbox);
 
-    //printf("recv me:%d peer:%d inbox:%d %dB\n",
-    //        me->peerid, cn->peerid, cbuf_get_spaceused(cn->inbox), *len);
-
-
     /* no data on pipe */
 #if 0
-    if (cbuf_is_empty(cn->inbox))
+    if (bipbuf_is_empty(cn->inbox))
     {
         return 0;
     }
 #endif
 
-    data = cbuf_poll(cn->inbox, (unsigned int)*len);
+    data = bipbuf_poll(cn->inbox, (unsigned int)*len);
 
     /* we can't poll enough data */
     if (!data)
@@ -330,6 +392,12 @@ int peer_recv_len(void **udata, const int peerid, char *buf, int *len)
 
     /* put memory into buffer */
     memcpy(buf, data, *len);
+
+#if 0
+    printf("|recv me:%d rpeer;%d peer:%d inbox:%d %dB %.*s\n",
+            me->peerid, peerid, cn->peerid, bipbuf_get_spaceused(cn->inbox), *len,
+            *len, buf);
+#endif
 
     return 1;
 }
@@ -350,14 +418,17 @@ int peers_poll(void **udata,
                                     int b),
                void (*func_process_connection) (void *,
                                                 int netid,
-                                                char *ip, int),
+                                                char *ip, int ip_len),
                void *caller)
 {
     client_t* me = *udata;
     hashmap_iterator_t iter;
 
-    hashmap_iterator(me->connections, &iter);
-    while (hashmap_iterator_has_next(me->connections, &iter))
+    /* loop throught each connection for this peer */
+    for (
+        hashmap_iterator(me->connections, &iter);
+        hashmap_iterator_has_next(me->connections, &iter);
+        )
     {
         client_connection_t* cn;
 
@@ -368,13 +439,15 @@ int peers_poll(void **udata,
         {
             char ip[32];
 
-            sprintf(ip,"%d", cn->peerid);
+            sprintf(ip, "%d", cn->peerid);
 
-            //printf("processing connection me:%d\n", me->peerid);
+            printf("processing connection me:%d them:%d\n",
+                    me->peerid, cn->peerid);
+
             func_process_connection(me->bt, cn->peerid, ip, 1);
-            cn->connect_status = 1;
+            cn->connect_status = CS_CONNECTED;
         }
-        else if (!cbuf_is_empty(cn->inbox))
+        else if (!bipbuf_is_empty(cn->inbox))
         {
             func_process_msg(me->bt, cn->peerid);
         }

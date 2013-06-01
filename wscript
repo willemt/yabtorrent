@@ -10,7 +10,8 @@ contribs = [
 ('CBTTrackerClient', 'git@github.com:willemt/CBTTrackerClient.git'),
 ('CBitstream', 'git@github.com:willemt/CSimpleBitstream.git'),
 ('CTorrentFileReader', 'git@github.com:willemt/CTorrentFileReader.git'),
-('CCircularBuffer', 'git@github.com:willemt/CCircularBuffer.git'),
+('CBipBuffer', 'git@github.com:willemt/CBipBuffer.git'),
+#('CCircularBuffer', 'git@github.com:willemt/CCircularBuffer.git'),
 ('CSparseCounter', 'git@github.com:willemt/CSparseCounter.git'),
 ('CBitstream', 'git@github.com:willemt/CSimpleBitstream.git'),
 ('CConfig-re', 'git@github.com:willemt/CConfig-re.git'),
@@ -39,7 +40,7 @@ def configure(conf):
             conf.env.CONTRIB_PATH = './'
             conf.exec_command("git clone %s %s" % (c[1],c[0],))
         else:
-            conf.env.CONTRIB_PATH = '../../'
+            conf.env.CONTRIB_PATH = '../'
             
 
 
@@ -146,7 +147,7 @@ def build(bld):
                     bld.env.CONTRIB_PATH+"CHashMapViaLinkedList",
                     bld.env.CONTRIB_PATH+"CHeap",
                     bld.env.CONTRIB_PATH+"CPSeudoLRU",
-                    bld.env.CONTRIB_PATH+"CCircularBuffer",
+                    bld.env.CONTRIB_PATH+"CBipBuffer",
                     bld.env.CONTRIB_PATH+"CEventTimer",
                     bld.env.CONTRIB_PATH+"CSparseCounter",
                     bld.env.CONTRIB_PATH+"CSparseFileAllocator",
@@ -181,7 +182,7 @@ def build(bld):
                     bld.env.CONTRIB_PATH+"CBTTrackerClient/bt_tracker_client.c",
                     bld.env.CONTRIB_PATH+"CBTTrackerClient/bt_tracker_client_response_reader.c",
                     bld.env.CONTRIB_PATH+"CBTTrackerClient/url_encoder.c",
-                    bld.env.CONTRIB_PATH+"CCircularBuffer/cbuffer.c"
+                    bld.env.CONTRIB_PATH+"CBipBuffer/bipbuffer.c"
                     ],
                 target='bt',
                 cflags=[
@@ -196,7 +197,7 @@ def build(bld):
                     bld.env.CONTRIB_PATH+"CHeaplessBencodeReader",
                     bld.env.CONTRIB_PATH+"CTorrentFileReader",
                     bld.env.CONTRIB_PATH+"CHashMapViaLinkedList",
-                    bld.env.CONTRIB_PATH+"CCircularBuffer",
+                    bld.env.CONTRIB_PATH+"CBipBuffer",
                    ], 
                 use='yabbt')
 
