@@ -53,8 +53,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "bt_local.h"
 #include "bt_block_readwriter_i.h"
 #include "bt_peermanager.h"
-//#include "bt_piece_db.h"
-//#include "bt_string.h"
 
 #include "bt_client_private.h"
 
@@ -85,8 +83,8 @@ static void __log(void *bto, void *src, const char *fmt, ...)
     bt->func_log(bt->log_udata, NULL, buf);
 }
 
-/*
- * peer connections are given this as a callback whenever they want to send
+/**
+ * Peer connections are given this as a callback whenever they want to send
  * information */
 int __FUNC_peerconn_send_to_peer(void *bto,
                                         const void* pr,
@@ -120,7 +118,8 @@ int __FUNC_peerconn_pollblock(void *bto,
     }
 }
 
-/*  return how many we've read */
+/**
+ * @return how much we've read */
 int __FUNC_peerconn_recv_from_peer(void *bto,
         void* pr,
         char *buf,
@@ -164,6 +163,7 @@ int __FUNC_peerconn_pushblock(void *bto,
 
     assert(pce);
 
+    /* write block to disk medium */
     bt_piece_write_block(pce, NULL, block, data);
 //    bt_filedumper_write_block(bt->fd, block, data);
 
@@ -181,9 +181,9 @@ int __FUNC_peerconn_pushblock(void *bto,
             bt_peermanager_forall(bt->pm,bt,pce,__FUNC_peerconn_send_have);
         }
 
-        //bt_piecedb_print_pieces_downloaded(bt->db);
-
 #if 0
+        bt_piecedb_print_pieces_downloaded(bt->db);
+
         /* dump everything to disk if the whole download is complete */
         if (bt_piecedb_all_pieces_are_complete(bt))
         {
@@ -259,9 +259,12 @@ typedef struct {
     int npeers;
     void* cfg;
     void* caller;
+    void* (*func_peerconn_init)(void* caller);
 
 } bt_peermanager_t;
 
+/**
+ * @return 1 if the peer is within the manager */
 int bt_peermanager_contains(void *pm, const char *ip, const int port)
 {
     bt_peermanager_t *me = pm;
@@ -319,8 +322,7 @@ pwp_connection_functions_t funcs = {
 
 /**
  * Add the peer.
- * Initiate connection with 
- *
+ * Initiate connection with the peer.
  * @return freshly created bt_peer
  */
 bt_peer_t *bt_peermanager_add_peer(void *pm,
@@ -353,8 +355,11 @@ bt_peer_t *bt_peermanager_add_peer(void *pm,
     asprintf(&peer->ip, "%.*s", ip_len, ip);
     asprintf(&peer->port, "%d", port);
 
-    /* create a peer connection for this peer */
 
+    if (me->func_peerconn_init)
+        me->func_peerconn_init(me->caller);
+
+    /* create a peer connection for this peer */
     peer->pc = pc = bt_peerconn_new();
     bt_peerconn_set_functions(pc, &funcs, me->caller);
     bt_peerconn_set_piece_info(pc,
@@ -424,11 +429,14 @@ void bt_peermanager_set_config(void* pm, void* cfg)
     me->cfg = cfg;
 }
 
-void* bt_peermanager_new(void* caller)
+void* bt_peermanager_new(void* caller,
+        void* (*func_peerconn_init)(void* caller)
+        )
 {
     bt_peermanager_t* me;
 
     me = calloc(1,sizeof(bt_peermanager_t));
     me->caller = caller;
+    me->func_peerconn_init = func_peerconn_init;
     return me;
 }

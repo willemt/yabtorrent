@@ -14,7 +14,10 @@ void bt_peermanager_forall(
         void* udata,
         void (*run)(void* caller, void* peer, void* udata));
 
-void* bt_peermanager_new(void* caller);
+void* bt_peermanager_new(void* caller,
+        /**
+         * Run this before the peerconn is about to be initialised */
+        void* (*func_peerconn_init)(void* caller));
 
 void bt_peermanager_set_config(void* pm, void* cfg);
 

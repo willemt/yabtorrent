@@ -53,7 +53,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "bt_local.h"
 #include "bt_peermanager.h"
 #include "bt_block_readwriter_i.h"
-//#include "bt_piece_db.h"
 #include "bt_string.h"
 
 #include "bt_client_private.h"
@@ -85,6 +84,14 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *  dumps files to disk
  *  reads files from disk
  */
+
+/* --------------------------------------------------------------------------*/
+
+void* __func_peerconn_init(void* caller)
+{
+    return NULL;
+}
+/* --------------------------------------------------------------------------*/
 
 static void __log(void *bto, void *src, const char *fmt, ...)
 {
@@ -139,27 +146,6 @@ static void __process_peer_connect(void *bto,
 
 static void __log_process_info(bt_client_t * bt)
 {
-#if 0
-    struct rusage
-    {
-        struct timeval ru_utime;        /* user time used */
-        struct timeval ru_stime;        /* system time used */
-        long ru_maxrss;         /* maximum resident set size */
-        long ru_ixrss;          /* integral shared memory size */
-        long ru_idrss;          /* integral unshared data size */
-        long ru_isrss;          /* integral unshared stack size */
-        long ru_minflt;         /* page reclaims */
-        long ru_majflt;         /* page faults */
-        long ru_nswap;          /* swaps */
-        long ru_inblock;        /* block input operations */
-        long ru_oublock;        /* block output operations */
-        long ru_msgsnd;         /* messages sent */
-        long ru_msgrcv;         /* messages received */
-        long ru_nsignals;       /* signals received */
-        long ru_nvcsw;          /* voluntary context switches */
-        long ru_nivcsw;         /* involuntary context switches */
-    };
-#endif
     static long int last_run = 0;
     struct timeval tv;
 
@@ -179,21 +165,7 @@ static void __log_process_info(bt_client_t * bt)
             return;
         last_run = tv.tv_usec;
     }
-
-#if 0
-    struct rusage stats;
-    getrusage(RUSAGE_SELF, &stats);
-    __log(bt, NULL,
-          "stats, ru_utime=%d, ru_stime=%d, ru_maxrss=%d, ru_ixrss=%d, ru_idrss=%d, ru_isrss=%d, ru_minflt=%d, ru_majflt=%d, ru_nswap=%d, ru_inblock=%d, ru_oublock=%d, ru_msgsnd=%d, ru_msgrcv=%d, ru_nsignals=%d, ru_nvcsw=%d, ru_nivcsw=%d",
-          stats.ru_utime, stats.ru_stime, stats.ru_maxrss,
-          stats.ru_ixrss, stats.ru_idrss, stats.ru_isrss,
-          stats.ru_minflt, stats.ru_majflt,
-          stats.ru_nswap, stats.ru_inblock,
-          stats.ru_oublock, stats.ru_msgsnd,
-          stats.ru_msgrcv, stats.ru_nsignals, stats.ru_nvcsw, stats.ru_nivcsw);
-#endif
 }
-
 
 static int __get_drate(const void *bto, const void *pc)
 {
@@ -283,11 +255,8 @@ void *bt_client_new()
     /* need to be able to tell the time */
     bt->ticker = eventtimer_new();
 
-    /* database for writing pieces */
-    //bt->db = bt_piecedb_new();
-
     /* peer manager */
-    bt->pm = bt_peermanager_new(bt);
+    bt->pm = bt_peermanager_new(bt,__func_peerconn_init);
     bt_peermanager_set_config(bt->pm,bt->cfg);
 
     /*  set leeching choker */
@@ -311,15 +280,6 @@ void bt_client_set_piecedb(void* bto, bt_piecedb_i* ipdb, void* piecedb)
     bt->ipdb = ipdb;
     bt->piecedb = piecedb;
 }
-
-#if 0
-void bt_client_set_diskstorage(void* bto, bt_blockrw_i * irw, func_add_file_f func_addfile, void *udata)
-{
-    bt_client_t* bt = bto;
-
-    bt_piecedb_set_diskstorage(bt->db, irw, func_addfile, udata);
-}
-#endif
 
 /**
  * Release all memory used by the client
@@ -365,65 +325,6 @@ int bt_client_read_metainfo_file(void *bto, const char *fname)
 
     return 1;
 }
-
-/**
- * Obtain this piece from the piece database
- * @return piece specified by piece_idx; otherwise NULL
- */
-#if 0
-void *bt_client_get_piece(void *bto, const unsigned int piece_idx)
-{
-    bt_client_t *bt = bto;
-
-    return bt_piecedb_get(bt->db, piece_idx);
-}
-#endif
-
-/**
- * Mass add pieces to the piece database
- * @param pieces A string of 20 byte sha1 hashes. Is always a multiple of 20 bytes in length. 
- * @param bto the bittorrent client object
- * @param len: total length of combine hash string
- * */
-#if 0
-void bt_client_add_pieces(void *bto, const char *pieces, int len)
-{
-    bt_client_t *bt = bto;
-
-    bt_piecedb_add_all(bt->db, pieces, len);
-
-    /* remember how many pieces there are now */
-    config_set_va(bt->cfg, "npieces", "%d", bt_piecedb_get_length(bt->db));
-}
-#endif
-
-/**
- * Add this file to the bittorrent client
- * This is used for adding new files.
- *
- * @param id id of bt client
- * @param fname file name
- * @param fname_len length of fname
- * @param flen length in bytes of the file
- * @return 1 on sucess; otherwise 0
- */
-#if 0
-int bt_client_add_file(void *bto,
-                       const char *fname, const int fname_len, const int flen)
-{
-    bt_client_t *bt = bto;
-    char *path = NULL;
-
-    /* tell the piece DB how big the file is */
-    bt_piecedb_set_tot_file_size(bt->db, bt_piecedb_get_tot_file_size(bt->db) + flen);
-
-    /* add the file to the filedumper */
-    asprintf(&path, "%.*s", fname_len, fname);
-    bt_piecedb_add_file(bt->db, path, flen);
-
-    return 1;
-}
-#endif
 
 /**
  * Add the peer.
@@ -504,34 +405,10 @@ int bt_client_step(void *bto)
     bt_peermanager_forall(bt->pm,NULL,NULL,__FUNC_peerconn_step);
 
 //    bt_piecedb_print_pieces_downloaded(bt->db);
-
 //    if (__all_pieces_are_complete(bt))
 //        return 0;
+
     return 1;
-}
-
-#if 0
-static void __dumppiece(bt_client_t* bt)
-{
-    int fd;
-    fd = open("piecedump", O_CREAT | O_WRONLY);
-    for (ii = 0; ii < bt_piecedb_get_length(bt->db); ii++)
-    {
-        bt_piece_t *pce;
-        
-        pce = bt_piecedb_get(bt->db, ii);
-        write(fd, (void*)bt_piece_get_data(pce), bt_piece_get_size(pce));
-    }
-
-    close(fd);
-}
-#endif
-
-/**
- * Validate the client's already downloaded pieces */
-void bt_client_validate_downloaded_pieces(void* bto)
-{
-//    bt_piecedb_print_pieces_downloaded();
 }
 
 /**

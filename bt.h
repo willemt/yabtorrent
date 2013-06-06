@@ -186,7 +186,6 @@ char *bt_generate_peer_id();
 
 void *bt_client_new();
 
-
 int bt_client_get_num_peers(void *bto);
 
 int bt_client_get_num_pieces(void *bto);

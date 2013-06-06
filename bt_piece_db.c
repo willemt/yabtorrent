@@ -142,6 +142,10 @@ void *bt_piecedb_poll_best_from_bitfield(void * dbo,
     return NULL;
 }
 
+/**
+ * Obtain this piece from the piece database
+ * @return piece specified by piece_idx; otherwise NULL
+ */
 void *bt_piecedb_get(void* dbo, const unsigned int idx)
 {
     bt_piecedb_t * db = dbo;
@@ -201,9 +205,9 @@ void bt_piecedb_add(bt_piecedb_t * db, const char *sha1)
  * Mass add pieces to the piece database
  *
  * @param pieces A string of 20 byte sha1 hashes. Is always a multiple of 20 bytes in length. 
- * @param bto the bittorrent client object
+ * @param len: total length of combine hash string
  * */
-void bt_piecedb_add_all(bt_piecedb_t * db, const char *sha1_pieces, const int len)
+void bt_piecedb_add_all(bt_piecedb_t * db, const char *pieces, const int len)
 {
     int prog;
 
@@ -211,8 +215,8 @@ void bt_piecedb_add_all(bt_piecedb_t * db, const char *sha1_pieces, const int le
     {
         if (0 != prog % 20) continue;
 
-        bt_piecedb_add(db, sha1_pieces);
-        sha1_pieces += 20;
+        bt_piecedb_add(db, pieces);
+        pieces += 20;
     }
 }
 
@@ -242,17 +246,36 @@ int bt_piecedb_all_pieces_are_complete(bt_piecedb_t* db)
     return 1;
 }
 
-void bt_piecedb_add_file(
+/**
+ * Add this file to the bittorrent client
+ * This is used for adding new files.
+ *
+ * @param fname file name
+ * @param fname_len length of fname
+ * @param flen length in bytes of the file
+ * @return 1 on sucess; otherwise 0
+ */
+int bt_piecedb_add_file(
     bt_piecedb_t * db,
     const char *fname,
-    const int size
+    const int fname_len,
+    const int flen
 )
 {
-    if (!priv(db)->func_addfile) return;
+    if (!priv(db)->func_addfile) return 0;
 
-    bt_piecedb_set_tot_file_size(db, bt_piecedb_get_tot_file_size(db) + size);
+    bt_piecedb_set_tot_file_size(db, bt_piecedb_get_tot_file_size(db) + flen);
 
-    priv(db)->func_addfile(priv(db)->blockrw_data, fname, size);
+    priv(db)->func_addfile(priv(db)->blockrw_data, fname, flen);
+
+    return 1;
+}
+
+/**
+ * Validate the client's already downloaded pieces */
+void bt_piecedb_validate_downloaded_pieces(void* bto)
+{
+//    bt_piecedb_print_pieces_downloaded();
 }
 
 /**
@@ -288,3 +311,21 @@ void bt_piecedb_print_pieces_downloaded(bt_piecedb_t * db)
     }
     printf("\n");
 }
+
+#if 0
+static void __dumppiece(bt_client_t* bt)
+{
+    int fd;
+    fd = open("piecedump", O_CREAT | O_WRONLY);
+    for (ii = 0; ii < bt_piecedb_get_length(bt->db); ii++)
+    {
+        bt_piece_t *pce;
+        
+        pce = bt_piecedb_get(bt->db, ii);
+        write(fd, (void*)bt_piece_get_data(pce), bt_piece_get_size(pce));
+    }
+
+    close(fd);
+}
+#endif
+

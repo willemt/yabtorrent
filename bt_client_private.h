@@ -6,8 +6,7 @@ typedef struct
     /* my peerid */
     char* my_peer_id;
 
-    /*  the piece container */
-//    bt_piecedb_t *db;
+    /* database for writing pieces */
     bt_piecedb_i *ipdb;
     void* piecedb;
 
