@@ -83,7 +83,6 @@ bt_piecedb_t *bt_piecedb_new()
     return db;
 }
 
-#if 1
 void bt_piecedb_set_piece_length(bt_piecedb_t * db,
                                  const int piece_length_bytes)
 {
@@ -110,18 +109,14 @@ void bt_piecedb_set_diskstorage(bt_piecedb_t * db,
     assert(irw->read_block);
     assert(udata);
 
-
     priv(db)->blockrw = irw;
     priv(db)->blockrw_data = udata;
     priv(db)->func_addfile = func_addfile;
 }
-#endif
 
 /**
  * Get the best piece to download from this bitfield
  */
-//bt_piece_t *bt_piecedb_poll_best_from_bitfield(bt_piecedb_t * db,
-//                                               void * bf_possibles)
 void *bt_piecedb_poll_best_from_bitfield(void * dbo,
                                                void * bf_possibles)
 {
@@ -158,7 +153,8 @@ void *bt_piecedb_get(void* dbo, const unsigned int idx)
     return priv(db)->pieces[idx];
 }
 
-/*  take care of the situation where the last piece is size differently */
+/* 
+ * take care of the situation where the last piece is size differently */
 static int __figure_out_new_piece_size(bt_piecedb_t * db)
 {
     int tot_bytes_used = 0, ii;
@@ -180,7 +176,8 @@ static int __figure_out_new_piece_size(bt_piecedb_t * db)
     }
 }
 
-/*  add a piece with this sha1sum */
+/**
+ * Add a piece with this sha1sum */
 void bt_piecedb_add(bt_piecedb_t * db, const char *sha1)
 {
     bt_piece_t *pce;
