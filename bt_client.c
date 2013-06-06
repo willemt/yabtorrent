@@ -53,7 +53,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "bt_local.h"
 #include "bt_peermanager.h"
 #include "bt_block_readwriter_i.h"
-#include "bt_piece_db.h"
+//#include "bt_piece_db.h"
 #include "bt_string.h"
 
 #include "bt_client_private.h"
@@ -284,7 +284,7 @@ void *bt_client_new()
     bt->ticker = eventtimer_new();
 
     /* database for writing pieces */
-    bt->db = bt_piecedb_new();
+    //bt->db = bt_piecedb_new();
 
     /* peer manager */
     bt->pm = bt_peermanager_new(bt);
@@ -304,12 +304,22 @@ void *bt_client_new()
     return bt;
 }
 
+void bt_client_set_piecedb(void* bto, bt_piecedb_i* ipdb, void* piecedb)
+{
+    bt_client_t* bt = bto;
+
+    bt->ipdb = ipdb;
+    bt->piecedb = piecedb;
+}
+
+#if 0
 void bt_client_set_diskstorage(void* bto, bt_blockrw_i * irw, func_add_file_f func_addfile, void *udata)
 {
     bt_client_t* bt = bto;
 
     bt_piecedb_set_diskstorage(bt->db, irw, func_addfile, udata);
 }
+#endif
 
 /**
  * Release all memory used by the client
@@ -343,11 +353,13 @@ int bt_client_read_metainfo_file(void *bto, const char *fname)
     //bt_client_read_metainfo(bto, contents, len, &bt->cfg.pinfo);
 
     /*  find out if we are seeding by default */
+#if 0
     bt_piecedb_print_pieces_downloaded(bt->db);
     if (bt_piecedb_all_pieces_are_complete(bt->db))
     {
         bt->am_seeding = 1;
     }
+#endif
 
     free(contents);
 
@@ -358,12 +370,14 @@ int bt_client_read_metainfo_file(void *bto, const char *fname)
  * Obtain this piece from the piece database
  * @return piece specified by piece_idx; otherwise NULL
  */
+#if 0
 void *bt_client_get_piece(void *bto, const unsigned int piece_idx)
 {
     bt_client_t *bt = bto;
 
     return bt_piecedb_get(bt->db, piece_idx);
 }
+#endif
 
 /**
  * Mass add pieces to the piece database
@@ -371,6 +385,7 @@ void *bt_client_get_piece(void *bto, const unsigned int piece_idx)
  * @param bto the bittorrent client object
  * @param len: total length of combine hash string
  * */
+#if 0
 void bt_client_add_pieces(void *bto, const char *pieces, int len)
 {
     bt_client_t *bt = bto;
@@ -380,6 +395,7 @@ void bt_client_add_pieces(void *bto, const char *pieces, int len)
     /* remember how many pieces there are now */
     config_set_va(bt->cfg, "npieces", "%d", bt_piecedb_get_length(bt->db));
 }
+#endif
 
 /**
  * Add this file to the bittorrent client
@@ -391,6 +407,7 @@ void bt_client_add_pieces(void *bto, const char *pieces, int len)
  * @param flen length in bytes of the file
  * @return 1 on sucess; otherwise 0
  */
+#if 0
 int bt_client_add_file(void *bto,
                        const char *fname, const int fname_len, const int flen)
 {
@@ -406,6 +423,7 @@ int bt_client_add_file(void *bto,
 
     return 1;
 }
+#endif
 
 /**
  * Add the peer.
@@ -485,7 +503,7 @@ int bt_client_step(void *bto)
     /*  run each peer connection step */
     bt_peermanager_forall(bt->pm,NULL,NULL,__FUNC_peerconn_step);
 
-    bt_piecedb_print_pieces_downloaded(bt->db);
+//    bt_piecedb_print_pieces_downloaded(bt->db);
 
 //    if (__all_pieces_are_complete(bt))
 //        return 0;

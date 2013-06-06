@@ -1,11 +1,5 @@
 typedef struct
 {
-    /* name of the topmost directory */
-//    char *name;
-
-    /* the main directory of the file */
-//    char *path;
-
     /* the info_hash of the file to be downloaded */
     char* info_hash;
 
@@ -13,25 +7,17 @@ typedef struct
     char* my_peer_id;
 
     /*  the piece container */
-    bt_piecedb_t *db;
-
-    /*  disk cache */
-//    void *dc;
+//    bt_piecedb_t *db;
+    bt_piecedb_i *ipdb;
+    void* piecedb;
 
     /*  tracker client */
     void *tc;
 
-    /*  file dumper */
-//    void *fd;
-
     /* net stuff */
     bt_client_funcs_t func;
-//    bt_net_pwp_funcs_t net;
 
     void *net_udata;
-
-    /* number of complete peers */
-//    int ncomplete_peers;
 
     char fail_reason[255];
 
@@ -41,9 +27,6 @@ typedef struct
     /*  logging  */
     func_log_f func_log;
     void *log_udata;
-
-//    bt_client_cfg_t cfg;
-//    bt_pwp_cfg_t pwpcfg;
 
     void* cfg;
 

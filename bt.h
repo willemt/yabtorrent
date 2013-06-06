@@ -175,12 +175,17 @@ typedef struct
     void* pc;
 } bt_peer_t;
 
+typedef struct {
+    void* (*poll_best_from_bitfield)(void * db, void * bf_possibles);
+    void* (*get_piece)(void *db, const unsigned int piece_idx);
+} bt_piecedb_i;
+
+void bt_client_set_piecedb(void* bto, bt_piecedb_i* ipdb, void* piecedb);
 
 char *bt_generate_peer_id();
 
 void *bt_client_new();
 
-void *bt_client_get_piece(void *bto, const unsigned int piece_idx);
 
 int bt_client_get_num_peers(void *bto);
 
@@ -193,6 +198,8 @@ char *bt_client_get_fail_reason(void *bto);
 int bt_client_get_nbytes_downloaded(void *bto);
 
 int bt_client_is_failed(void *bto);
+
+void *bt_client_get_piecedb(void *bto);
 
 void *bt_client_add_peer(void *bto,
                               const char *peer_id,

@@ -43,6 +43,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 /*----------------------------------------------------------------------------*/
 
+#include "bt_piece_db.h"
 #include "bt_diskmem.h"
 #include "config.h"
 #include "linked_list_hashmap.h"
@@ -223,6 +224,12 @@ static void __log(void *udata, void *src, char *buf)
     write(fd, "\n", 1);
 }
 
+bt_piecedb_i pdb_funcs = {
+    .poll_best_from_bitfield = bt_piecedb_poll_best_from_bitfield,
+    .get_piece = bt_piecedb_get
+};
+
+
 client_t* client_setup(int log, int id)
 {
     client_t* cli;
@@ -241,11 +248,13 @@ client_t* client_setup(int log, int id)
 
     /* create disk backend */
     {
-        void* dc;
+        void* dc, *db;
 
         dc = bt_diskmem_new();
         bt_diskmem_set_size(dc, 1000);
-        bt_client_set_diskstorage(bt, bt_diskmem_get_blockrw(dc), NULL, dc);
+        db = bt_piecedb_new();
+        bt_piecedb_set_diskstorage(db, bt_diskmem_get_blockrw(dc), NULL, dc);
+        bt_client_set_piecedb(bt,&pdb_funcs,db);
     }
 
     /* set network functions */
@@ -302,7 +311,8 @@ void* network_setup()
         config_set(cfg, "npieces", "1");
         config_set(cfg, "piece_length", "5");
         config_set(cfg, "infohash", "00000000000000000000");
-        bt_client_add_pieces(bt, "00000000000000000000", 20);
+        assert(bt_client_get_piecedb(bt));
+        bt_piecedb_add_all(bt_client_get_piecedb(bt), "00000000000000000000", 20);
 //        bt_client_add_pieces(bt, "00000000000000000000", 1);
         //bt_client_set_peer_id(bt, "00000000000000000000");
     }

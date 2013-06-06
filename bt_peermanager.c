@@ -53,7 +53,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "bt_local.h"
 #include "bt_block_readwriter_i.h"
 #include "bt_peermanager.h"
-#include "bt_piece_db.h"
+//#include "bt_piece_db.h"
 //#include "bt_string.h"
 
 #include "bt_client_private.h"
@@ -107,7 +107,7 @@ int __FUNC_peerconn_pollblock(void *bto,
     bt_client_t *bt = bto;
     bt_piece_t *pce;
 
-    if ((pce = bt_piecedb_poll_best_from_bitfield(bt->db, peer_bitfield)))
+    if ((pce = bt->ipdb->poll_best_from_bitfield(bt->piecedb, peer_bitfield)))
     {
         assert(!bt_piece_is_complete(pce));
         assert(!bt_piece_is_fully_requested(pce));
@@ -132,11 +132,19 @@ int __FUNC_peerconn_recv_from_peer(void *bto,
     return bt->func.peer_recv_len(&bt->net_udata, peer->net_peerid, buf, len);
 }
 
-void __FUNC_peerconn_send_have(void* caller, void* peer, void* udata)
+static void __FUNC_peerconn_send_have(void* caller, void* peer, void* udata)
 {
     if (bt_peerconn_is_active(peer))
         bt_peerconn_send_have(peer, bt_piece_get_idx(udata));
 }
+
+static void* __FUNC_get_piece(void* caller, unsigned int idx)
+{
+    bt_client_t *bt = caller;
+
+    return bt->ipdb->get_piece(bt->piecedb, idx);
+}
+
 
 /**
  * Received a block from a peer
@@ -152,7 +160,7 @@ int __FUNC_peerconn_pushblock(void *bto,
     bt_client_t *bt = bto;
     bt_piece_t *pce;
 
-    pce = bt_client_get_piece(bt, block->piece_idx);
+    pce = bt->ipdb->get_piece(bt->piecedb, block->piece_idx);
 
     assert(pce);
 
@@ -173,14 +181,17 @@ int __FUNC_peerconn_pushblock(void *bto,
             bt_peermanager_forall(bt->pm,bt,pce,__FUNC_peerconn_send_have);
         }
 
-        bt_piecedb_print_pieces_downloaded(bt->db);
+        //bt_piecedb_print_pieces_downloaded(bt->db);
 
+#if 0
         /* dump everything to disk if the whole download is complete */
         if (bt_piecedb_all_pieces_are_complete(bt))
         {
             bt->am_seeding = 1;
 //            bt_diskcache_disk_dump(bt->dc);
         }
+#endif
+
     }
 
     return 1;
@@ -299,7 +310,7 @@ pwp_connection_functions_t funcs = {
     .pollblock = __FUNC_peerconn_pollblock,
     .disconnect = __FUNC_peerconn_disconnect,
     .connect = __FUNC_peerconn_connect,
-    .getpiece = bt_client_get_piece,
+    .getpiece = __FUNC_get_piece,
     .write_block_to_stream = __FUNC_peerconn_write_block_to_stream,
     .piece_is_complete = __FUNC_peerconn_pieceiscomplete,
     .log = __log

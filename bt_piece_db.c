@@ -117,12 +117,15 @@ void bt_piecedb_set_diskstorage(bt_piecedb_t * db,
 }
 #endif
 
-/*
- * get the best piece to download from this bitfield
+/**
+ * Get the best piece to download from this bitfield
  */
-bt_piece_t *bt_piecedb_poll_best_from_bitfield(bt_piecedb_t * db,
-                                               bitfield_t * bf_possibles)
+//bt_piece_t *bt_piecedb_poll_best_from_bitfield(bt_piecedb_t * db,
+//                                               void * bf_possibles)
+void *bt_piecedb_poll_best_from_bitfield(void * dbo,
+                                               void * bf_possibles)
 {
+    bt_piecedb_t* db = dbo;
     int ii;
 
     for (ii = 0; ii < priv(db)->npieces; ii++)
@@ -139,8 +142,10 @@ bt_piece_t *bt_piecedb_poll_best_from_bitfield(bt_piecedb_t * db,
     return NULL;
 }
 
-bt_piece_t *bt_piecedb_get(bt_piecedb_t * db, const int idx)
+void *bt_piecedb_get(void* dbo, const unsigned int idx)
 {
+    bt_piecedb_t * db = dbo;
+
 //    assert(idx < priv(db)->npieces);
     if (priv(db)->npieces == 0)
         return NULL;
@@ -244,6 +249,9 @@ void bt_piecedb_add_file(
 )
 {
     if (!priv(db)->func_addfile) return;
+
+    bt_piecedb_set_tot_file_size(db, bt_piecedb_get_tot_file_size(db) + size);
+
     priv(db)->func_addfile(priv(db)->blockrw_data, fname, size);
 }
 

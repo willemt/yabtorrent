@@ -191,3 +191,10 @@ int bt_client_is_failed(void *bto)
     return 0;
 }
 
+void *bt_client_get_piecedb(void *bto)
+{
+    bt_client_t *bt = bto;
+
+    return bt->piecedb;
+}
+

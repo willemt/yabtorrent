@@ -43,6 +43,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "block.h"
 #include "bt.h"
+#include "bt_piece_db.h"
 #include "bt_diskcache.h"
 #include "bt_filedumper.h"
 #include "bt_tracker_client.h"
@@ -205,6 +206,8 @@ int main(int argc, char **argv)
     /* set peer id */
     //bt_client_set_peer_id(bt, bt_generate_peer_id());
 
+
+
     bt_client_set_logging(bt,
                           open("dump_log", O_CREAT | O_TRUNC | O_RDWR,
                                0666), __log);
@@ -226,7 +229,12 @@ int main(int argc, char **argv)
 
     /* set file system backend functions */
     {
-        void* fd, *dc;
+        void* fd, *dc, *db;
+
+        bt_piecedb_i pdb_funcs = {
+            .poll_best_from_bitfield = bt_piecedb_poll_best_from_bitfield,
+            .get_piece = bt_piecedb_get
+        };
 
         /* database for dumping pieces to disk */
         fd = bt_filedumper_new();
@@ -237,9 +245,14 @@ int main(int argc, char **argv)
 
         /* point diskcache to filedumper */
         bt_diskcache_set_disk_blockrw(dc, bt_filedumper_get_blockrw(fd), fd);
-        bt_client_set_diskstorage(bt,
+
+        /* set up piecedb */
+        db = bt_piecedb_new();
+        bt_piecedb_set_diskstorage(db,
                 bt_diskcache_get_blockrw(dc),
-                (void*)bt_filedumper_add_file, dc);
+                (void*)bt_filedumper_add_file,
+                dc);
+        bt_client_set_piecedb(bt,&pdb_funcs,db);
     }
 
     if (o_torrent_file_report_only)
