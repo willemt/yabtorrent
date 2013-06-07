@@ -83,6 +83,13 @@ bt_piecedb_t *bt_piecedb_new()
     return db;
 }
 
+#if 0
+int bt_piecedb_get_length(bt_piecedb_t * db)
+{
+    return priv(db)->tot_file_size_bytes;
+}
+#endif
+
 void bt_piecedb_set_piece_length(bt_piecedb_t * db,
                                  const int piece_length_bytes)
 {
