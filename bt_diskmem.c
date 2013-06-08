@@ -62,7 +62,7 @@ typedef struct
 } diskmem_t;
 
 /*----------------------------------------------------------------------------*/
-static int __write_block(
+int bt_diskmem_write_block(
     void *udata,
     void *caller __attribute__((__unused__)),
     const bt_block_t * blk,
@@ -119,7 +119,7 @@ void *bt_diskmem_new(
     diskmem_t *dc;
 
     dc = calloc(1, sizeof(diskmem_t));
-    dc->irw.write_block = __write_block;
+    dc->irw.write_block = bt_diskmem_write_block;
     dc->irw.read_block = __read_block;
 //    dc->irw.giveup_block = NULL;
 

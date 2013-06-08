@@ -112,7 +112,6 @@ int bt_piece_write_block(
     /* mark progress */
     {
         int offset, len;
-//        int off, ln;
 
         offset = blk->block_byte_offset;
         len = blk->block_len;
@@ -121,6 +120,7 @@ int bt_piece_write_block(
 //        sparsecounter_get_incomplete(priv(me)->progress_requested, &off, &ln,
 //                                  priv(me)->piece_length);
     }
+
 #if 0
     printf("%d left to go: %d/%d\n",
            me->idx,
@@ -246,6 +246,22 @@ bool bt_piece_is_valid(
 
     hash = str2sha1hash(data, priv(me)->piece_length);
     ret = bt_sha1_equal(hash, priv(me)->sha1);
+
+    /* debugging */
+#if 0
+    {
+        int ii;
+
+        for (ii=0; ii<20; ii++)
+            printf("%02x ", ((unsigned char*)priv(me)->sha1)[ii]);
+        printf("\n");
+
+        for (ii=0; ii<20; ii++)
+            printf("%02x ", ((unsigned char*)hash)[ii]);
+        printf("\n");
+    }
+#endif
+
     free(hash);
     return ret;
 }

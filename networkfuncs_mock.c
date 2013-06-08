@@ -40,6 +40,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "block.h"
 #include "bt.h"
 #include "networkfuncs.h"
+#include "mock_torrent.h"
 
 /*----------------------------------------------------------------------------*/
 
@@ -254,6 +255,7 @@ client_t* client_setup(int log, int id)
         bt_diskmem_set_size(dc, 1000);
         db = bt_piecedb_new();
         bt_piecedb_set_diskstorage(db, bt_diskmem_get_blockrw(dc), NULL, dc);
+        bt_piecedb_set_piece_length(db,5);
         bt_client_set_piecedb(bt,&pdb_funcs,db);
     }
 
@@ -284,15 +286,19 @@ client_t* client_setup(int log, int id)
 void* network_setup()
 {
     int log;
+    int ii;
     client_t* a, *b;
     hashmap_iterator_t iter;
-
-    __clients = hashmap_new(__int_hash, __int_compare, 11);
+    void* mt;
 
     log = open("dump_log", O_CREAT | O_TRUNC | O_RDWR, 0666);
 
+    mt = mocktorrent_new(5);
+
+    __clients = hashmap_new(__int_hash, __int_compare, 11);
     a = client_setup(log, 1);
     b = client_setup(log, 2);
+
 
     for (
         hashmap_iterator(__clients, &iter);
@@ -303,27 +309,39 @@ void* network_setup()
         client_t* cli;
 
         cli = hashmap_iterator_next_value(__clients, &iter);
-
-        printf("client: %d\n", cli->peerid);
-
         bt = cli->bt;
         cfg = bt_client_get_config(bt);
+        /* default configuration for clients */
         config_set(cfg, "npieces", "1");
         config_set(cfg, "piece_length", "5");
         config_set(cfg, "infohash", "00000000000000000000");
-        assert(bt_client_get_piecedb(bt));
-        bt_piecedb_add_all(bt_client_get_piecedb(bt), "00000000000000000000", 20);
-//        bt_client_add_pieces(bt, "00000000000000000000", 1);
-        //bt_client_set_peer_id(bt, "00000000000000000000");
-
-        bt_piecedb_all_pieces_are_complete(bt_client_get_piecedb(bt));
-        bt_piecedb_print_pieces_downloaded(bt_client_get_piecedb(bt));
+        /* add files/pieces */
+        bt_piecedb_add_file(bt_client_get_piecedb(bt),"test.txt",8,5);
+        bt_piecedb_add(bt_client_get_piecedb(bt),mocktorrent_get_piece_sha1(mt,0));
     }
 
-    //bt_client_add_peer(a->bt,NULL,0,"1",1,0);
+    /* write blocks to client A */
+    {
+        void* data;
+        bt_block_t blk;
+
+        data = mocktorrent_get_data(mt,0);
+        blk.block_byte_offset = 0;
+        blk.block_len = 5;
+
+        bt_diskmem_write_block(
+                bt_piecedb_get_diskstorage(bt_client_get_piecedb(a->bt)),
+                NULL,
+                &blk,
+                data);
+
+        bt_piecedb_all_pieces_are_complete(bt_client_get_piecedb(a->bt));
+        bt_piecedb_print_pieces_downloaded(bt_client_get_piecedb(a->bt));
+    }
+
+    /* B will initiate the connection */
     bt_client_add_peer(b->bt,NULL,0,"1",1,0);
 
-    int ii;
 
     for (ii=0; ii<10; ii++)
     {

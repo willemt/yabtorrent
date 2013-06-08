@@ -7,13 +7,15 @@
 
 #include "mock_torrent.h"
 #include "mt19937ar.h"
+#include "block.h"
+#include "bt.h"
+#include "bt_local.h"
 
 typedef struct {
     unsigned char *data;
     int size;
 
 } mock_torrent_t;
-
 
 void *mocktorrent_new(int size)
 {
@@ -38,4 +40,11 @@ void *mocktorrent_get_data(void* _me, unsigned int offset)
     mock_torrent_t* me = _me;
 
     return me->data + offset;
+}
+
+void *mocktorrent_get_piece_sha1(void* _me, unsigned int piece)
+{
+    mock_torrent_t* me = _me;
+
+    return str2sha1hash(me->data + piece,5);
 }

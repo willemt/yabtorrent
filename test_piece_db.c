@@ -24,9 +24,21 @@ void TestBTpiecedb_new_is_empty(
     void *db;
 
     db = bt_piecedb_new();
-
     CuAssertTrue(tc, NULL == bt_piecedb_get(db, 0));
 }
+
+void TestBTPieceDB_add_piece_doesnt_work_without_available_filespace(
+    CuTest * tc
+)
+{
+    void *db;
+
+    db = bt_piecedb_new();
+    bt_piecedb_set_piece_length(db, 40);
+    bt_piecedb_add(db, "00000000000000000000");
+    CuAssertTrue(tc, NULL == bt_piecedb_get(db, 0));
+}
+
 
 void TestBTPieceDB_add_piece(
     CuTest * tc
@@ -36,6 +48,8 @@ void TestBTPieceDB_add_piece(
 
     db = bt_piecedb_new();
     bt_piecedb_set_piece_length(db, 40);
+    /* need to add a file so that we have a filespace to hold the added piece */
+    bt_piecedb_add_file(db,"test",4,40);
     bt_piecedb_add(db, "00000000000000000000");
     CuAssertTrue(tc, NULL != bt_piecedb_get(db, 0));
 }
@@ -84,11 +98,8 @@ void TestBTPieceDB_dont_poll_piece_that_peer_doesnt_have(
 )
 {
     void *db;
-
     bt_piece_t *pce;
-
     bt_block_t blk;
-
     bitfield_t bf;
 
     bitfield_init(&bf, 4);
@@ -109,11 +120,8 @@ void TestBTPieceDB_poll_best_from_bitfield(
 )
 {
     void *db;
-
     bt_piece_t *pce;
-
     bt_block_t blk;
-
     bitfield_t bf;
 
     bitfield_init(&bf, 4);
@@ -137,7 +145,6 @@ void TestBTPieceDB_AddingPiece_LastPieceFitsTotalSize(
 )
 {
     void *db;
-
     bt_piece_t *pce;
 
     db = bt_piecedb_new();

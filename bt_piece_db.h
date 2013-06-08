@@ -15,6 +15,8 @@ int bt_piecedb_get_tot_file_size(bt_piecedb_t * db);
 void bt_piecedb_set_diskstorage(bt_piecedb_t * db,
                                 bt_blockrw_i * irw, func_add_file_f func_addfile, void *udata);
 
+void* bt_piecedb_get_diskstorage(bt_piecedb_t * db);
+
 void *bt_piecedb_poll_best_from_bitfield(void * dbo, void * bf_possibles);
 
 void *bt_piecedb_get(void* dbo, const unsigned int idx);

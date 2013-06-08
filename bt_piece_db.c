@@ -110,16 +110,25 @@ int bt_piecedb_get_tot_file_size(bt_piecedb_t * db)
 }
 
 void bt_piecedb_set_diskstorage(bt_piecedb_t * db,
-                                bt_blockrw_i * irw, func_add_file_f func_addfile, void *udata)
+                                bt_blockrw_i * irw,
+                                func_add_file_f func_addfile,
+                                void *udata)
 {
     assert(irw->write_block);
     assert(irw->read_block);
     assert(udata);
 
     priv(db)->blockrw = irw;
-    priv(db)->blockrw_data = udata;
     priv(db)->func_addfile = func_addfile;
+    priv(db)->blockrw_data = udata;
 }
+
+void* bt_piecedb_get_diskstorage(bt_piecedb_t * db)
+{
+    assert(db);
+    return priv(db)->blockrw_data;
+}
+
 
 /**
  * Get the best piece to download from this bitfield
@@ -160,17 +169,20 @@ void *bt_piecedb_get(void* dbo, const unsigned int idx)
     return priv(db)->pieces[idx];
 }
 
-/* 
- * take care of the situation where the last piece is size differently */
+/** 
+ * Take care of the situation where the last piece is sized differently */
 static int __figure_out_new_piece_size(bt_piecedb_t * db)
 {
     int tot_bytes_used = 0, ii;
 
     /*  figure out current total size */
     for (ii = tot_bytes_used = 0; ii < priv(db)->npieces; ii++)
+    {
         tot_bytes_used += bt_piece_get_size(priv(db)->pieces[ii]);
+    }
 
-//    printf("%d %d\n", bt_piecedb_get_tot_file_size(db), tot_bytes_used);
+    //printf("%d %d\n", bt_piecedb_get_tot_file_size(db), tot_bytes_used);
+    //    return priv(db)->piece_length_bytes;
 
     if (bt_piecedb_get_tot_file_size(db) - tot_bytes_used <
         priv(db)->piece_length_bytes)
@@ -188,21 +200,24 @@ static int __figure_out_new_piece_size(bt_piecedb_t * db)
 void bt_piecedb_add(bt_piecedb_t * db, const char *sha1)
 {
     bt_piece_t *pce;
+    int size;
 
-//    pce = malloc(sizeof(bt_piece_t));
-    int size = __figure_out_new_piece_size(db);
+    size = __figure_out_new_piece_size(db);
 
-    printf("adding piece: %d bytes %d\n", size, priv(db)->tot_file_size_bytes);
+//    printf("adding piece: %d bytes %d piecelen:%d\n",
+//            size, priv(db)->tot_file_size_bytes, priv(db)->piece_length_bytes);
+
     priv(db)->npieces += 1;
     priv(db)->pieces =
         realloc(priv(db)->pieces, sizeof(bt_piece_t *) * priv(db)->npieces);
 
+    /* create piece */
     pce = bt_piece_new((const unsigned char*)sha1, size);
-
-    priv(db)->pieces[priv(db)->npieces - 1] = pce;
-//    bt_piece_new(piece, sha1, priv(db)->pinfo->piece_len);
     bt_piece_set_idx(pce, priv(db)->npieces - 1);
     bt_piece_set_disk_blockrw(pce, priv(db)->blockrw, priv(db)->blockrw_data);
+
+    /* register piece */
+    priv(db)->pieces[priv(db)->npieces - 1] = pce;
 }
 
 /**
@@ -266,13 +281,16 @@ int bt_piecedb_add_file(
     const int flen
 )
 {
-    if (!priv(db)->func_addfile) return 0;
-
+    /* increase total file size by this file's size */
     bt_piecedb_set_tot_file_size(db, bt_piecedb_get_tot_file_size(db) + flen);
 
-    priv(db)->func_addfile(priv(db)->blockrw_data, fname, flen);
+    if (priv(db)->func_addfile)
+    {
+        priv(db)->func_addfile(priv(db)->blockrw_data, fname, flen);
+        return 1;
+    }
 
-    return 1;
+    return 0;
 }
 
 /**
