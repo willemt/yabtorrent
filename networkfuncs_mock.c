@@ -315,6 +315,9 @@ void* network_setup()
         bt_piecedb_add_all(bt_client_get_piecedb(bt), "00000000000000000000", 20);
 //        bt_client_add_pieces(bt, "00000000000000000000", 1);
         //bt_client_set_peer_id(bt, "00000000000000000000");
+
+        bt_piecedb_all_pieces_are_complete(bt_client_get_piecedb(bt));
+        bt_piecedb_print_pieces_downloaded(bt_client_get_piecedb(bt));
     }
 
     //bt_client_add_peer(a->bt,NULL,0,"1",1,0);

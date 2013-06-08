@@ -228,7 +228,7 @@ void *bt_piece_get_data(
 }
 
 /**
- * Use sha1 to determine if valid
+ * Read data and use sha1 to determine if valid
  * @return 1 if valid; 0 otherwise */
 bool bt_piece_is_valid(
     bt_piece_t * me
