@@ -186,6 +186,9 @@ void TestBT_GeneratedPeeridIs20BytesLong(
     CuAssertTrue(tc, 20 == strlen(peerid));
 }
 
+
+
+
 /*----------------------------------------------------------------------------*/
 #if 0
 void TxestBT_AddPiece(

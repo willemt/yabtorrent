@@ -206,8 +206,6 @@ int main(int argc, char **argv)
     /* set peer id */
     //bt_client_set_peer_id(bt, bt_generate_peer_id());
 
-
-
     bt_client_set_logging(bt,
                           open("dump_log", O_CREAT | O_TRUNC | O_RDWR,
                                0666), __log);
@@ -223,7 +221,7 @@ int main(int argc, char **argv)
             .peer_listen_open =peer_listen_open
         };
 
-        network_setup();
+//        network_setup();
         bt_client_set_funcs(bt, &func, NULL);
     }
 
@@ -279,7 +277,6 @@ int main(int argc, char **argv)
     }
     else
     {
-
         while (1)
         {
             //bt_trackerclient_step(tc);

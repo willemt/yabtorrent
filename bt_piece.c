@@ -139,13 +139,13 @@ void *bt_piece_read_block(
 {
     bt_piece_t *me = pceo;
 
-    assert(priv(me)->disk->write_block);
+    assert(priv(me)->disk->read_block);
 
-    if (!priv(me)->disk->write_block)
+    if (!priv(me)->disk->read_block)
         return NULL;
 
-    if (!sparsecounter_have
-        (priv(me)->progress_downloaded, blk->block_byte_offset,
+    if (!sparsecounter_have(
+        priv(me)->progress_downloaded, blk->block_byte_offset,
          blk->block_len))
         return NULL;
 

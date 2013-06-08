@@ -60,7 +60,6 @@ def unittest(bld, src, ccflag=None):
         # collect tests into one area
         bld(rule='sh make-tests.sh '+src+' > ${TGT}', target="t_"+src)
 
-
         # build the test program
         bld.program(
                 source=[
@@ -87,6 +86,52 @@ def unittest(bld, src, ccflag=None):
             bld(rule='${SRC}',source=src[:-2]+'.exe')
         else:
             bld(rule='pwd && export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:. && ./'+src[:-2])
+
+def end2end(bld, src, ccflag=None):
+        bld(rule='cp ../make-tests.sh .')
+        bld(rule='cp ../%s .' % src)
+        # collect tests into one area
+        bld(rule='sh make-tests.sh '+src+' > ${TGT}', target="t_"+src)
+
+        bld.program(
+                source=[
+                    src,
+                    "t_"+src,
+                    'CuTest.c',
+#                    'test_end_to_end.c',
+                    "networkfuncs_mock.c",
+                    "mt19937ar.c",
+                    "mock_torrent.c",
+                    bld.env.CONTRIB_PATH+"CBTTrackerClient/bt_tracker_client.c",
+                    bld.env.CONTRIB_PATH+"CBTTrackerClient/bt_tracker_client_response_reader.c",
+                    bld.env.CONTRIB_PATH+"CBTTrackerClient/url_encoder.c",
+                    bld.env.CONTRIB_PATH+"CBipBuffer/bipbuffer.c"
+                    ],
+                target='test_end_to_end',
+                cflags=[
+                    '-g',
+                    '-Werror',
+                    '-Werror=uninitialized',
+                    '-Werror=return-type'
+                    ],
+                unit_test='yes',
+                includes=[
+                    bld.env.CONTRIB_PATH+"CConfig-re",
+                    bld.env.CONTRIB_PATH+"CBTTrackerClient",
+                    bld.env.CONTRIB_PATH+"CHeaplessBencodeReader",
+                    bld.env.CONTRIB_PATH+"CTorrentFileReader",
+                    bld.env.CONTRIB_PATH+"CHashMapViaLinkedList",
+                    bld.env.CONTRIB_PATH+"CBipBuffer",
+                   ], 
+                use='yabbt')
+
+        # run the test
+        if sys.platform == 'win32':
+            bld(rule='${SRC}',source=src[:-2]+'.exe')
+        else:
+            bld(rule='pwd && export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:. && ./'+src[:-2])
+
+
 
 
 #def shutdown(bld):
@@ -175,10 +220,11 @@ def build(bld):
         unittest(bld,'test_filedumper.c')
         unittest(bld,'test_piece.c',ccflag='-I../'+bld.env.CONTRIB_PATH+"CBitfield")
         unittest(bld,'test_piece_db.c')
+        end2end(bld,'test_end_to_end.c')
 
         bld.program(
                 source=[
-                    'bt_main.c',
+                    'yabtorrent.c',
                     "networkfuncs_mock.c",
                     "mt19937ar.c",
                     "mock_torrent.c",
@@ -187,7 +233,7 @@ def build(bld):
                     bld.env.CONTRIB_PATH+"CBTTrackerClient/url_encoder.c",
                     bld.env.CONTRIB_PATH+"CBipBuffer/bipbuffer.c"
                     ],
-                target='bt',
+                target='yabtorrent',
                 cflags=[
                     '-g',
                     '-Werror',
@@ -203,8 +249,4 @@ def build(bld):
                     bld.env.CONTRIB_PATH+"CBipBuffer",
                    ], 
                 use='yabbt')
-
-
-
-
 
