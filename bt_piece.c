@@ -247,15 +247,16 @@ bool bt_piece_is_valid(
     hash = str2sha1hash(data, priv(me)->piece_length);
     ret = bt_sha1_equal(hash, priv(me)->sha1);
 
-    /* debugging */
-#if 0
+#if 1 /* debugging */
     {
         int ii;
 
+        printf("Exepected: ");
         for (ii=0; ii<20; ii++)
             printf("%02x ", ((unsigned char*)priv(me)->sha1)[ii]);
         printf("\n");
 
+        printf("File calc: ");
         for (ii=0; ii<20; ii++)
             printf("%02x ", ((unsigned char*)hash)[ii]);
         printf("\n");

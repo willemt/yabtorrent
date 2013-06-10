@@ -204,8 +204,18 @@ void bt_piecedb_add(bt_piecedb_t * db, const char *sha1)
 
     size = __figure_out_new_piece_size(db);
 
-//    printf("adding piece: %d bytes %d piecelen:%d\n",
-//            size, priv(db)->tot_file_size_bytes, priv(db)->piece_length_bytes);
+    printf("adding piece: %d bytes %d piecelen:%d\n",
+            size, priv(db)->tot_file_size_bytes, priv(db)->piece_length_bytes);
+#if 1 /* debugging */
+    {
+        int ii;
+
+        for (ii=0; ii<20; ii++)
+            printf("%02x ", ((unsigned char*)sha1)[ii]);
+        printf("\n");
+    }
+#endif
+
 
     priv(db)->npieces += 1;
     priv(db)->pieces =

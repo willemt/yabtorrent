@@ -57,6 +57,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 typedef struct
 {
     bt_blockrw_i irw;
+    int piece_size;
     int data_size;
     unsigned char *data;
 } diskmem_t;

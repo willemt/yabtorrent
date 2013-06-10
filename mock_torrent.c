@@ -14,16 +14,18 @@
 typedef struct {
     unsigned char *data;
     int size;
+    int piece_len;
 
 } mock_torrent_t;
 
-void *mocktorrent_new(int size)
+void *mocktorrent_new(int size, int piece_len)
 {
     mock_torrent_t* me;
     int ii, *ptr;
 
     me = malloc(sizeof(mock_torrent_t));
     me->data = malloc(size);
+    me->piece_len = piece_len;
 
     init_genrand(0);
 
@@ -46,5 +48,5 @@ void *mocktorrent_get_piece_sha1(void* _me, unsigned int piece)
 {
     mock_torrent_t* me = _me;
 
-    return str2sha1hash(me->data + piece,5);
+    return str2sha1hash(me->data + piece * me->piece_len, me->piece_len);
 }
