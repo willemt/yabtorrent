@@ -197,7 +197,7 @@ static void *__get_data(
     /*  fail without disk writing functions */
     if (!priv(me)->disk || !priv(me)->disk->read_block)
     {
-        assert(FALSE);
+        return NULL;
     }
 
     /*  read this block */
@@ -360,6 +360,14 @@ void bt_piece_poll_block_request(
 }
 
 /*----------------------------------------------------------------------------*/
+
+void bt_piece_set_complete(
+    bt_piece_t * me,
+    int yes
+)
+{
+    priv(me)->is_completed = yes;
+}
 
 void bt_piece_set_idx(
     bt_piece_t * me,

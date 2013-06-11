@@ -133,8 +133,7 @@ void* bt_piecedb_get_diskstorage(bt_piecedb_t * db)
 /**
  * Get the best piece to download from this bitfield
  */
-void *bt_piecedb_poll_best_from_bitfield(void * dbo,
-                                               void * bf_possibles)
+void *bt_piecedb_poll_best_from_bitfield(void * dbo, void * bf_possibles)
 {
     bt_piecedb_t* db = dbo;
     int ii;
@@ -142,6 +141,9 @@ void *bt_piecedb_poll_best_from_bitfield(void * dbo,
     for (ii = 0; ii < priv(db)->npieces; ii++)
     {
         if (!bitfield_is_marked(bf_possibles, ii))
+            continue;
+
+        if (bt_piece_is_complete(priv(db)->pieces[ii]))
             continue;
 
         if (!bt_piece_is_fully_requested(priv(db)->pieces[ii]))
@@ -175,6 +177,7 @@ static int __figure_out_new_piece_size(bt_piecedb_t * db)
 {
     int tot_bytes_used = 0, ii;
 
+
     /*  figure out current total size */
     for (ii = tot_bytes_used = 0; ii < priv(db)->npieces; ii++)
     {
@@ -202,7 +205,11 @@ void bt_piecedb_add(bt_piecedb_t * db, const char *sha1)
     bt_piece_t *pce;
     int size;
 
-    size = __figure_out_new_piece_size(db);
+    if (0 == (size = __figure_out_new_piece_size(db)))
+    {
+        /* check if we have enough file space for this piece */
+        return;
+    }
 
 #if 0 /* debugging */
     printf("adding piece: %d bytes %d piecelen:%d\n",

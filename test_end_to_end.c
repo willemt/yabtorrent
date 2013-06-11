@@ -61,7 +61,7 @@ static void __log(void *udata, void *src, char *buf)
     int fd = (unsigned long) udata;
     struct timeval tv;
 
-#if 0 /* debugging */
+#if 1 /* debugging */
     printf(buf);
     printf("\n");
 #endif
@@ -371,6 +371,10 @@ void TestBT_Peer_three_share_all_pieces_between_each_other(
         bt_client_step(c->bt);
         __print_client_contents();
     }
+
+    bt_piecedb_print_pieces_downloaded(bt_client_get_piecedb(a->bt));
+    bt_piecedb_print_pieces_downloaded(bt_client_get_piecedb(b->bt));
+    bt_piecedb_print_pieces_downloaded(bt_client_get_piecedb(c->bt));
 
     CuAssertTrue(tc, 1 == bt_piecedb_all_pieces_are_complete(bt_client_get_piecedb(a->bt)));
     CuAssertTrue(tc, 1 == bt_piecedb_all_pieces_are_complete(bt_client_get_piecedb(b->bt)));
