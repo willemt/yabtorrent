@@ -32,14 +32,10 @@ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <stdbool.h>
 #include <assert.h>
-#include <setjmp.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-
-#include <stdint.h>
 
 #include "block.h"
 #include "bt.h"
@@ -53,7 +49,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 typedef struct
 {
     hashmap_t *peers;
-//    heap_t *piece_heap;
     hashmap_t *pieces;
     /*  pieces that we've polled */
     hashmap_t *pieces_polled;
@@ -64,7 +59,6 @@ typedef struct
 typedef struct
 {
     hashmap_t *have_pieces;
-//    linked_list_queue_t *have_pieces;
 } peer_t;
 
 /*  piece */
@@ -96,14 +90,10 @@ static int __cmp_piece(
     const void *ckr
 )
 {
-//    choker_t *ch = ckr;
-
     const piece_t *p1 = i1;
-
     const piece_t *p2 = i2;
 
     return p2->nhaves - p1->nhaves;
-//    return ch->iface->get_urate(p1) - ch->iface->get_urate(p2);
 }
 
 /*----------------------------------------------------------------------------*/
@@ -148,9 +138,7 @@ void bt_rarestfirst_selector_offer_piece(
 
     piece_t *pce;
 
-    pce = hashmap_remove(rf->pieces_polled, (void *) (long) piece_idx);
-
-    if (pce)
+    if ((pce = hashmap_remove(rf->pieces_polled, (void *) (long) piece_idx)))
     {
         hashmap_put(rf->pieces, (void *) (long) piece_idx, pce);
     }
@@ -162,7 +150,6 @@ void bt_rarestfirst_selector_announce_have_piece(
 )
 {
     rarestfirst_t *rf = r;
-
     piece_t *pce;
 
     pce = hashmap_remove(rf->pieces, (void *) (long) piece_idx);
@@ -176,13 +163,9 @@ void bt_rarestfirst_selector_remove_peer(
 )
 {
     rarestfirst_t *rf = r;
-
     peer_t *pr;
 
-    /*  get the peer */
-    pr = hashmap_remove(rf->peers, peer);
-
-    if (pr)
+    if ((pr = hashmap_remove(rf->peers, peer)))
     {
         hashmap_free(pr->have_pieces);
         free(pr);
@@ -195,15 +178,11 @@ void bt_rarestfirst_selector_add_peer(
 )
 {
     rarestfirst_t *rf = r;
-
     peer_t *pr;
 
-    /*  get the peer */
-    pr = hashmap_get(rf->peers, peer);
-
-    if (!pr)
+    if (!(pr = hashmap_get(rf->peers, peer)))
     {
-        pr = malloc(sizeof(peer_t));
+        pr = calloc(1,sizeof(peer_t));
         pr->have_pieces = hashmap_new(__peer_hash, __peer_compare, 11);
         hashmap_put(rf->peers, peer, pr);
     }
@@ -219,9 +198,7 @@ void bt_rarestfirst_selector_announce_peer_have_piece(
 )
 {
     rarestfirst_t *rf = r;
-
     piece_t *piece;
-
     peer_t *pr;
 
     /*  get the peer */
@@ -229,9 +206,7 @@ void bt_rarestfirst_selector_announce_peer_have_piece(
 
     assert(pr);
 
-    piece = hashmap_get(rf->pieces, (void *) (long) piece_idx);
-
-    if (!piece)
+    if (!(piece = hashmap_get(rf->pieces, (void *) (long) piece_idx)))
     {
         piece = malloc(sizeof(piece_t));
         piece->nhaves = 1;
@@ -246,18 +221,14 @@ void bt_rarestfirst_selector_announce_peer_have_piece(
     hashmap_put(pr->have_pieces, (void *) (long) piece_idx, piece);
 }
 
-int bt_rarestfirst_selector_get_npeers(
-    void *r
-)
+int bt_rarestfirst_selector_get_npeers(void *r)
 {
     rarestfirst_t *rf = r;
 
     return hashmap_count(rf->peers);
 }
 
-int bt_rarestfirst_selector_get_npieces(
-    void *r
-)
+int bt_rarestfirst_selector_get_npieces(void *r)
 {
     rarestfirst_t *rf = r;
 
@@ -279,9 +250,7 @@ int bt_rarestfirst_selector_poll_best_piece(
     hashmap_iterator_t iter;
     piece_t *pce;
 
-    pr = hashmap_get(rf->peers, peer);
-
-    if (!pr)
+    if (!(pr = hashmap_get(rf->peers, peer)))
     {
         return -1;
     }
