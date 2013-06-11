@@ -61,7 +61,7 @@ static void __log(void *udata, void *src, char *buf)
     int fd = (unsigned long) udata;
     struct timeval tv;
 
-#if 1 /* debugging */
+#if 0 /* debugging */
     printf(buf);
     printf("\n");
 #endif
@@ -282,6 +282,54 @@ void TestBT_Peer_shares_all_pieces_between_each_other(
     CuAssertTrue(tc, 1 == bt_piecedb_all_pieces_are_complete(bt_client_get_piecedb(b->bt)));
 }
 
+/**
+ * add a random subset of pieces to the piece db */
+static void __add_piece_intersection_of_mocktorrent(void* db, void* db2, void* mt, int npieces)
+{
+    int ii;
+
+    for (ii=0; ii<npieces; ii++)
+    {
+        void* data;
+        bt_block_t blk;
+
+        /* only add the piece if db2 does not have it */
+        if (bt_piece_is_complete(bt_piecedb_get(db2,ii)))
+            continue;
+
+        blk.piece_idx = ii;
+        blk.block_byte_offset = 0;
+        blk.block_len = 5;
+        data = mocktorrent_get_data(mt,ii);
+        bt_diskmem_write_block(bt_piecedb_get_diskstorage(db), NULL, &blk, data);
+    }
+}
+
+/**
+ * add a random subset of pieces to the piece db */
+static void __add_random_piece_subset_of_mocktorrent(void* db, void* mt, int npieces)
+{
+    int ii;
+
+    for (ii=0; ii<npieces; ii++)
+    {
+        void* data;
+        bt_block_t blk;
+        int rand_num;
+        
+        rand_num = rand();
+
+        if (rand_num % 2 == 0)
+             continue;
+
+        blk.piece_idx = ii;
+        blk.block_byte_offset = 0;
+        blk.block_len = 5;
+        data = mocktorrent_get_data(mt,ii);
+        bt_diskmem_write_block(bt_piecedb_get_diskstorage(db), NULL, &blk, data);
+    }
+}
+
 /** a have message has to be sent by client B, for client A and C to finish */
 void TestBT_Peer_three_share_all_pieces_between_each_other(
     CuTest * tc
@@ -381,3 +429,76 @@ void TestBT_Peer_three_share_all_pieces_between_each_other(
     CuAssertTrue(tc, 1 == bt_piecedb_all_pieces_are_complete(bt_client_get_piecedb(c->bt)));
 }
 
+void TestBT_Peer_share_100_pieces(
+    CuTest * tc
+)
+{
+    int log;
+    int ii;
+    client_t* a, *b;
+    hashmap_iterator_t iter;
+    void* mt;
+    void* clients;
+
+    network_setup();
+
+    log = open("dump_log", O_CREAT | O_TRUNC | O_RDWR, 0666);
+
+    mt = mocktorrent_new(100,5);
+
+    a = client_setup(log, 1);
+    b = client_setup(log, 2);
+
+    __client_setup_disk_backend(a->bt,5);
+    __client_setup_disk_backend(b->bt,5);
+
+    for (
+        hashmap_iterator(__clients, &iter);
+        hashmap_iterator_has_next(__clients, &iter);
+        )
+    {
+        void* bt, *cfg;
+        client_t* cli;
+
+        cli = hashmap_iterator_next_value(__clients, &iter);
+        bt = cli->bt;
+        cfg = bt_client_get_config(bt);
+        /* default configuration for clients */
+        config_set(cfg, "npieces", "100");
+        config_set(cfg, "piece_length", "5");
+        config_set(cfg, "infohash", "00000000000000000000");
+        /* add files/pieces */
+        bt_piecedb_add_file(bt_client_get_piecedb(bt),"test.txt",8,100 * 5);
+
+        for (ii=0; ii<100; ii++)
+            bt_piecedb_add(bt_client_get_piecedb(bt),mocktorrent_get_piece_sha1(mt,ii));
+    }
+
+  
+    /* B will initiate the connection */
+    bt_client_add_peer(a->bt,NULL,0,"2",1,0);
+
+    __add_random_piece_subset_of_mocktorrent(
+            bt_client_get_piecedb(a->bt),
+            mt, 100);
+
+    __add_piece_intersection_of_mocktorrent(
+            bt_client_get_piecedb(b->bt),
+            bt_client_get_piecedb(a->bt),
+            mt, 100);
+
+    for (ii=0; ii<150; ii++)
+    {
+//        printf("\nStep %d:\n", ii+1);
+        bt_client_step(a->bt);
+        bt_client_step(b->bt);
+//        __print_client_contents();
+//        bt_piecedb_print_pieces_downloaded(bt_client_get_piecedb(b->bt));
+    }
+
+    bt_piecedb_print_pieces_downloaded(bt_client_get_piecedb(a->bt));
+    bt_piecedb_print_pieces_downloaded(bt_client_get_piecedb(b->bt));
+
+    CuAssertTrue(tc, 1 == bt_piecedb_all_pieces_are_complete(bt_client_get_piecedb(a->bt)));
+    CuAssertTrue(tc, 1 == bt_piecedb_all_pieces_are_complete(bt_client_get_piecedb(b->bt)));
+}

@@ -135,7 +135,7 @@ int __FUNC_peerconn_recv_from_peer(void *bto,
 static void __FUNC_peerconn_send_have(void* caller, void* peer, void* udata)
 {
 //    if (bt_peerconn_is_active(peer))
-    printf("sending have\n");
+//    printf("sending have\n");
     bt_peerconn_send_have(peer, bt_piece_get_idx(udata));
 }
 
