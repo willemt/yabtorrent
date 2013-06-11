@@ -61,7 +61,7 @@ static void __log(void *udata, void *src, char *buf)
     int fd = (unsigned long) udata;
     struct timeval tv;
 
-#if 1 /* debugging */
+#if 0 /* debugging */
     printf(buf);
     printf("\n");
 #endif
@@ -79,15 +79,15 @@ bt_piecedb_i pdb_funcs = {
 };
 
 /** create disk backend */
-static void __client_setup_disk_backend(void* bt)
+static void __client_setup_disk_backend(void* bt, unsigned int piece_len)
 {
     void* dc, *db;
 
     dc = bt_diskmem_new();
-    bt_diskmem_set_size(dc, 1000);
+    bt_diskmem_set_size(dc, piece_len);
     db = bt_piecedb_new();
     bt_piecedb_set_diskstorage(db, bt_diskmem_get_blockrw(dc), NULL, dc);
-    bt_piecedb_set_piece_length(db,5);
+    bt_piecedb_set_piece_length(db,piece_len);
     bt_client_set_piecedb(bt,&pdb_funcs,db);
 }
 
@@ -140,13 +140,13 @@ void TestBT_Peer_shares_all_pieces(
 
     log = open("dump_log", O_CREAT | O_TRUNC | O_RDWR, 0666);
 
-    mt = mocktorrent_new(5,5);
+    mt = mocktorrent_new(1,5);
 
     a = client_setup(log, 1);
     b = client_setup(log, 2);
 
-    __client_setup_disk_backend(a->bt);
-    __client_setup_disk_backend(b->bt);
+    __client_setup_disk_backend(a->bt,5);
+    __client_setup_disk_backend(b->bt,5);
 
     for (
         hashmap_iterator(__clients, &iter);
@@ -174,14 +174,12 @@ void TestBT_Peer_shares_all_pieces(
         bt_block_t blk;
 
         data = mocktorrent_get_data(mt,0);
+        blk.piece_idx = 0;
         blk.block_byte_offset = 0;
         blk.block_len = 5;
-
         bt_diskmem_write_block(
                 bt_piecedb_get_diskstorage(bt_client_get_piecedb(a->bt)),
-                NULL,
-                &blk,
-                data);
+                NULL, &blk, data);
 
         //bt_piecedb_print_pieces_downloaded(bt_client_get_piecedb(a->bt));
         CuAssertTrue(tc, 1 == bt_piecedb_all_pieces_are_complete(bt_client_get_piecedb(a->bt)));
@@ -217,13 +215,13 @@ void TestBT_Peer_shares_all_pieces_between_each_other(
 
     log = open("dump_log", O_CREAT | O_TRUNC | O_RDWR, 0666);
 
-    mt = mocktorrent_new(5,5);
+    mt = mocktorrent_new(2,5);
 
     a = client_setup(log, 1);
     b = client_setup(log, 2);
 
-    __client_setup_disk_backend(a->bt);
-    __client_setup_disk_backend(b->bt);
+    __client_setup_disk_backend(a->bt,5);
+    __client_setup_disk_backend(b->bt,5);
 
     for (
         hashmap_iterator(__clients, &iter);
@@ -282,5 +280,100 @@ void TestBT_Peer_shares_all_pieces_between_each_other(
 
     CuAssertTrue(tc, 1 == bt_piecedb_all_pieces_are_complete(bt_client_get_piecedb(a->bt)));
     CuAssertTrue(tc, 1 == bt_piecedb_all_pieces_are_complete(bt_client_get_piecedb(b->bt)));
+}
+
+/** a have message has to be sent by client B, for client A and C to finish */
+void TestBT_Peer_three_share_all_pieces_between_each_other(
+    CuTest * tc
+)
+{
+    int log;
+    int ii;
+    client_t* a, *b, *c;
+    hashmap_iterator_t iter;
+    void* mt;
+    void* clients;
+
+    network_setup();
+
+    log = open("dump_log", O_CREAT | O_TRUNC | O_RDWR, 0666);
+
+    mt = mocktorrent_new(3,5);
+
+    a = client_setup(log, 1);
+    b = client_setup(log, 2);
+    c = client_setup(log, 3);
+
+    __client_setup_disk_backend(a->bt,5);
+    __client_setup_disk_backend(b->bt,5);
+    __client_setup_disk_backend(c->bt,5);
+
+    for (
+        hashmap_iterator(__clients, &iter);
+        hashmap_iterator_has_next(__clients, &iter);
+        )
+    {
+        void* bt, *cfg;
+        client_t* cli;
+
+        cli = hashmap_iterator_next_value(__clients, &iter);
+        bt = cli->bt;
+        cfg = bt_client_get_config(bt);
+        /* default configuration for clients */
+        config_set(cfg, "npieces", "3");
+        config_set(cfg, "piece_length", "5");
+        config_set(cfg, "infohash", "00000000000000000000");
+        /* add files/pieces */
+        bt_piecedb_add_file(bt_client_get_piecedb(bt),"test.txt",8,20);
+//        bt_piecedb_add_file(bt_client_get_piecedb(bt),"test2.txt",8,12);
+        bt_piecedb_add(bt_client_get_piecedb(bt),mocktorrent_get_piece_sha1(mt,0));
+        bt_piecedb_add(bt_client_get_piecedb(bt),mocktorrent_get_piece_sha1(mt,1));
+        bt_piecedb_add(bt_client_get_piecedb(bt),mocktorrent_get_piece_sha1(mt,2));
+    }
+
+    /* write blocks to client A & B */
+    {
+        void* data;
+        bt_block_t blk;
+
+        blk.piece_idx = 0;
+        blk.block_byte_offset = 0;
+        blk.block_len = 5;
+
+        data = mocktorrent_get_data(mt,0);
+        bt_diskmem_write_block(
+                bt_piecedb_get_diskstorage(bt_client_get_piecedb(a->bt)),
+                NULL, &blk, data);
+
+        blk.piece_idx = 1;
+        data = mocktorrent_get_data(mt,1);
+        bt_diskmem_write_block(
+                bt_piecedb_get_diskstorage(bt_client_get_piecedb(b->bt)),
+                NULL, &blk, data);
+
+        blk.piece_idx = 2;
+        data = mocktorrent_get_data(mt,2);
+        bt_diskmem_write_block(
+                bt_piecedb_get_diskstorage(bt_client_get_piecedb(c->bt)),
+                NULL, &blk, data);
+    }
+
+    /* B will initiate the connection */
+    bt_client_add_peer(a->bt,NULL,0,"2",1,0);
+    bt_client_add_peer(b->bt,NULL,0,"3",1,0);
+
+
+    for (ii=0; ii<20; ii++)
+    {
+//        printf("\nStep %d:\n", ii+1);
+        bt_client_step(a->bt);
+        bt_client_step(b->bt);
+        bt_client_step(c->bt);
+        __print_client_contents();
+    }
+
+    CuAssertTrue(tc, 1 == bt_piecedb_all_pieces_are_complete(bt_client_get_piecedb(a->bt)));
+    CuAssertTrue(tc, 1 == bt_piecedb_all_pieces_are_complete(bt_client_get_piecedb(b->bt)));
+    CuAssertTrue(tc, 1 == bt_piecedb_all_pieces_are_complete(bt_client_get_piecedb(c->bt)));
 }
 

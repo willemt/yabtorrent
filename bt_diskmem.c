@@ -70,7 +70,8 @@ int bt_diskmem_write_block(
     const void *blkdata
 )
 {
-    diskmem_t *dc = udata;
+    diskmem_t *me = udata;
+    unsigned int offset;
 
 #if 0
     int ii;
@@ -81,8 +82,18 @@ int bt_diskmem_write_block(
     printf("\n");
 #endif
 
-    assert(dc->data);
-    memcpy(dc->data + blk->block_byte_offset, blkdata, blk->block_len);
+    assert(me->data);
+
+    offset = blk->piece_idx * me->piece_size + blk->block_byte_offset;
+
+    /* if required, enlarge capacity */
+    if (me->data_size < offset + blk->block_len)
+    {
+        me->data_size = offset + blk->block_len;
+        me->data = realloc(me->data, me->data_size);
+    }
+
+    memcpy(me->data + offset, blkdata, blk->block_len);
 
 #if 0
     {
@@ -90,7 +101,7 @@ int bt_diskmem_write_block(
 
     printf("diskmem %d:", blk->block_byte_offset);
     for (ii = 0; ii < blk->block_len; ii++)
-        printf("%02x,", ((const unsigned char*)dc->data)[ii]);
+        printf("%02x,", ((const unsigned char*)me->data)[ii]);
     printf("\n");
     }
 #endif
@@ -108,56 +119,66 @@ static void *__read_block(
     const bt_block_t * blk
 )
 {
-    diskmem_t *dc = udata;
+    diskmem_t *me = udata;
+    unsigned int offset;
 
-    return dc->data + blk->block_byte_offset;
+    offset = blk->piece_idx * me->piece_size + blk->block_byte_offset;
+
+    if (me->data_size < offset + blk->block_len)
+    {
+        return NULL;
+    }
+
+    return me->data + offset;
 }
 
 /*----------------------------------------------------------------------------*/
 void *bt_diskmem_new(
 )
 {
-    diskmem_t *dc;
+    diskmem_t *me;
 
-    dc = calloc(1, sizeof(diskmem_t));
-    dc->irw.write_block = bt_diskmem_write_block;
-    dc->irw.read_block = __read_block;
-//    dc->irw.giveup_block = NULL;
+    me = calloc(1, sizeof(diskmem_t));
+    me->irw.write_block = bt_diskmem_write_block;
+    me->irw.read_block = __read_block;
+    me->data = NULL;
+//    me->irw.giveup_block = NULL;
 
-    return dc;
+    return me;
 }
 
 void bt_diskmem_free(
-    void *dco
+    void *meo
 )
 {
-    diskmem_t *dc = dco;
+    diskmem_t *me = meo;
 
-    if (dc->data)
-        free(dc->data);
-    free(dc);
+    if (me->data)
+        free(me->data);
+    free(me);
 }
 
 /*----------------------------------------------------------------------------*/
 void bt_diskmem_set_size(
-    void *dco,
+    void *meo,
     const int piece_bytes_size
 )
 {
-    diskmem_t *dc = dco;
+    diskmem_t *me = meo;
 
-    dc->data_size = piece_bytes_size;
-    dc->data = realloc(dc->data, dc->data_size);
-    memset(dc->data, 0, piece_bytes_size);
+    me->piece_size = piece_bytes_size;
+    me->data_size = piece_bytes_size * 10;
+    me->data = realloc(me->data, me->data_size);
+    memset(me->data, 0, me->data_size);
 }
 
 /*----------------------------------------------------------------------------*/
 bt_blockrw_i *bt_diskmem_get_blockrw(
-    void *dco
+    void *meo
 )
 {
-    diskmem_t *dc = dco;
+    diskmem_t *me = meo;
 
-    return &dc->irw;
+    return &me->irw;
 }
 

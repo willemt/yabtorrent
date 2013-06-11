@@ -247,7 +247,7 @@ bool bt_piece_is_valid(
     hash = str2sha1hash(data, priv(me)->piece_length);
     ret = bt_sha1_equal(hash, priv(me)->sha1);
 
-#if 1 /* debugging */
+#if 0 /* debugging */
     {
         int ii;
 
@@ -403,7 +403,10 @@ void bt_piece_write_block_to_stream(
     byte *data;
     int ii;
 
-    data = __get_data(me) + blk->block_byte_offset;
+    if (!(data = __get_data(me)))
+        return;
+    
+    data += blk->block_byte_offset;
 
     for (ii = 0; ii < blk->block_len; ii++)
     {

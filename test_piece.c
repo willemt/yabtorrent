@@ -121,6 +121,7 @@ void TestBTPiece_write_block_needs_disk_blockrw(
     char *msg = "this great message is 40 bytes in length";
 
     pce = bt_piece_new("00000000000000000000", 40);
+    blk.piece_idx = 0;
     blk.block_byte_offset = 0;
     blk.block_len = 10;
     CuAssertTrue(tc, 0 == bt_piece_write_block(pce, NULL, &blk, msg));
@@ -176,6 +177,7 @@ void TestBTPiece_cannot_read_block_we_dont_have(
     char *msg = "this great message is 40 bytes in length";
 
     pce = bt_piece_new("00000000000000000000", 40);
+    blk.piece_idx = 0;
     blk.block_byte_offset = 0;
     blk.block_len = 10;
     bt_piece_set_disk_blockrw(pce, &__mock_disk_rw, &__mockdisk);
@@ -193,6 +195,7 @@ void TestBTPiece_write_block_means_block_can_be_read(
     char *msg = "this great message is 40 bytes in length";
 
     pce = bt_piece_new("00000000000000000000", 40);
+    blk.piece_idx = 0;
     blk.block_byte_offset = 0;
     blk.block_len = 10;
     bt_piece_set_disk_blockrw(pce, &__mock_disk_rw, &__mockdisk);
@@ -221,9 +224,11 @@ void TestBTPiece_doneness_is_valid(
         0xc1, 0x20, 0xbe, 0x68, 0x96, 0x56, 0x82, 0xf8, 0xb1, 0xb0, 0x25,
         0x88, 0x48, 0xa5, 0xfb, 0x04, 0x7f, 0x31, 0x96, 0x1e
     };
+
     pce = bt_piece_new(sha1, 40);
     bt_piece_set_disk_blockrw(pce, &__mock_disk_rw, &__mockdisk);
     CuAssertTrue(tc, 0 == bt_piece_is_complete(pce));
+    blk.piece_idx = 0;
     blk.block_byte_offset = 0;
     blk.block_len = 40;
     bt_piece_write_block(pce, NULL, &blk, msg);
@@ -236,13 +241,9 @@ void TestBTPiece_Write_Block_To_Stream(
 )
 {
     bt_piece_t *pce;
-
     bt_block_t blk;
-
     void *dc;
-
     char *msg = "this great message is 40 bytes in length", out[40], *bs;
-
     bs = out;
 
     pce = bt_piece_new("00000000000000000000", 40);
@@ -250,10 +251,12 @@ void TestBTPiece_Write_Block_To_Stream(
     bt_diskmem_set_size(dc, 40);
     bt_piece_set_disk_blockrw(pce, bt_diskmem_get_blockrw(dc), dc);
     /*  write the whole message out */
+    blk.piece_idx = 0;
     blk.block_byte_offset = 0;
     blk.block_len = 40;
     bt_piece_write_block(pce, NULL, &blk, msg);
     /*  read offset of 10 and length of 20 */
+    blk.piece_idx = 0;
     blk.block_byte_offset = 10;
     blk.block_len = 20;
     bt_piece_write_block_to_stream(pce, &blk, &bs);

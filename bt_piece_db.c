@@ -204,9 +204,9 @@ void bt_piecedb_add(bt_piecedb_t * db, const char *sha1)
 
     size = __figure_out_new_piece_size(db);
 
+#if 0 /* debugging */
     printf("adding piece: %d bytes %d piecelen:%d\n",
             size, priv(db)->tot_file_size_bytes, priv(db)->piece_length_bytes);
-#if 1 /* debugging */
     {
         int ii;
 
@@ -215,7 +215,6 @@ void bt_piecedb_add(bt_piecedb_t * db, const char *sha1)
         printf("\n");
     }
 #endif
-
 
     priv(db)->npieces += 1;
     priv(db)->pieces =
