@@ -161,7 +161,7 @@ bt_piece_t *bt_piece_new(
 {
     __piece_private_t *me;
 
-    me = malloc(sizeof(__piece_private_t));
+    me = calloc(1,sizeof(__piece_private_t));
     priv(me)->sha1 = malloc(20);
     memcpy(priv(me)->sha1, sha1sum, 20);
     priv(me)->progress_downloaded = sparsecounter_init(piece_bytes_size);
@@ -204,6 +204,8 @@ static void *__get_data(
     tmp.piece_idx = priv(me)->idx;
     tmp.block_byte_offset = 0;
     tmp.block_len = priv(me)->piece_length;
+    //printf("%d %d %d\n", tmp.piece_idx, tmp.block_byte_offset, tmp.block_len);
+
     /*  go to the disk */
     return priv(me)->disk->read_block(priv(me)->disk_udata, me, &tmp);
 }
@@ -230,9 +232,7 @@ void *bt_piece_get_data(
 /**
  * Read data and use sha1 to determine if valid
  * @return 1 if valid; 0 otherwise */
-bool bt_piece_is_valid(
-    bt_piece_t * me
-)
+int bt_piece_is_valid(bt_piece_t * me)
 {
     char *hash;
     int ret;
@@ -251,7 +251,7 @@ bool bt_piece_is_valid(
     {
         int ii;
 
-        printf("Exepected: ");
+        printf("Expected: ");
         for (ii=0; ii<20; ii++)
             printf("%02x ", ((unsigned char*)priv(me)->sha1)[ii]);
         printf("\n");
@@ -272,9 +272,7 @@ bool bt_piece_is_valid(
  * A piece needs to be valid to be complete
  *
  * @return 1 if complete; 0 otherwise */
-bool bt_piece_is_complete(
-    bt_piece_t * me
-)
+int bt_piece_is_complete(bt_piece_t * me)
 {
     if (priv(me)->is_completed)
     {
@@ -282,7 +280,7 @@ bool bt_piece_is_complete(
     }
     else if (sparsecounter_is_complete(priv(me)->progress_downloaded))
     {
-        if (bt_piece_is_valid(me))
+        if (1 == bt_piece_is_valid(me))
         {
             priv(me)->is_completed = TRUE;
             return  TRUE;
@@ -299,7 +297,7 @@ bool bt_piece_is_complete(
         if (0 == off && ln == priv(me)->piece_length)
         {
             /* if sha1 matches properly - then we are done */
-            if (bt_piece_is_valid(me))
+            if (1 == bt_piece_is_valid(me))
             {
                 priv(me)->is_completed = TRUE;
                 return TRUE;
@@ -312,9 +310,7 @@ bool bt_piece_is_complete(
     return FALSE;
 }
 
-bool bt_piece_is_fully_requested(
-    bt_piece_t * me
-)
+int bt_piece_is_fully_requested(bt_piece_t * me)
 {
     return sparsecounter_is_complete(priv(me)->progress_requested);
 }
@@ -413,7 +409,7 @@ void bt_piece_write_block_to_stream(
 
     if (!(data = __get_data(me)))
         return;
-    
+
     data += blk->block_byte_offset;
 
     for (ii = 0; ii < blk->block_len; ii++)

@@ -73,13 +73,16 @@ int bt_diskmem_write_block(
     diskmem_t *me = udata;
     unsigned int offset;
 
-#if 0
+#if 0 /* debugging */
     int ii;
 
     printf("diskmem %d:", blk->block_byte_offset);
     for (ii = 0; ii < blk->block_len; ii++)
         printf("%02x,", ((const unsigned char*)blkdata)[ii]);
     printf("\n");
+//    for (ii = 0; ii < blk->block_len; ii++)
+//        printf("%c,", ((const unsigned char*)blkdata)[ii]);
+//    printf("\n");
 #endif
 
     assert(me->data);
@@ -95,7 +98,7 @@ int bt_diskmem_write_block(
 
     memcpy(me->data + offset, blkdata, blk->block_len);
 
-#if 0
+#if 0 /* debugging */
     {
     int ii;
 
@@ -126,6 +129,7 @@ static void *__read_block(
 
     if (me->data_size < offset + blk->block_len)
     {
+//        printf("too big %d %d\n", me->data_size, offset + blk->block_len);
         return NULL;
     }
 

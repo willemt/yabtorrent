@@ -217,7 +217,6 @@ def build(bld):
         unittest(bld,'test_choker_leecher.c')
         unittest(bld,'test_choker_seeder.c')
         unittest(bld,'test_rarestfirst.c')
-        unittest(bld,'test_filedumper.c')
         unittest(bld,'test_piece.c',ccflag='-I../'+bld.env.CONTRIB_PATH+"CBitfield")
         unittest(bld,'test_piece_db.c')
         end2end(bld,'test_end_to_end.c')

@@ -244,17 +244,20 @@ void TestBTPiece_Write_Block_To_Stream(
     bt_block_t blk;
     void *dc;
     char *msg = "this great message is 40 bytes in length", out[40], *bs;
+
     bs = out;
 
     pce = bt_piece_new("00000000000000000000", 40);
     dc = bt_diskmem_new();
     bt_diskmem_set_size(dc, 40);
     bt_piece_set_disk_blockrw(pce, bt_diskmem_get_blockrw(dc), dc);
+
     /*  write the whole message out */
     blk.piece_idx = 0;
     blk.block_byte_offset = 0;
     blk.block_len = 40;
     bt_piece_write_block(pce, NULL, &blk, msg);
+
     /*  read offset of 10 and length of 20 */
     blk.piece_idx = 0;
     blk.block_byte_offset = 10;

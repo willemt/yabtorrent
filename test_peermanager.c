@@ -14,7 +14,6 @@
 #include "bt_local.h"
 #include "bt_peermanager.h"
 
-
 void TestPM_init_pm_is_empty(
     CuTest * tc
 )
@@ -74,4 +73,27 @@ void TestPM_forall_works_across_all_peers(
     //bt_peermanager_add_peer(pm, peerid, strlen(peerid), ip, strlen(ip), 4000);
     CuAssertTrue(tc, 1 == mod);
 }
+
+#if 0
+void T_estPM_emovePeer(
+    CuTest * tc
+)
+{
+    void *id;
+
+    char *peerid = "0000000000000";
+
+    char *ip = "127.0.0.1";
+
+    id = bt_client_new();
+    /*  a peer id is required for adding peers */
+    //bt_client_set_peer_id(id, peerid);
+
+    CuAssertTrue(tc, 0 == bt_client_get_num_peers(id));
+
+    bt_client_add_peer(id, peerid, strlen(peerid), ip, strlen(ip), 4000);
+    bt_client_remove_peer(id, peerid);
+    CuAssertTrue(tc, 0 == bt_client_get_num_peers(id));
+}
+#endif
 
