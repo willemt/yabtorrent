@@ -39,3 +39,4 @@ typedef struct
     void *ticker;
 
 } bt_client_t;
+

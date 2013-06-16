@@ -233,6 +233,7 @@ int peer_send(void **udata,
     return 1;
 }
 
+#if 0
 /**
  * @param len: pointer to how much memory we need to read
  * @return how many we have read */
@@ -272,6 +273,7 @@ int peer_recv_len(void **udata, const int peerid, char *buf, int *len)
 
     return 1;
 }
+#endif
 
 int peer_disconnect(void **udata, int peerid)
 {
@@ -285,11 +287,14 @@ int peer_disconnect(void **udata, int peerid)
  * */
 int peers_poll(void **udata,
                const int msec_timeout,
-               int (*func_process_msg) (void *a,
-                                    int b),
+               int (*func_process) (void *caller,
+                                    int netid,
+                                    const unsigned char* buf,
+                                    unsigned int len),
                void (*func_process_connection) (void *,
                                                 int netid,
-                                                char *ip, int ip_len),
+                                                char *ip,
+                                                int ip_len),
                void *caller)
 {
     client_t* me = *udata;
@@ -322,7 +327,7 @@ int peers_poll(void **udata,
         }
         else if (!bipbuf_is_empty(cn->inbox))
         {
-            func_process_msg(me->bt, cn->peerid);
+            func_process(me->bt, cn->peerid, bipbuf_poll(cn->inbox, 1), 1);
         }
     }
 

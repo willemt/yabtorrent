@@ -119,19 +119,6 @@ int __FUNC_peerconn_pollblock(void *bto,
     }
 }
 
-/**
- * @return how much we've read */
-int __FUNC_peerconn_recv_from_peer(void *bto,
-        void* pr,
-        char *buf,
-        int *len)
-{
-    bt_client_t *bt = bto;
-    bt_peer_t * peer = pr;
-
-    return bt->func.peer_recv_len(&bt->net_udata, peer->net_peerid, buf, len);
-}
-
 static void __FUNC_peerconn_send_have(void* caller, void* peer, void* udata)
 {
 //    if (pwp_conn_is_active(peer))
@@ -263,7 +250,10 @@ typedef struct {
     void* caller;
     void* (*func_peerconn_init)(void* caller);
 
+//    hashmap_t *peers;
+
 } bt_peermanager_t;
+
 
 /**
  * @return 1 if the peer is within the manager */
@@ -310,7 +300,6 @@ void *bt_peermanager_netpeerid_to_peerconn(void * pm, const int netpeerid)
 
 pwp_connection_functions_t funcs = {
     .send = __FUNC_peerconn_send_to_peer,
-    .recv = __FUNC_peerconn_recv_from_peer,
     .pushblock = __FUNC_peerconn_pushblock,
     .pollblock = __FUNC_peerconn_pollblock,
     .disconnect = __FUNC_peerconn_disconnect,
@@ -320,7 +309,6 @@ pwp_connection_functions_t funcs = {
     .piece_is_complete = __FUNC_peerconn_pieceiscomplete,
     .log = __log
 };
-
 
 /**
  * Add the peer.
@@ -440,5 +428,6 @@ void* bt_peermanager_new(void* caller,
     me = calloc(1,sizeof(bt_peermanager_t));
     me->caller = caller;
     me->func_peerconn_init = func_peerconn_init;
+    //me->peers = hashmap_new(__request_hash, __request_compare, 11);
     return me;
 }

@@ -114,7 +114,7 @@ typedef struct
      * Receive data
      * @param buf : the buffer for holding the data
      * @param len IN: data len expected to receive; Out: data len received */
-    int (*peer_recv_len) (void **udata, int peerid, char *buf, int *len);
+//    int (*peer_recv_len) (void **udata, int peerid, char *buf, int *len);
 
     /**
      * Drop the connection for this peer
@@ -132,9 +132,13 @@ typedef struct
                         *
                         * @param caller: the caller
                         * @param netid: peer ID 
+                        * @param buf: buffer containing data
+                        * @param len: bytes available in buffer
                         */
                        int (*func_process) (void *caller,
-                                            int netid),
+                                            int netid,
+                                            const unsigned char* buf,
+                                            unsigned int len),
                        /**
                         * We've determined that we are now connected.
                         * Announce the connection to the caller.
@@ -145,7 +149,8 @@ typedef struct
                        void (*func_process_connection) (void *,
                                                         int netid,
                                                         char *ip,
-                                                        int), void *data);
+                                                        int),
+                       void *data);
 
     int (*peer_listen_open) (void **udata, const int port);
 
@@ -159,21 +164,6 @@ typedef struct
     const int idx;
 
 } bt_piece_t;
-
-/* peer */
-typedef struct
-{
-    /* 20 byte sha1 string */
-    char *peer_id;
-    char *ip;
-    char *port;
-
-    /* for network api */
-    int net_peerid;
-
-    /* peer connection */
-    void* pc;
-} bt_peer_t;
 
 typedef struct {
     void* (*poll_best_from_bitfield)(void * db, void * bf_possibles);

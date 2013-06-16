@@ -64,6 +64,30 @@ typedef struct
 
 /*----------------------------------------------------------------------------*/
 
+/* peer */
+typedef struct
+{
+    /* 20 byte sha1 string */
+    char *peer_id;
+    char *ip;
+    char *port;
+
+    /* for network api */
+    int net_peerid;
+
+    /* peer connection */
+    void* pc;
+
+    /* message handler */
+    void* mh;
+
+    /* handshaker */
+    void* hs;
+
+} bt_peer_t;
+
+/*----------------------------------------------------------------------------*/
+
 char *read_file(const char *name, int *len);
 
 /*----------------------------------------------------------------------------*/

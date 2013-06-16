@@ -215,7 +215,6 @@ int main(int argc, char **argv)
         bt_client_funcs_t func = {
             .peer_connect = peer_connect,
             .peer_send =  peer_send,
-            .peer_recv_len =peer_recv_len, 
             .peer_disconnect =peer_disconnect, 
             .peers_poll =peers_poll, 
             .peer_listen_open =peer_listen_open

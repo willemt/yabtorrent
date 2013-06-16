@@ -102,8 +102,10 @@ int peer_disconnect(void **udata, int peerid)
  * */
 int peers_poll(void **udata,
                const int msec_timeout,
-               int (*func_process) (void *a,
-                                    int b),
+               int (*func_process) (void *caller,
+                                    int netid,
+                                    const unsigned char* buf,
+                                    unsigned int len),
                void (*func_process_connection) (void *,
                                                 int netid,
                                                 char *ip, int), void *data)

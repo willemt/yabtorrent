@@ -115,7 +115,11 @@ void __FUNC_peerconn_step(void* caller, void* peer, void* udata)
 /**
  * Take this message and process it on the PeerConnection side
  * */
-static int __process_peer_msg(void *bto, const int netpeerid)
+static int __process_peer_msg(
+        void *bto,
+        const int netpeerid,
+        const unsigned char* buf,
+        unsigned int len)
 {
     bt_client_t *bt = bto;
     void *pc;
@@ -169,12 +173,14 @@ static void __log_process_info(bt_client_t * bt)
 
 static int __get_drate(const void *bto, const void *pc)
 {
-    return pwp_conn_get_download_rate(pc);
+//    return pwp_conn_get_download_rate(pc);
+    return 0;
 }
 
 static int __get_urate(const void *bto, const void *pc)
 {
-    return pwp_conn_get_upload_rate(pc);
+//    return pwp_conn_get_upload_rate(pc);
+    return 0;
 }
 
 static int __get_is_interested(void *bto, void *pc)
@@ -399,7 +405,8 @@ int bt_client_step(void *bto)
     /*  poll data from peer pwp connections */
     bt->func.peers_poll(&bt->net_udata,
                        atoi(config_get(bt->cfg,"select_timeout_msec")),
-                       __process_peer_msg, __process_peer_connect, bt);
+                       __process_peer_msg,
+                       __process_peer_connect, bt);
 
     /*  run each peer connection step */
     bt_peermanager_forall(bt->pm,NULL,NULL,__FUNC_peerconn_step);
