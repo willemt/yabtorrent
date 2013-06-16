@@ -43,9 +43,9 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <stdarg.h>
 
+#include "bitfield.h"
 #include "pwp_connection.h"
 
-#include "bitfield.h"
 #include "event_timer.h"
 #include "config.h"
 
@@ -134,9 +134,9 @@ int __FUNC_peerconn_recv_from_peer(void *bto,
 
 static void __FUNC_peerconn_send_have(void* caller, void* peer, void* udata)
 {
-//    if (bt_peerconn_is_active(peer))
+//    if (pwp_conn_is_active(peer))
 //    printf("sending have\n");
-    bt_peerconn_send_have(peer, bt_piece_get_idx(udata));
+    pwp_conn_send_have(peer, bt_piece_get_idx(udata));
 }
 
 static void* __FUNC_get_piece(void* caller, unsigned int idx)
@@ -276,7 +276,7 @@ int bt_peermanager_contains(void *pm, const char *ip, const int port)
     {
         bt_peer_t *peer;
 
-        peer = bt_peerconn_get_peer(me->peerconnects[ii]);
+        peer = pwp_conn_get_peer(me->peerconnects[ii]);
         if (!strcmp(peer->ip, ip) && atoi(peer->port) == port)
         {
             return 1;
@@ -297,9 +297,9 @@ void *bt_peermanager_netpeerid_to_peerconn(void * pm, const int netpeerid)
 
         pc = me->peerconnects[ii];
 
-//        if (!bt_peerconn_is_active(pc))
+//        if (!pwp_conn_is_active(pc))
 //            continue;
-        peer = bt_peerconn_get_peer(pc);
+        peer = pwp_conn_get_peer(pc);
         if (peer->net_peerid == netpeerid)
             return pc;
     }
@@ -362,16 +362,16 @@ bt_peer_t *bt_peermanager_add_peer(void *pm,
         me->func_peerconn_init(me->caller);
 
     /* create a peer connection for this peer */
-    peer->pc = pc = bt_peerconn_new();
-    bt_peerconn_set_functions(pc, &funcs, me->caller);
-    bt_peerconn_set_piece_info(pc,
+    peer->pc = pc = pwp_conn_new();
+    pwp_conn_set_functions(pc, &funcs, me->caller);
+    pwp_conn_set_piece_info(pc,
             config_get_int(me->cfg,"npieces"),
             config_get_int(me->cfg,"piece_length"));
-    bt_peerconn_set_peer(pc, peer);
-//    bt_peerconn_set_my_peer_id(pc, );
-    bt_peerconn_set_infohash(pc, config_get(me->cfg,"infohash"));
-    bt_peerconn_set_my_peer_id(pc, config_get(me->cfg,"my_peerid"));;
-    bt_peerconn_set_their_peer_id(pc, strdup(peer->peer_id));
+    pwp_conn_set_peer(pc, peer);
+//    pwp_conn_set_my_peer_id(pc, );
+    pwp_conn_set_infohash(pc, config_get(me->cfg,"infohash"));
+    pwp_conn_set_my_peer_id(pc, config_get(me->cfg,"my_peerid"));;
+    pwp_conn_set_their_peer_id(pc, strdup(peer->peer_id));
 
 //    __log(bto,NULL,"adding peer: ip:%.*s port:%d\n", ip_len, ip, port);
 

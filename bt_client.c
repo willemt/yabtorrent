@@ -43,9 +43,9 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <stdarg.h>
 
+#include "bitfield.h"
 #include "pwp_connection.h"
 
-#include "bitfield.h"
 #include "event_timer.h"
 #include "config.h"
 
@@ -65,7 +65,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 /*
  * bt_client
- *  has a bt_peerconn_t for each peer_t
+ *  has a pwp_conn_t for each peer_t
  *
  * peerconnection_t has a peer_t
  *  downloads from peer
@@ -109,7 +109,7 @@ static void __log(void *bto, void *src, const char *fmt, ...)
 
 void __FUNC_peerconn_step(void* caller, void* peer, void* udata)
 {
-    bt_peerconn_step(peer);
+    pwp_conn_step(peer);
 }
 
 /**
@@ -123,7 +123,7 @@ static int __process_peer_msg(void *bto, const int netpeerid)
     /* get the peer that this message is for using the netpeerid*/
     pc = bt_peermanager_netpeerid_to_peerconn(bt->pm, netpeerid);
 
-    bt_peerconn_process_msg(pc);
+//    pwp_conn_process_msg(pc);
     return 1;
 }
 
@@ -139,7 +139,7 @@ static void __process_peer_connect(void *bto,
     peer->net_peerid = netpeerid;
     /* get the peer that this message is for using the netpeerid*/
     pc = bt_peermanager_netpeerid_to_peerconn(bt->pm, netpeerid);
-    bt_peerconn_connected(pc);
+    pwp_conn_connected(pc);
 
     __log(bto,NULL,"CONNECTED: peerid:%d ip:%s", netpeerid, ip);
 }
@@ -169,27 +169,27 @@ static void __log_process_info(bt_client_t * bt)
 
 static int __get_drate(const void *bto, const void *pc)
 {
-    return bt_peerconn_get_download_rate(pc);
+    return pwp_conn_get_download_rate(pc);
 }
 
 static int __get_urate(const void *bto, const void *pc)
 {
-    return bt_peerconn_get_upload_rate(pc);
+    return pwp_conn_get_upload_rate(pc);
 }
 
 static int __get_is_interested(void *bto, void *pc)
 {
-    return bt_peerconn_peer_is_interested(pc);
+    return pwp_conn_peer_is_interested(pc);
 }
 
 static void __choke_peer(void *bto, void *pc)
 {
-    bt_peerconn_choke(pc);
+    pwp_conn_choke_peer(pc);
 }
 
 static void __unchoke_peer(void *bto, void *pc)
 {
-    bt_peerconn_unchoke(pc);
+    pwp_conn_unchoke_peer(pc);
 }
 
 static bt_choker_peer_i iface_choker_peer = {

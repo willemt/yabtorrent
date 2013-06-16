@@ -44,10 +44,10 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <stdarg.h>
 
-#include "pwp_connection.h"
-
 #include "bitfield.h"
 #include "event_timer.h"
+
+#include "block.h"
 
 #include "bt.h"
 #include "bt_local.h"
