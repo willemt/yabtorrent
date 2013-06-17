@@ -149,6 +149,8 @@ static void __offer_inbox(client_t* me, const void* send_data, int len, int peer
     client_connection_t* cn;
     int ii;
 
+    assert(me->connections);
+
     cn = hashmap_get(me->connections, &peerid);
 
     assert(cn);

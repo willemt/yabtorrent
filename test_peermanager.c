@@ -18,7 +18,7 @@ void TestPM_init_pm_is_empty(
     CuTest * tc
 )
 {
-    void *pm =  bt_peermanager_new(NULL,NULL);
+    void *pm =  bt_peermanager_new(NULL);
 
     CuAssertTrue(tc, 0 == bt_peermanager_count(pm));
 }
@@ -30,7 +30,7 @@ void TestPM_add_peer_counts_extra_peer(
     void *id;
     char *peerid = "0000000000000";
     char *ip = "127.0.0.1";
-    void *pm =  bt_peermanager_new(NULL,NULL);
+    void *pm =  bt_peermanager_new(NULL);
 
     bt_peermanager_add_peer(pm, peerid, strlen(peerid), ip, strlen(ip), 4000);
     CuAssertTrue(tc, 1 == bt_peermanager_count(pm));
@@ -43,7 +43,7 @@ void TestPM_cant_add_peer_twice(
     void *id;
     char *peerid = "0000000000000";
     char *ip = "127.0.0.1";
-    void *pm =  bt_peermanager_new(NULL,NULL);
+    void *pm =  bt_peermanager_new(NULL);
 
     bt_peermanager_add_peer(pm, peerid, strlen(peerid), ip, strlen(ip), 4000);
     bt_peermanager_add_peer(pm, peerid, strlen(peerid), ip, strlen(ip), 4000);
@@ -66,7 +66,7 @@ void TestPM_forall_works_across_all_peers(
     char *ip = "127.0.0.1";
 
     mod = 0;
-    pm =  bt_peermanager_new(NULL,NULL);
+    pm =  bt_peermanager_new(NULL);
 
     bt_peermanager_add_peer(pm, peerid, strlen(peerid), ip, strlen(ip), 4000);
     bt_peermanager_forall(pm, NULL, &mod, addone);
