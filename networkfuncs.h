@@ -1,11 +1,9 @@
 int peer_connect (void **udata,
-                     const char *host, const char *port, int *peerid);
+                     const char *host, int port, int *peerid);
 
 int peer_send (void **udata,
                   const int peerid,
                   const unsigned char *send_data, const int len);
-
-int peer_recv_len (void **udata, int peerid, char *recv, int *len);
 
 int peer_disconnect (void **udata, int peerid);
 

@@ -304,7 +304,7 @@ int bt_peermanager_contains(void *pm, const char *ip, const int port)
     return 0;
 }
 
-void *bt_peermanager_netpeerid_to_peerconn(void * pm, const int netpeerid)
+void *bt_peermanager_netpeerid_to_peer(void * pm, const int netpeerid)
 {
     bt_peermanager_t *me = pm;
     hashmap_iterator_t iter;
@@ -316,9 +316,8 @@ void *bt_peermanager_netpeerid_to_peerconn(void * pm, const int netpeerid)
         bt_peer_t* peer;
 
         peer = hashmap_iterator_next(me->peers,&iter);
-
         if (peer->net_peerid == netpeerid)
-            return peer->pc;
+            return peer;
     }
 
     assert(FALSE);

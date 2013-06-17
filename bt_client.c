@@ -45,6 +45,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "bitfield.h"
 #include "pwp_connection.h"
+#include "pwp_msghandler.h"
 
 #include "event_timer.h"
 #include "config.h"
@@ -125,12 +126,19 @@ static int __process_peer_msg(
         unsigned int len)
 {
     bt_client_t *bt = bto;
-    void *pc;
+    bt_peer_t* peer;
 
     /* get the peer that this message is for using the netpeerid*/
-    pc = bt_peermanager_netpeerid_to_peerconn(bt->pm, netpeerid);
+    peer = bt_peermanager_netpeerid_to_peer(bt->pm, netpeerid);
 
-//    pwp_conn_process_msg(pc);
+    /* initialise msg handler if needed */
+    if (!peer->mh)
+    {
+        peer->mh = pwp_msghandler_new(peer->pc);
+    }
+
+    pwp_msghandler_dispatch_from_buffer(peer->mh, buf, len);
+
     return 1;
 }
 
@@ -144,9 +152,7 @@ static void __process_peer_connect(void *bto,
 
     peer = bt_client_add_peer(bt, NULL, 0, ip, strlen(ip), port);
     peer->net_peerid = netpeerid;
-    /* get the peer that this message is for using the netpeerid*/
-    pc = bt_peermanager_netpeerid_to_peerconn(bt->pm, netpeerid);
-    pwp_conn_connected(pc);
+    pwp_conn_connected(peer->pc);
 
     __log(bto,NULL,"CONNECTED: peerid:%d ip:%s", netpeerid, ip);
 }
