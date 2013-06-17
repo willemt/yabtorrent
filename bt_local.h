@@ -70,7 +70,7 @@ typedef struct
     /* 20 byte sha1 string */
     char *peer_id;
     char *ip;
-    char *port;
+    unsigned int port;
 
     /* for network api */
     int net_peerid;

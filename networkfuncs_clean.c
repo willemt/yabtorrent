@@ -40,36 +40,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "block.h"
 #include "bt.h"
 
-/*----------------------------------------------------------------------------*/
-
-#if 0
-/*  @param my_ip: populate this with the interface's ip */
-int tracker_connect(void **udata,
-                    const char *host, const char *port, char *my_ip)
-{
-    return 1;
-}
-
-int tracker_send(void **udata, const void *data, int len)
-{
-    return 1;
-}
-
-int tracker_recv(void **udata, char **rdata, int *rlen)
-{
-    return 1;
-}
-
-int tracker_disconnect(void **udata)
-{
-
-    return 1;
-}
-#endif
-
-/*----------------------------------------------------------------------------*/
-
-int peer_connect(void **udata, const char *host, const char *port, int *peerid)
+int peer_connect(void **udata, const char *host, int *port, int *peerid)
 {
     *peerid = 1;
     return 1;
@@ -84,12 +55,6 @@ int peer_send(void **udata,
 {
 
     return 1;
-}
-
-/*  return how many we've read */
-int peer_recv_len(void **udata, const int peerid, char *buf, int *len)
-{
-    return 0;
 }
 
 int peer_disconnect(void **udata, int peerid)
@@ -123,14 +88,3 @@ int peer_listen_open(void **udata, const int port)
 }
 
 /*----------------------------------------------------------------------------*/
-
-#if 0
-bt_net_pwp_funcs_t pwpNetFuncs = {
-    peer_connect,
-    peer_send,
-    peer_recv_len,
-    peer_disconnect,
-    peers_poll,
-    peer_listen_open
-};
-#endif

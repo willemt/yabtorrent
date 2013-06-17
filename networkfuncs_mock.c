@@ -198,7 +198,7 @@ void* network_setup()
 
 /*----------------------------------------------------------------------------*/
 
-int peer_connect(void **udata, const char *host, const char *port, int *peerid)
+int peer_connect(void **udata, const char *host, const int port, int *peerid)
 {
     client_t* you;
     client_t* me = *udata;

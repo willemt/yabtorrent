@@ -642,14 +642,3 @@ int peer_listen_open(void **udata, const int port)
 }
 
 /*----------------------------------------------------------------------------*/
-
-#if 0
-bt_net_pwp_funcs_t pwpNetFuncs = {
-    peer_connect,
-    peer_send,
-    peer_recv_len,
-    peer_disconnect,
-    peers_poll,
-    peer_listen_open
-};
-#endif

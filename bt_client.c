@@ -107,9 +107,12 @@ static void __log(void *bto, void *src, const char *fmt, ...)
     bt->func_log(bt->log_udata, NULL, buf);
 }
 
-void __FUNC_peerconn_step(void* caller, void* peer, void* udata)
+void __FUNC_peer_step(void* caller, void* peer, void* udata)
 {
-    pwp_conn_step(peer);
+    bt_peer_t* p;
+
+    p = peer;
+    pwp_conn_step(p->pc);
 }
 
 /**
@@ -409,7 +412,7 @@ int bt_client_step(void *bto)
                        __process_peer_connect, bt);
 
     /*  run each peer connection step */
-    bt_peermanager_forall(bt->pm,NULL,NULL,__FUNC_peerconn_step);
+    bt_peermanager_forall(bt->pm,NULL,NULL,__FUNC_peer_step);
 
 //    bt_piecedb_print_pieces_downloaded(bt->db);
 //    if (__all_pieces_are_complete(bt))

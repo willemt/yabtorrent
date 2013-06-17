@@ -98,7 +98,7 @@ typedef struct
      * @param port the host's port
      * @param peerid pointer available for the callee to identify the peer */
     int (*peer_connect) (void **udata,
-                         const char *host, const char *port, int *peerid);
+                         const char *host, const int port, int *peerid);
 
     /**
      * Send data to peer
@@ -109,12 +109,6 @@ typedef struct
     int (*peer_send) (void **udata,
                       const int peerid,
                       const unsigned char *send_data, const int len);
-
-    /**
-     * Receive data
-     * @param buf : the buffer for holding the data
-     * @param len IN: data len expected to receive; Out: data len received */
-//    int (*peer_recv_len) (void **udata, int peerid, char *buf, int *len);
 
     /**
      * Drop the connection for this peer
