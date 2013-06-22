@@ -51,10 +51,10 @@ class compiletest(Task):
                 )
 
 def unittest(bld, src, ccflag=None):
-        bld(rule='cp ../make-tests.sh .')
-        bld(rule='cp ../%s .' % src)
+        #bld(rule='cp ../make-tests.sh .')
+        #bld(rule='cp ../%s .' % src)
         # collect tests into one area
-        bld(rule='sh make-tests.sh '+src+' > ${TGT}', target="t_"+src)
+        bld(rule='sh ../make-tests.sh ../'+src+' > ${TGT}', target="t_"+src)
 
         # build the test program
         bld.program(
