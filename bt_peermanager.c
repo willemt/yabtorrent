@@ -177,7 +177,8 @@ bt_peer_t *bt_peermanager_add_peer(void *pm,
         asprintf(&peer->peer_id, "");//, peer_id_len, peer_id);
     }
     asprintf(&peer->ip, "%.*s", ip_len, ip);
-    asprintf(&peer->port, "%d", port);
+    //asprintf(&peer->port, "%d", port);
+    peer->port = port;
 
 //    if (me->func_peerconn_init)
 //        me->func_peerconn_init(me->caller);

@@ -52,7 +52,8 @@ void TestBT_client_add_peer(
     CuAssertTrue(tc, 1 == bt_client_get_num_peers(id));
 }
 
-void TestBT_ClientCantAddPeerTwice(
+#if 0 /* tested as part of peer manager */
+void T_estBT_ClientCantAddPeerTwice(
     CuTest * tc
 )
 {
@@ -72,6 +73,7 @@ void TestBT_ClientCantAddPeerTwice(
     bt_client_add_peer(id, peerid, strlen(peerid), ip, strlen(ip), 4000);
     CuAssertTrue(tc, 1 == bt_client_get_num_peers(id));
 }
+#endif
 
 void TestBT_GeneratedPeeridIs20BytesLong(
     CuTest * tc
