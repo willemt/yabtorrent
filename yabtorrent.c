@@ -111,8 +111,6 @@ typedef struct {
 
 int cb_event(void* udata, const char* key)
 {
-    printf("%s\n");
-
     return 1;
 }
 
