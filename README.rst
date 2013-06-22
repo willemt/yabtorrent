@@ -1,5 +1,7 @@
 YABTorrent
 ==========
+.. image:: https://travis-ci.org/willemt/YABTorrent.png
+   :target: https://travis-ci.org/willemt/YABTorrent
 
 What?
 -----
