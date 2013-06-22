@@ -140,9 +140,9 @@ def end2end(bld, src, ccflag=None):
 def build(bld):
 
         if sys.platform == 'win32':
-            platform = '-D__WINDOWS__'
+            platform = '-DWIN32'
 	elif sys.platform == 'linux2':
-            platform = '-D__LINUX__'
+            platform = '-DLINUX'
         else:
             platform = ''
 

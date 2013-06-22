@@ -7,7 +7,7 @@
 
 #include "bt_string.h"
 
-
+#if WIN32
 int asprintf(char **resultp, const char *format, ...)
 {
     char buf[1024];
@@ -28,4 +28,5 @@ char* strndup(const char* str, const unsigned int len)
     strncpy(new,str,len);
     return new;
 }
+#endif
 
