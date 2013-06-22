@@ -329,7 +329,11 @@ int peers_poll(void **udata,
         }
         else if (!bipbuf_is_empty(cn->inbox))
         {
-            func_process(me->bt, cn->peerid, bipbuf_poll(cn->inbox, 1), 1);
+            int len;
+
+            len = bipbuf_get_spaceused(cn->inbox);
+            if (len > 0)
+                func_process(me->bt, cn->peerid, bipbuf_poll(cn->inbox, len), len);
         }
     }
 

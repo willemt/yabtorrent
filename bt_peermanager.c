@@ -64,8 +64,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <time.h>
 
-//-----------------------------------------------------------------------------
-
 typedef struct {
 
     void* cfg;

@@ -175,6 +175,7 @@ def build(bld):
                     bld.env.CONTRIB_PATH+"CBitstream/bitstream.c",
                     bld.env.CONTRIB_PATH+"CBTPWPConnection/pwp_connection.c",
                     bld.env.CONTRIB_PATH+"CBTPWPConnection/pwp_msghandler.c",
+                    bld.env.CONTRIB_PATH+"CBTPWPConnection/pwp_handshaker.c",
                     bld.env.CONTRIB_PATH+"CSparseFileAllocator/sparsefile_allocator.c",
                     bld.env.CONTRIB_PATH+"CSparseCounter/sparse_counter.c",
                     bld.env.CONTRIB_PATH+"CPSeudoLRU/pseudolru.c",

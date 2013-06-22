@@ -45,6 +45,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "bitfield.h"
 #include "pwp_connection.h"
+#include "pwp_handshaker.h"
 #include "pwp_msghandler.h"
 
 #include "event_timer.h"
@@ -104,9 +105,10 @@ static void __log(void *bto, void *src, const char *fmt, ...)
 
 void __FUNC_peer_step(void* caller, void* peer, void* udata)
 {
-    bt_peer_t* p;
+    bt_peer_t* p = peer;
 
-    p = peer;
+    if (!pwp_conn_flag_is_set(p->pc, PC_HANDSHAKE_RECEIVED)) return;
+
     pwp_conn_step(p->pc);
 }
 
@@ -125,10 +127,24 @@ static int __process_peer_msg(
     /* get the peer that this message is for using the netpeerid*/
     peer = bt_peermanager_netpeerid_to_peer(bt->pm, netpeerid);
 
-    /* initialise msg handler if needed */
-    if (!peer->mh)
+    /* handle handshake */
+    if (!pwp_conn_flag_is_set(peer->pc, PC_HANDSHAKE_RECEIVED))
     {
-        peer->mh = pwp_msghandler_new(peer->pc);
+        int ret;
+
+        ret = pwp_handshaker_dispatch_from_buffer(peer->mh, &buf, &len);
+
+        if (ret == 1)
+        {
+            pwp_handshaker_release(peer->mh);
+            peer->mh = pwp_msghandler_new(peer->pc);
+            pwp_conn_set_state(peer->pc, PC_HANDSHAKE_RECEIVED);
+            pwp_conn_send_bitfield(peer->pc);
+        }
+        else if (ret == -1)
+        {
+            assert(0);
+        }
     }
 
     pwp_msghandler_dispatch_from_buffer(peer->mh, buf, len);
@@ -147,7 +163,7 @@ static void __process_peer_connect(void *bto,
     peer = bt_client_add_peer(bt, NULL, 0, ip, strlen(ip), port);
     peer->net_peerid = netpeerid;
     pwp_conn_connected(peer->pc);
-
+    pwp_conn_send_handshake(peer->pc);
     __log(bto,NULL,"CONNECTED: peerid:%d ip:%s", netpeerid, ip);
 }
 
@@ -401,9 +417,9 @@ int __FUNC_peerconn_pollblock(void *bto,
 
 static void __FUNC_peerconn_send_have(void* caller, void* peer, void* udata)
 {
-//    if (pwp_conn_is_active(peer))
-//    printf("sending have\n");
-    pwp_conn_send_have(peer, bt_piece_get_idx(udata));
+    bt_peer_t* p = peer;
+
+    pwp_conn_send_have(p->pc, bt_piece_get_idx(udata));
 }
 
 static void* __FUNC_get_piece(void* caller, unsigned int idx)
@@ -412,7 +428,6 @@ static void* __FUNC_get_piece(void* caller, unsigned int idx)
 
     return bt->ipdb->get_piece(bt->piecedb, idx);
 }
-
 
 /**
  * Received a block from a peer
@@ -485,29 +500,6 @@ int __FUNC_peerconn_disconnect(void *bto,
     __log(bto,NULL,"disconnecting,%s", reason);
     return 1;
 }
-
-#if 0
-int __FUNC_peerconn_connect(void *bto, void *pc, void* pr)
-{
-    bt_peer_t * peer = pr;
-    bt_client_t *bt = bto;
-
-    assert(bt->func.peer_connect);
-
-    /* the remote peer will have always send a handshake */
-    if (NULL == bt->func.peer_connect)
-        return 0;
-
-    if (0 == bt->func.peer_connect(&bt->net_udata, peer->ip,
-                                  peer->port, &peer->net_peerid))
-    {
-        __log(bto,NULL,"failed connection to peer");
-        return 0;
-    }
-
-    return 1;
-}
-#endif
 
 int __FUNC_peerconn_pieceiscomplete(void *bto, void *piece)
 {
@@ -588,6 +580,10 @@ void *bt_client_add_peer(void *bto,
             return 0;
         }
     }
+
+    peer->mh = pwp_handshaker_new(
+            config_get(me->cfg,"infohash"),
+            config_get(me->cfg,"my_peerid"));
 
     bt_leeching_choker_add_peer(me->lchoke, peer->pc);
 

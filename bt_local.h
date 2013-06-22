@@ -81,9 +81,6 @@ typedef struct
     /* message handler */
     void* mh;
 
-    /* handshaker */
-    void* hs;
-
 } bt_peer_t;
 
 /*----------------------------------------------------------------------------*/
