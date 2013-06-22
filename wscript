@@ -5,26 +5,23 @@ def options(opt):
 
 
 contribs = [
-('CBitfield', 'git@github.com:willemt/CBitfield.git'),
-('CLinkedListQueue', 'git@github.com:willemt/CLinkedListQueue.git'),
-('CBTTrackerClient', 'git@github.com:willemt/CBTTrackerClient.git'),
-('CBitstream', 'git@github.com:willemt/CSimpleBitstream.git'),
-('CTorrentFileReader', 'git@github.com:willemt/CTorrentFileReader.git'),
-('CBipBuffer', 'git@github.com:willemt/CBipBuffer.git'),
-#('CCircularBuffer', 'git@github.com:willemt/CCircularBuffer.git'),
-('CSparseCounter', 'git@github.com:willemt/CSparseCounter.git'),
-('CBitstream', 'git@github.com:willemt/CSimpleBitstream.git'),
-('CConfig-re', 'git@github.com:willemt/CConfig-re.git'),
-('CBTPWPConnection', 'git@github.com:willemt/CBTPWPConnection.git'),
-('CSparseFileAllocator', 'git@github.com:willemt/CSparseFileAllocator.git'),
-('CEventTimer', 'git@github.com:willemt/CEventTimer.git'),
-('CHeaplessBencodeReader', 'git@github.com:willemt/CHeaplessBencodeReader.git'),
-('CHashMapViaLinkedList','git@github.com:willemt/CHashMapViaLinkedList.git'),
-('CMeanQueue','git@github.com:willemt/CMeanQueue.git'),
-('CHeap','git@github.com:willemt/CHeap.git'),
-('CPSeudoLRU','git@github.com:willemt/CPseudoLRU.git')]
-
-#bld(rule='mkdir clinkedlistqueue && git pull git@github.com:willemt/CLinkedListQueue.git', always=True)
+('CBitfield', 'http://github.com/willemt/CBitfield'),
+('CLinkedListQueue', 'http://github.com/willemt/CLinkedListQueue'),
+('CBTTrackerClient', 'http://github.com/willemt/CBTTrackerClient'),
+('CBitstream', 'http://github.com/willemt/CSimpleBitstream'),
+('CTorrentFileReader', 'http://github.com/willemt/CTorrentFileReader'),
+('CBipBuffer', 'http://github.com/willemt/CBipBuffer'),
+('CSparseCounter', 'http://github.com/willemt/CSparseCounter'),
+('CSimpleBitstream', 'http://github.com/willemt/CSimpleBitstream'),
+('CConfig-re', 'http://github.com/willemt/CConfig-re'),
+('CBTPWPConnection', 'http://github.com/willemt/CBTPWPConnection'),
+('CSparseFileAllocator', 'http://github.com/willemt/CSparseFileAllocator'),
+('CEventTimer', 'http://github.com/willemt/CEventTimer'),
+('CHeaplessBencodeReader', 'http://github.com/willemt/CHeaplessBencodeReader'),
+('CHashMapViaLinkedList','http://github.com/willemt/CHashMapViaLinkedList'),
+('CMeanQueue','http://github.com/willemt/CMeanQueue'),
+('CHeap','http://github.com/willemt/CHeap'),
+('CPSeudoLRU','http://github.com/willemt/CPseudoLRU')]
 
 def configure(conf):
     conf.load('compiler_c')
@@ -36,7 +33,6 @@ def configure(conf):
         #conf.exec_command("git init", cwd=c[0])
         #conf.exec_command("git pull %s" % c[1], cwd=c[0])
         if not os.path.exists("../"+c[0]):
-#            conf.exec_command("git clone %s" % "../"+c[0])
             conf.env.CONTRIB_PATH = './'
             conf.exec_command("git clone %s %s" % (c[1],c[0],))
         else:
