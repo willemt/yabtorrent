@@ -81,7 +81,8 @@ def unittest(bld, src, ccflag=None):
         if sys.platform == 'win32':
             bld(rule='${SRC}',source=src[:-2]+'.exe')
         else:
-            bld(rule='pwd && export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:. && ./build/'+src[:-2])
+            bld(rule='${SRC}',source=src[:-2]+'.exe')
+            #bld(rule='pwd && export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:. && ./build/'+src[:-2])
 
 def end2end(bld, src, ccflag=None):
         bld(rule='cp ../make-tests.sh .')
