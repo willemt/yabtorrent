@@ -25,6 +25,8 @@ contribs = [
 
 def configure(conf):
     conf.load('compiler_c')
+    if sys.platform == 'win32':
+        conf.check_cc(lib='ws2_32')
 
     # Get the required contributions via GIT
     for c in contribs:
@@ -221,12 +223,16 @@ def build(bld):
         unittest(bld,'test_piece_db.c')
         end2end(bld,'test_end_to_end.c')
 
+        libs = []
+        if sys.platform == 'win32':
+            libs += ['ws2_32']
+
         bld.program(
                 source=[
                     'yabtorrent.c',
-                    "networkfuncs_mock.c",
+                    "networkfuncs_tcp.c",
                     "mt19937ar.c",
-                    "mock_torrent.c",
+#                    "mock_torrent.c",
                     bld.env.CONTRIB_PATH+"CBTTrackerClient/bt_tracker_client.c",
                     bld.env.CONTRIB_PATH+"CBTTrackerClient/bt_tracker_client_response_reader.c",
                     bld.env.CONTRIB_PATH+"CBTTrackerClient/url_encoder.c",
@@ -237,8 +243,9 @@ def build(bld):
                     '-g',
                     '-Werror',
                     '-Werror=uninitialized',
-                    '-Werror=return-type'
+                    '-Werror=return-type',
                     ],
+                lib = libs,
                 includes=[
                     bld.env.CONTRIB_PATH+"CConfig-re",
                     bld.env.CONTRIB_PATH+"CBTTrackerClient",
@@ -246,6 +253,6 @@ def build(bld):
                     bld.env.CONTRIB_PATH+"CTorrentFileReader",
                     bld.env.CONTRIB_PATH+"CHashMapViaLinkedList",
                     bld.env.CONTRIB_PATH+"CBipBuffer",
-                   ], 
-                use='yabbt')
+                   ],
+                   use='yabbt')
 

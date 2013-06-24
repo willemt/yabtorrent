@@ -38,11 +38,21 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <assert.h>
 
 #include <sys/types.h>
-//#include <sys/socket.h>
-//#include <netinet/in.h>
-//#include <netdb.h>
-//#include <poll.h>
+
+#if WIN32
+#define _WIN32_WINNT 0x0501
+
 #include <winsock2.h>
+#include <ws2tcpip.h>
+
+#else
+
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <netdb.h>
+#include <poll.h>
+
+#endif
 
 #include <unistd.h>     /* for sleep */
 
@@ -50,11 +60,12 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <getopt.h>
 
+#include "block.h"
 #include "bt.h"
 
 #include <errno.h>
 
-#include "cbuffer.h"
+#include "bipbuffer.h"
 
 typedef struct
 {
@@ -79,8 +90,9 @@ typedef struct
     /* ports for pwp */
     sock_t *peer_socks;
     int npeer_socks;
-    /*  circular buffer for buffering failed send()s */
-    cbuf_t *cb;
+
+    /*  buffer for buffering failed send()s */
+    void *bb;
 } net_t;
 
 static int __tcp_connect(const char *host, const char *port)
@@ -173,11 +185,12 @@ static int __tcpsock_send(const int sock, const char *data, int len)
             return bytes_sent;
         }
 
-//        FD_CLR(sock, &fdset_send);
         assert(FD_ISSET(sock, &fdset_send));
-//        if ((bytes_out = write(sock, data, len)) < 0)
-//        if ((bytes_out = write(sock, data, len)) < 0)
+#if WIN32
+        bytes_out = send(sock, data, len, 0);
+#else
         bytes_out = send(sock, data, len, MSG_NOSIGNAL);
+#endif
         if (bytes_out < 0)
         {
             /*  other side has disconnected us */
@@ -205,70 +218,7 @@ static int __tcpsock_send(const int sock, const char *data, int len)
     return bytes_sent;
 }
 
-/*----------------------------------------------------------------------------*/
-
 /*  @param my_ip: populate this with the interface's ip */
-
-int __tcpsock_http_recv(int sock, char **rdata, int *rlen)
-{
-#define BUF_SIZE 2000
-
-    char buf[BUF_SIZE + 1], *out = NULL;
-
-    int recvd = 0;
-
-    //MSG_DONTWAIT
-#if 0
-    while ((recvd = recv(sock, buf, BUF_SIZE, MSG_WAITALL)) > 0)
-    {
-        buf[recvd] = '\0';
-
-        if (!out)
-        {
-            out = strndup(buf, recvd);
-        }
-        else
-        {
-            char *tmp = NULL;
-
-            asprintf(&tmp, "%s%s", out, buf);
-            assert(tmp);
-            free(out);
-            out = tmp;
-        }
-    }
-
-    if (recvd == 0)
-    {
-        printf("Other side has shutdown\n");
-        perror("can't recv from socket:");
-//        exit(EXIT_FAILURE);
-    }
-#else
-
-    if (0 == (recvd = recv(sock, buf, BUF_SIZE, MSG_WAITALL)))
-    {
-        printf("Other side has shutdown\n");
-        perror("can't recv from socket:");
-//        exit(EXIT_FAILURE);
-        return 0;
-    }
-    else
-    {
-        buf[recvd] = '\0';
-        out = malloc(recvd);
-        memcpy(out, buf, recvd);
-
-        *rdata = out;
-        *rlen = recvd;
-    }
-
-#endif
-
-    return 1;
-}
-
-/*----------------------------------------------------------------------------*/
 
 static void __find_unused_sock(net_t * net, int *peerid)
 {
@@ -322,7 +272,7 @@ int peer_connect(void **udata, const char *host, const char *port, int *peerid)
     }
 }
 
-static void __add_to_sendbuffer(cbuf_t * cb,
+static void __add_to_sendbuffer(void * bb,
                                 const int peerid,
                                 const int size, const char *data)
 {
@@ -330,8 +280,8 @@ static void __add_to_sendbuffer(cbuf_t * cb,
 
     hdr.sendee = peerid;
     hdr.size = size;
-    cbuf_offer(cb, (void *) &hdr, sizeof(buffered_data_header_t));
-    cbuf_offer(cb, data, hdr.size);
+    bipbuf_offer(bb, (void *) &hdr, sizeof(buffered_data_header_t));
+    bipbuf_offer(bb, data, hdr.size);
 }
 
 /**
@@ -347,9 +297,7 @@ int peer_send(void **udata,
     assert(*udata);
     assert(peerid < net->npeer_socks);
 
-//    printf("sending: %d %s\n", len, send_data);
-
-#if 1    /*  circular buffer */
+#if 0    /*  circular buffer */
 
     /*  init buffer */
     if (!net->cb)
@@ -414,7 +362,7 @@ int peer_send(void **udata,
     /*  wasn't able to be sent, add to buffer */
     if (0 < diff)
     {
-        __add_to_sendbuffer(net->cb, peerid, diff, send_data + (len - diff));
+        __add_to_sendbuffer(net->bb, peerid, diff, send_data + (len - diff));
     }
 
     return 1;
@@ -430,7 +378,11 @@ int peer_recv_len(void **udata, const int peerid, char *buf, int *len)
     net = *udata;
     sock = &net->peer_socks[peerid];
 
+#if WIN32
+    recvd = recv(sock->fd, buf, *len, 0);
+#else
     recvd = recv(sock->fd, buf, *len, MSG_WAITALL);
+#endif
 
     if (0 < recvd)
     {
@@ -471,18 +423,19 @@ int peer_disconnect(void **udata, int peerid)
  * */
 int peers_poll(void **udata,
                const int msec_timeout,
-               int (*func_process) (void *a,
-                                    int b),
+               int (*func_process) (void *caller,
+                                    int netid,
+                                    const unsigned char* buf,
+                                    unsigned int len),
                void (*func_process_connection) (void *,
                                                 int netid,
-                                                char *ip, int), void *data)
+                                                char *ip,
+                                                int ip_len),
+               void *caller)
 {
     int nsocks_rdy = 0, fd_highest, ii;
-
     struct timeval select_delay;
-
     fd_set fdset_read;
-
     net_t *net = *udata;
 
     if (!net)
@@ -515,7 +468,6 @@ int peers_poll(void **udata,
 
     /*  set wait */
     select_delay.tv_sec = 0;
-//    select_delay.tv_usec = 0;
     select_delay.tv_usec = msec_timeout * 1000;
 
     /*  2. select from sockets */
@@ -560,7 +512,7 @@ int peers_poll(void **udata,
         if (1 == sock->inuse && FD_ISSET(sock->fd, &fdset_read))
         {
             /*  3a. read! */
-            func_process(data, ii);
+//            func_process(data, ii);
             FD_CLR(sock->fd, &fdset_read);
         }
     }
@@ -569,15 +521,18 @@ int peers_poll(void **udata,
     if (FD_ISSET(net->peer_listen_sock, &fdset_read))
     {
         socklen_t clilen;
-
         struct sockaddr_in cli_addr;
-
         int new_fd;
 
         clilen = sizeof(cli_addr);
         new_fd =
-            accept4(net->peer_listen_sock, (struct sockaddr *) &cli_addr,
-                    &clilen, SOCK_NONBLOCK);
+#if WIN32
+            accept(net->peer_listen_sock, (struct sockaddr *) &cli_addr, &clilen);
+#else
+            accept4(net->peer_listen_sock, (struct sockaddr *) &cli_addr, &clilen,
+                     SOCK_NONBLOCK);
+#endif
+
         if (new_fd < 0)
         {
             perror("ERROR on accept");
@@ -591,15 +546,15 @@ int peers_poll(void **udata,
         val = (void *) &cli_addr.sin_addr.s_addr;
 
         sprintf(ip, "%d.%d.%d.%d", val[0], val[1], val[2], val[3]);
-//        printf("\n\n\n\nconnection from sock: %d %s:%d\n", new_fd, ip, port);
-        func_process_connection(data, __add_new_peer_with_sock(net, new_fd),
-                                ip, port);
+#if 0
+        printf("\n\n\n\nconnection from sock: %d %s:%d\n", new_fd, ip, port);
+#endif
+//        func_process_connection(data, __add_new_peer_with_sock(net, new_fd),
+//                                ip, port);
     }
 
     return 1;
 }
-
-/*----------------------------------------------------------------------------*/
 
 /**
  * open up to listen to peers */
@@ -612,11 +567,15 @@ int peer_listen_open(void **udata, const int port)
     /*  open TCP socket */
     if ((net->peer_listen_sock = socket(AF_INET, SOCK_STREAM, 0)) < 0)
     {
+#if WIN32
+        assert(0);
+#else
         error("ERROR opening socket");
+#endif
     }
 
     /*  configure TCP socket */
-    bzero((char *) &serv_addr, sizeof(serv_addr));
+    memset((char *) &serv_addr, 0, sizeof(serv_addr));
     serv_addr.sin_family = AF_INET;
     serv_addr.sin_addr.s_addr = INADDR_ANY;
     serv_addr.sin_port = htons(port);
