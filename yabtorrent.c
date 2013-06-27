@@ -54,6 +54,15 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #define PROGRAM_NAME "bt"
 
+#if WIN32
+#define _WIN32_WINNT 0x0501
+
+#include <winsock2.h>
+#include <ws2tcpip.h>
+
+#endif
+
+
 
 #include <sys/time.h>
 
@@ -118,7 +127,7 @@ int cb_event_str(void* udata, const char* key, const char* val, int len)
 {
     torrent_reader_t* me = udata;
 
-    printf("%s %.*s\n", key, len, val);
+//    printf("%s %.*s\n", key, len, val);
 
     if (!strcmp(key,"announce"))
     {
@@ -131,24 +140,32 @@ int cb_event_str(void* udata, const char* key, const char* val, int len)
 
 int cb_event_int(void* udata, const char* key, int val)
 {
-    printf("%s %d\n", key, val);
+//    printf("%s %d\n", key, val);
 
     return 1;
 }
 
-void __read_torrent_file(void* bt, char* torrent_file)
+/**
+ * Read metainfo file (ie. "torrent" file)
+ * This function will populate the piece database
+ * @return 1 on sucess; otherwise 0
+ */
+static int __read_torrent_file(void* bt, const char* torrent_file)
 {
     torrent_reader_t r;
     void* tf;
     int len;
     char* metainfo;
 
+    printf("\nReading file torrent file\n");
     memset(&r, 0, sizeof(torrent_reader_t));
     r.bt = bt;
     r.cfg = bt_client_get_config(bt);
     tf = tfr_new(cb_event, cb_event_str, cb_event_int, &r);
     metainfo = read_file(torrent_file,&len);
+    printf("len: %d\n", len);
     tfr_read_metainfo(tf, metainfo, len);
+    return 1;
 }
 
 int main(int argc, char **argv)
@@ -160,6 +177,19 @@ int main(int argc, char **argv)
     //int status;
     config_t* cfg;
 
+#if WIN32
+    WSADATA wsaData;
+
+    if(WSAStartup(0x202, &wsaData) == 0)
+    {
+    }
+    else
+        printf("ERROR: Initialization failure.\n");
+
+#endif
+
+
+
     o_verify_download = 0;
     o_shutdown_when_complete = 0;
     o_torrent_file_report_only = 0;
@@ -167,7 +197,6 @@ int main(int argc, char **argv)
     bt = bt_client_new();
     cfg = bt_client_get_config(bt);
     //status = config_read(cfg, "yabtc", "config");
-
     // setlocale(LC_ALL, " ");
     //  atexit (close_stdin);
 
@@ -263,9 +292,19 @@ int main(int argc, char **argv)
         printf("ERROR: Please specify torrent file\n");
         exit(EXIT_FAILURE);
     }
-    else if (0 == bt_client_read_metainfo_file(bt, argv[optind]))
+    else if (0 == __read_torrent_file(bt,argv[optind]))
     {
         exit(EXIT_FAILURE);
+    }
+
+    {
+        void* bt;
+
+        //bt_trackerclient_funcs_t *funcs
+        
+        bt =  bt_trackerclient_new(NULL);
+
+        bt_trackerclient_connect_to_uri(bt, "http://tracker.publicbt.com:80/announce");
     }
 
     if (o_verify_download)
@@ -276,8 +315,6 @@ int main(int argc, char **argv)
     {
         while (1)
         {
-            //bt_trackerclient_step(tc);
-
             if (0 == bt_client_step(bt))
                 break;
         }

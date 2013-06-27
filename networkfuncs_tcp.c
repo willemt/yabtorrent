@@ -166,15 +166,15 @@ static int __tcpsock_send(const int sock, const char *data, int len)
     {
         int bytes_out, nsocks_rdy, ii;
 
-        struct timeval select_delay;
+        struct timeval delay;
 
         fd_set fdset_send;
 
-        select_delay.tv_sec = 0;
-        select_delay.tv_usec = 1000;
+        delay.tv_sec = 0;
+        delay.tv_usec = 1000;
         FD_ZERO(&fdset_send);
         FD_SET(sock, &fdset_send);
-        nsocks_rdy = select(sock + 1, NULL, &fdset_send, NULL, &select_delay);
+        nsocks_rdy = select(sock + 1, NULL, &fdset_send, NULL, &delay);
         if (nsocks_rdy < 0)
         {
             perror("select");
@@ -368,6 +368,7 @@ int peer_send(void **udata,
     return 1;
 }
 
+#if 0
 /*  return how many we've read */
 int peer_recv_len(void **udata, const int peerid, char *buf, int *len)
 {
@@ -406,6 +407,7 @@ int peer_recv_len(void **udata, const int peerid, char *buf, int *len)
 
     return recvd;
 }
+#endif
 
 int peer_disconnect(void **udata, int peerid)
 {
@@ -433,8 +435,9 @@ int peers_poll(void **udata,
                                                 int ip_len),
                void *caller)
 {
+    int us_waited = 0;
     int nsocks_rdy = 0, fd_highest, ii;
-    struct timeval select_delay;
+    struct timeval delay;
     fd_set fdset_read;
     net_t *net = *udata;
 
@@ -464,22 +467,19 @@ int peers_poll(void **udata,
     if (fd_highest < net->peer_listen_sock)
         fd_highest = net->peer_listen_sock;
 
-    int us_waited = 0;
-
     /*  set wait */
-    select_delay.tv_sec = 0;
-    select_delay.tv_usec = msec_timeout * 1000;
+    delay.tv_sec = 0;
+    delay.tv_usec = msec_timeout * 1000;
 
     /*  2. select from sockets */
-    while (us_waited < msec_timeout * 1000)
+    for (us_waited = 0; us_waited < msec_timeout * 1000;)
     {
         int us_wait;
 
-        us_wait = select_delay.tv_usec;
+        us_wait = delay.tv_usec;
 
         /*  2b. do select */
-        nsocks_rdy =
-            select(fd_highest + 1, &fdset_read, NULL, NULL, &select_delay);
+        nsocks_rdy = select(fd_highest + 1, &fdset_read, NULL, NULL, &delay);
 
         if (nsocks_rdy < 0)
         {
@@ -491,15 +491,20 @@ int peers_poll(void **udata,
         {
             break;
         }
-//        printf("us_waited: %d %d\n", us_waited, msec_timeout);
-        us_waited += us_wait - select_delay.tv_usec;
-        select_delay.tv_usec = msec_timeout * 1000;
+
+#if 0
+        printf("us_waited: %d %d\n", us_waited, msec_timeout);
+#endif
+        us_waited += us_wait - delay.tv_usec;
+        delay.tv_usec = msec_timeout * 1000;
     }
 
     if (nsocks_rdy == 0)
         return 1;
 
-//    printf("nsocks_rdy %d\n", nsocks_rdy);
+#if 0
+    printf("nsocks_rdy %d\n", nsocks_rdy);
+#endif
 
     /* 3. read from sockets */
     for (ii = 0; ii < net->npeer_socks; ii++)

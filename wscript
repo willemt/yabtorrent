@@ -101,9 +101,11 @@ def end2end(bld, src, ccflag=None):
                     "networkfuncs_mock.c",
                     "mt19937ar.c",
                     "mock_torrent.c",
-                    bld.env.CONTRIB_PATH+"CBTTrackerClient/bt_tracker_client.c",
-                    bld.env.CONTRIB_PATH+"CBTTrackerClient/bt_tracker_client_response_reader.c",
-                    bld.env.CONTRIB_PATH+"CBTTrackerClient/url_encoder.c",
+#                    bld.env.CONTRIB_PATH+"CBTTrackerClient/bt_tracker_client.c",
+#                    bld.env.CONTRIB_PATH+"CBTTrackerClient/tracker_http.c",
+#                    bld.env.CONTRIB_PATH+"CBTTrackerClient/network.c",
+#                    bld.env.CONTRIB_PATH+"CBTTrackerClient/bt_tracker_client_response_reader.c",
+#                    bld.env.CONTRIB_PATH+"CBTTrackerClient/url_encoder.c",
                     bld.env.CONTRIB_PATH+"CBipBuffer/bipbuffer.c"
                     ],
                 target='test_end_to_end',
@@ -234,6 +236,8 @@ def build(bld):
                     "mt19937ar.c",
 #                    "mock_torrent.c",
                     bld.env.CONTRIB_PATH+"CBTTrackerClient/bt_tracker_client.c",
+                    bld.env.CONTRIB_PATH+"CBTTrackerClient/tracker_http.c",
+                    bld.env.CONTRIB_PATH+"CBTTrackerClient/network.c",
                     bld.env.CONTRIB_PATH+"CBTTrackerClient/bt_tracker_client_response_reader.c",
                     bld.env.CONTRIB_PATH+"CBTTrackerClient/url_encoder.c",
                     bld.env.CONTRIB_PATH+"CBipBuffer/bipbuffer.c"

@@ -318,42 +318,6 @@ int bt_client_release(void *bto)
     return 1;
 }
 
-/**
- * Read metainfo file (ie. "torrent" file)
- * This function will populate the piece database
- * @return 1 on sucess; otherwise 0
- */
-int bt_client_read_metainfo_file(void *bto, const char *fname)
-{
-    bt_client_t *bt = bto;
-    char *contents;
-    int len;
-
-    if (!(contents = read_file(fname, &len)))
-    {
-        __log(bto,NULL,"ERROR: torrent file: %s can't be read", fname);
-        return 0;
-    }
-
-    //bt_client_read_metainfo(bto, contents, len, &bt->cfg.pinfo);
-
-    /*  find out if we are seeding by default */
-#if 0
-    bt_piecedb_print_pieces_downloaded(bt->db);
-    if (bt_piecedb_all_pieces_are_complete(bt->db))
-    {
-        bt->am_seeding = 1;
-    }
-#endif
-
-    free(contents);
-
-    return 1;
-}
-
-
-/*---------------------------------------------------------------------------*/
-
 static void __FUNC_log(void *bto, void *src, const char *fmt, ...)
 {
     bt_client_t *bt = bto;
