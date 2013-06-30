@@ -27,6 +27,9 @@ def configure(conf):
     conf.load('compiler_c')
     if sys.platform == 'win32':
         conf.check_cc(lib='ws2_32')
+        conf.check_cc(lib='psapi')
+
+#    conf.check_cc(lib='uv',libpath="./libuv/")
 
     # Get the required contributions via GIT
     for c in contribs:
@@ -145,118 +148,126 @@ def end2end(bld, src, ccflag=None):
 
 def build(bld):
 
-        if sys.platform == 'win32':
-            platform = '-DWIN32'
-	elif sys.platform == 'linux2':
-            platform = '-DLINUX'
-        else:
-            platform = ''
+    cp = bld.env.CONTRIB_PATH
 
-        bld.shlib(
-                source= [
-                    "bt_client.c",
-                    "bt_client_properties.c",
-                    "bt_peermanager.c",
-                    "bt_sha1.c",
-                    "bt_util.c",
-                    "bt_piece_db.c",
-                    "bt_filedumper.c",
-                    "bt_piece.c",
-                    "bt_choker_leecher.c",
-                    "bt_choker_seeder.c",
-                    "bt_diskcache.c",
-                    "bt_string.c",
-                    "bt_diskmem.c",
-                    "readfile.c",
-                    "sha1.c",
-                    "bt_selector_rarestfirst.c",
-                    bld.env.CONTRIB_PATH+"CHeap/heap.c",
-                    bld.env.CONTRIB_PATH+"CHeaplessBencodeReader/bencode.c",
-                    bld.env.CONTRIB_PATH+"CHashMapViaLinkedList/linked_list_hashmap.c",
-                    bld.env.CONTRIB_PATH+"CLinkedListQueue/linked_list_queue.c",
-                    bld.env.CONTRIB_PATH+"CBitstream/bitstream.c",
-                    bld.env.CONTRIB_PATH+"CBTPWPConnection/pwp_connection.c",
-                    bld.env.CONTRIB_PATH+"CBTPWPConnection/pwp_msghandler.c",
-                    bld.env.CONTRIB_PATH+"CBTPWPConnection/pwp_handshaker.c",
-                    bld.env.CONTRIB_PATH+"CSparseFileAllocator/sparsefile_allocator.c",
-                    bld.env.CONTRIB_PATH+"CSparseCounter/sparse_counter.c",
-                    bld.env.CONTRIB_PATH+"CPSeudoLRU/pseudolru.c",
-                    bld.env.CONTRIB_PATH+"CEventTimer/event_timer.c",
-                    bld.env.CONTRIB_PATH+"CBitfield/bitfield.c",
-                    bld.env.CONTRIB_PATH+"CConfig-re/list.c",
-                    bld.env.CONTRIB_PATH+"CConfig-re/config.c",
-                    bld.env.CONTRIB_PATH+"CTorrentFileReader/torrentfile_reader.c",
-                    ],
-                #bt_diskmem.c
-                #CCircularBuffer/cbuffer.c
-                #use='config',
-                target='yabbt',
-                includes=[
-                    bld.env.CONTRIB_PATH+"CHeaplessBencodeReader",
-                    bld.env.CONTRIB_PATH+"CLinkedListQueue",
-                    bld.env.CONTRIB_PATH+"CHashMapViaLinkedList",
-                    bld.env.CONTRIB_PATH+"CHeap",
-                    bld.env.CONTRIB_PATH+"CPSeudoLRU",
-                    bld.env.CONTRIB_PATH+"CBipBuffer",
-                    bld.env.CONTRIB_PATH+"CEventTimer",
-                    bld.env.CONTRIB_PATH+"CSparseCounter",
-                    bld.env.CONTRIB_PATH+"CSparseFileAllocator",
-                    bld.env.CONTRIB_PATH+"CBitfield",
-                    bld.env.CONTRIB_PATH+"CBTPWPConnection",
-                    bld.env.CONTRIB_PATH+"CBitstream",
-                    bld.env.CONTRIB_PATH+"CConfig-re",
-                    bld.env.CONTRIB_PATH+"CBTTrackerClient",
-                   ], 
-                cflags=[
-                    '-Werror',
-                    '-g',
-                    platform,
-                    '-Werror=uninitialized',
-                    '-Werror=return-type',
-                    '-Wcast-align'],
-                )
+    if sys.platform == 'win32':
+        platform = '-DWIN32'
+    elif sys.platform == 'linux2':
+        platform = '-DLINUX'
+    else:
+        platform = ''
 
-        unittest(bld,"test_bt.c")
-        unittest(bld,"test_peermanager.c")
-        unittest(bld,'test_choker_leecher.c')
-        unittest(bld,'test_choker_seeder.c')
-        unittest(bld,'test_rarestfirst.c')
-        unittest(bld,'test_piece.c',ccflag='-I../'+bld.env.CONTRIB_PATH+"CBitfield")
-        unittest(bld,'test_piece_db.c')
-        end2end(bld,'test_end_to_end.c')
+    bld.shlib(
+        source= [
+            "bt_client.c",
+            "bt_client_properties.c",
+            "bt_peermanager.c",
+            "bt_sha1.c",
+            "bt_util.c",
+            "bt_piece_db.c",
+            "bt_filedumper.c",
+            "bt_piece.c",
+            "bt_choker_leecher.c",
+            "bt_choker_seeder.c",
+            "bt_diskcache.c",
+            "bt_string.c",
+            "bt_diskmem.c",
+            "readfile.c",
+            "sha1.c",
+            "bt_selector_rarestfirst.c",
+            cp+"CHeap/heap.c",
+            cp+"CHeaplessBencodeReader/bencode.c",
+            cp+"CHashMapViaLinkedList/linked_list_hashmap.c",
+            cp+"CLinkedListQueue/linked_list_queue.c",
+            cp+"CBitstream/bitstream.c",
+            cp+"CBTPWPConnection/pwp_connection.c",
+            cp+"CBTPWPConnection/pwp_msghandler.c",
+            cp+"CBTPWPConnection/pwp_handshaker.c",
+            cp+"CSparseFileAllocator/sparsefile_allocator.c",
+            cp+"CSparseCounter/sparse_counter.c",
+            cp+"CPSeudoLRU/pseudolru.c",
+            cp+"CEventTimer/event_timer.c",
+            cp+"CBitfield/bitfield.c",
+            cp+"CConfig-re/list.c",
+            cp+"CConfig-re/config.c",
+            cp+"CTorrentFileReader/torrentfile_reader.c",
+            ],
+        #bt_diskmem.c
+        #CCircularBuffer/cbuffer.c
+        #use='config',
+        target='yabbt',
+        includes=[
+            cp+"CHeaplessBencodeReader",
+            cp+"CLinkedListQueue",
+            cp+"CHashMapViaLinkedList",
+            cp+"CHeap",
+            cp+"CPSeudoLRU",
+            cp+"CBipBuffer",
+            cp+"CEventTimer",
+            cp+"CSparseCounter",
+            cp+"CSparseFileAllocator",
+            cp+"CBitfield",
+            cp+"CBTPWPConnection",
+            cp+"CBitstream",
+            cp+"CConfig-re",
+            cp+"CBTTrackerClient",
+           ], 
+        cflags=[
+            '-Werror',
+            '-g',
+            platform,
+            '-Werror=uninitialized',
+            '-Werror=return-type',
+            '-Wcast-align'],
+        )
 
-        libs = []
-        if sys.platform == 'win32':
-            libs += ['ws2_32']
+    unittest(bld,"test_bt.c")
+    unittest(bld,"test_peermanager.c")
+    unittest(bld,'test_choker_leecher.c')
+    unittest(bld,'test_choker_seeder.c')
+    unittest(bld,'test_rarestfirst.c')
+    unittest(bld,'test_piece.c',ccflag='-I../'+cp+"CBitfield")
+    unittest(bld,'test_piece_db.c')
+    end2end(bld,'test_end_to_end.c')
 
-        bld.program(
-                source=[
-                    'yabtorrent.c',
-                    "networkfuncs_tcp.c",
-                    "mt19937ar.c",
-#                    "mock_torrent.c",
-                    bld.env.CONTRIB_PATH+"CBTTrackerClient/bt_tracker_client.c",
-                    bld.env.CONTRIB_PATH+"CBTTrackerClient/tracker_http.c",
-                    bld.env.CONTRIB_PATH+"CBTTrackerClient/network.c",
-                    bld.env.CONTRIB_PATH+"CBTTrackerClient/bt_tracker_client_response_reader.c",
-                    bld.env.CONTRIB_PATH+"CBTTrackerClient/url_encoder.c",
-                    bld.env.CONTRIB_PATH+"CBipBuffer/bipbuffer.c"
-                    ],
-                target='yabtorrent',
-                cflags=[
-                    '-g',
-                    '-Werror',
-                    '-Werror=uninitialized',
-                    '-Werror=return-type',
-                    ],
-                lib = libs,
-                includes=[
-                    bld.env.CONTRIB_PATH+"CConfig-re",
-                    bld.env.CONTRIB_PATH+"CBTTrackerClient",
-                    bld.env.CONTRIB_PATH+"CHeaplessBencodeReader",
-                    bld.env.CONTRIB_PATH+"CTorrentFileReader",
-                    bld.env.CONTRIB_PATH+"CHashMapViaLinkedList",
-                    bld.env.CONTRIB_PATH+"CBipBuffer",
-                   ],
-                   use='yabbt')
+    libs = []
+    libs += ['uv']
+    if sys.platform == 'win32':
+        libs += ['ws2_32']
+        libs += ['psapi']
+        libs += ['Iphlpapi']
+
+
+    bld.program(
+        source=[
+            'yabtorrent.c',
+            "networkfuncs_tcp.c",
+            "mt19937ar.c",
+            cp+"CBTTrackerClient/bt_tracker_client.c",
+            cp+"CBTTrackerClient/tracker_http.c",
+            cp+"CBTTrackerClient/network.c",
+            cp+"CBTTrackerClient/bt_tracker_client_response_reader.c",
+            cp+"CBTTrackerClient/url_encoder.c",
+            cp+"CBipBuffer/bipbuffer.c"
+            ],
+        target='yabtorrent',
+        cflags=[
+            '-g',
+            '-Werror',
+            '-Werror=uninitialized',
+            '-Werror=return-type',
+            ],
+        stlibpath = ['libuv','.'],
+        lib = libs,
+        includes=[
+            './libuv/include',
+            cp+"CConfig-re",
+            cp+"CBTTrackerClient",
+            cp+"CHeaplessBencodeReader",
+            cp+"CTorrentFileReader",
+            cp+"CHashMapViaLinkedList",
+            cp+"CBipBuffer",
+           ],
+           #use=['yabbt','uv'])
+           use=['yabbt'])
 

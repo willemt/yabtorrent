@@ -62,9 +62,13 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #endif
 
-
+#include <uv.h>
 
 #include <sys/time.h>
+
+uv_loop_t *loop;
+uv_timer_t periodic_req;
+
 
 static void __log(void *udata, void *src, char *buf)
 {
@@ -127,7 +131,9 @@ int cb_event_str(void* udata, const char* key, const char* val, int len)
 {
     torrent_reader_t* me = udata;
 
-//    printf("%s %.*s\n", key, len, val);
+#if 0 /* debugging */
+    printf("%s %.*s\n", key, len, val);
+#endif
 
     if (!strcmp(key,"announce"))
     {
@@ -140,7 +146,10 @@ int cb_event_str(void* udata, const char* key, const char* val, int len)
 
 int cb_event_int(void* udata, const char* key, int val)
 {
-//    printf("%s %d\n", key, val);
+
+#if 0 /* debugging */
+    printf("%s %d\n", key, val);
+#endif
 
     return 1;
 }
@@ -163,9 +172,24 @@ static int __read_torrent_file(void* bt, const char* torrent_file)
     r.cfg = bt_client_get_config(bt);
     tf = tfr_new(cb_event, cb_event_str, cb_event_int, &r);
     metainfo = read_file(torrent_file,&len);
-    printf("len: %d\n", len);
     tfr_read_metainfo(tf, metainfo, len);
     return 1;
+}
+
+static void __periodic(uv_timer_t* handle, int status)
+{
+
+    {
+        void* bt;
+
+        //bt_trackerclient_funcs_t *funcs
+        
+        bt =  bt_trackerclient_new(NULL);
+        bt_trackerclient_connect_to_uri(bt, "http://tracker.publicbt.com:80/announce");
+//        bt_trackerclient_connect_to_uri(bt, "http://tracker.openbittorrent.com:80/announce");
+//        bt_trackerclient_connect_to_uri(bt, "http://www.google.com:80/announce");
+    }
+
 }
 
 int main(int argc, char **argv)
@@ -174,21 +198,7 @@ int main(int argc, char **argv)
     int o_verify_download, o_shutdown_when_complete, o_torrent_file_report_only;
     void *bt;
     char *str;
-    //int status;
     config_t* cfg;
-
-#if WIN32
-    WSADATA wsaData;
-
-    if(WSAStartup(0x202, &wsaData) == 0)
-    {
-    }
-    else
-        printf("ERROR: Initialization failure.\n");
-
-#endif
-
-
 
     o_verify_download = 0;
     o_shutdown_when_complete = 0;
@@ -196,9 +206,12 @@ int main(int argc, char **argv)
 
     bt = bt_client_new();
     cfg = bt_client_get_config(bt);
-    //status = config_read(cfg, "yabtc", "config");
-    // setlocale(LC_ALL, " ");
-    //  atexit (close_stdin);
+
+#if 0
+    status = config_read(cfg, "yabtc", "config");
+    setlocale(LC_ALL, " ");
+    atexit (close_stdin);
+#endif
 
     while ((c = getopt_long(argc, argv, "esi:p:", long_opts, NULL)) != -1)
     {
@@ -227,7 +240,6 @@ int main(int argc, char **argv)
     }
 
     /* do configuration */
-
     config_set_va(cfg,"shutdown_when_complete","%d",o_shutdown_when_complete);
 
     /* set peer id */
@@ -247,7 +259,10 @@ int main(int argc, char **argv)
             .peer_listen_open =peer_listen_open
         };
 
-//        network_setup();
+#if 0
+        network_setup();
+#endif
+
         bt_client_set_funcs(bt, &func, NULL);
     }
 
@@ -297,15 +312,13 @@ int main(int argc, char **argv)
         exit(EXIT_FAILURE);
     }
 
-    {
-        void* bt;
+    /* start uv */
+    loop = uv_default_loop();
 
-        //bt_trackerclient_funcs_t *funcs
-        
-        bt =  bt_trackerclient_new(NULL);
-
-        bt_trackerclient_connect_to_uri(bt, "http://tracker.publicbt.com:80/announce");
-    }
+    /* create periodic timer */
+    uv_timer_init(loop, &periodic_req);
+    uv_timer_start(&periodic_req, __periodic, 0, 5000);
+    uv_run(loop, UV_RUN_DEFAULT);
 
     if (o_verify_download)
     {
@@ -326,5 +339,5 @@ int main(int argc, char **argv)
     bt_client_release(bt);
 //    bt_connect_to_tracker(bt, bt_get_nbytes_downloaded)
 
-    return 1;
+    return uv_run(loop, UV_RUN_DEFAULT);
 }
