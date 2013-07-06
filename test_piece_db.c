@@ -49,7 +49,7 @@ void TestBTPieceDB_add_piece(
     db = bt_piecedb_new();
     bt_piecedb_set_piece_length(db, 40);
     /* need to add a file so that we have a filespace to hold the added piece */
-    bt_piecedb_add_file(db,"test",4,40);
+    bt_piecedb_increase_piece_space(db,40);
     bt_piecedb_add(db, "00000000000000000000");
     CuAssertTrue(tc, NULL != bt_piecedb_get(db, 0));
 }
@@ -87,7 +87,7 @@ void TestBTPieceDB_GetLength_returns_correct_length_of_db(
     bt_piecedb_set_piece_length(db, 40);
     CuAssertTrue(tc, 0 == bt_piecedb_get_length(db));
     /* make sure we have enough file space */
-    bt_piecedb_add_file(db,"test",4,40 * 4);
+    bt_piecedb_increase_piece_space(db,40 * 4);
     bt_piecedb_add(db, "00000000000000000000");
     bt_piecedb_add(db, "00000000000000000000");
     bt_piecedb_add(db, "00000000000000000000");
@@ -108,7 +108,7 @@ void TestBTPieceDB_dont_poll_piece_that_peer_doesnt_have(
     db = bt_piecedb_new();
     bt_piecedb_set_piece_length(db, 40);
     /* make sure we have enough file space */
-    bt_piecedb_add_file(db,"test",4,40 * 4);
+    bt_piecedb_increase_piece_space(db,40 * 4);
     bt_piecedb_add(db, "00000000000000000000");
     bt_piecedb_add(db, "00000000000000000000");
     bt_piecedb_add(db, "00000000000000000000");
@@ -133,7 +133,7 @@ void TestBTPieceDB_dont_poll_piece_that_weve_completed(
     db = bt_piecedb_new();
     bt_piecedb_set_piece_length(db, 40);
     /* make sure we have enough file space */
-    bt_piecedb_add_file(db,"test",4,40);
+    bt_piecedb_increase_piece_space(db,40);
     bt_piecedb_add(db, "00000000000000000000");
     /* set the piece as complete */
     bt_piece_set_complete(bt_piecedb_get(db, 0),1);
@@ -156,7 +156,7 @@ void TestBTPieceDB_poll_best_from_bitfield(
     db = bt_piecedb_new();
     bt_piecedb_set_piece_length(db, 40);
     /* make sure we have enough file space */
-    bt_piecedb_add_file(db,"test",4,40*4);
+    bt_piecedb_increase_piece_space(db,40*4);
     bt_piecedb_add(db, "00000000000000000000");
     bt_piecedb_add(db, "00000000000000000000");
     bt_piecedb_add(db, "00000000000000000000");

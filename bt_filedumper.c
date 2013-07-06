@@ -95,21 +95,53 @@ void *bt_filedumper_new(
 
     me = calloc(1, sizeof(bt_filedumper_t));
     me->sfa = sfa_new();
+    assert(me->sfa);
     me->irw.write_block = bt_filedumper_write_block;
     me->irw.read_block = bt_filedumper_read_block;
     return me;
 }
 
+/**
+ * Add this file to the bittorrent client
+ * This is used for adding new files.
+ *
+ * @param fname file name
+ * @param fname_len length of fname
+ * @param flen length in bytes of the file
+ * @return 1 on sucess; otherwise 0
+ */
 void bt_filedumper_add_file(
     void* fl,
     const char *fname,
+    int fname_len,
     const int size
 )
 {
     bt_filedumper_t* me = fl;
 
-    sfa_add_file(me->sfa, fname, size);
+    sfa_add_file(me->sfa, fname, fname_len, size);
 }
+
+#if 0
+int bt_piecedb_add_file(
+    bt_piecedb_t * db,
+    const char *fname,
+    const int fname_len,
+    const int flen
+)
+{
+    /* increase total file size by this file's size */
+    bt_piecedb_set_tot_file_size(db, bt_piecedb_get_tot_file_size(db) + flen);
+
+    if (priv(db)->func_addfile)
+    {
+        priv(db)->func_addfile(priv(db)->blockrw_data, fname, flen);
+        return 1;
+    }
+
+    return 0;
+}
+#endif
 
 int bt_filedumper_get_nfiles(
     void * fl

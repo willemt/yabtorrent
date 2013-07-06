@@ -26,3 +26,5 @@ void bt_piecedb_add(bt_piecedb_t * db, const char *sha1);
 int bt_piecedb_get_length(bt_piecedb_t * db);
 
 void bt_piecedb_print_pieces_downloaded(bt_piecedb_t * db);
+
+void bt_piecedb_increase_piece_space(bt_piecedb_t* db, const int size);

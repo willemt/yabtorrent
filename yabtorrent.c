@@ -67,7 +67,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <sys/time.h>
 
 uv_loop_t *loop;
-uv_timer_t periodic_req;
 
 
 static void __log(void *udata, void *src, char *buf)
@@ -118,7 +117,18 @@ static struct option const long_opts[] = {
 
 typedef struct {
     void* bt;
+
+    /* piece db*/
+    void* db;
+
+    /* file dumper */
+    void* fd;
+
     void* cfg;
+
+    char fname[256];
+    int fname_len;
+    int flen;
 
 } torrent_reader_t;
 
@@ -139,6 +149,16 @@ int cb_event_str(void* udata, const char* key, const char* val, int len)
     {
         config_set_va(me->cfg,"tracker_url","%.*s", len, val);
     }
+    else if (!strcmp(key,"file path"))
+    {
+        assert(len < 256);
+        strncpy(me->fname,val,len);
+        me->fname_len = len;
+        printf("file path: %.*s\n", len, val);
+
+        bt_piecedb_increase_piece_space(me->db, me->flen);
+        bt_filedumper_add_file(me->fd, me->fname, me->fname_len, me->flen);
+    }
 
 
     return 1;
@@ -146,20 +166,36 @@ int cb_event_str(void* udata, const char* key, const char* val, int len)
 
 int cb_event_int(void* udata, const char* key, int val)
 {
+    torrent_reader_t* me = udata;
 
 #if 0 /* debugging */
     printf("%s %d\n", key, val);
 #endif
+    if (!strcmp(key,"file length"))
+    {
+        me->flen = val;
+//        printf("file len\n");
+//        printf("added file: %.*s %d\n", me->fname_len, me->fname, me->flen);
+//        bt_piecedb_add_file(bt_client_get_piecedb(me->bt),
+//                me->fname, me->fname_len, me->flen);
+
+    }
 
     return 1;
 }
 
-/**
- * Read metainfo file (ie. "torrent" file)
- * This function will populate the piece database
- * @return 1 on sucess; otherwise 0
- */
-static int __read_torrent_file(void* bt, const char* torrent_file)
+/*******
+ * FUNCTION
+ *  Read metainfo file (ie. "torrent" file).
+ *  This function will populate the piece database.
+ * PARAMETERS
+ *  bt bittorrent client
+ *  db piece database 
+ *  fd filedumper
+ * RETURNS
+ *  1 on sucess; otherwise 0
+ ******/
+static int __read_torrent_file(void* bt, void* db, void* fd, const char* torrent_file)
 {
     torrent_reader_t r;
     void* tf;
@@ -169,6 +205,8 @@ static int __read_torrent_file(void* bt, const char* torrent_file)
     printf("\nReading file torrent file\n");
     memset(&r, 0, sizeof(torrent_reader_t));
     r.bt = bt;
+    r.db = db;
+    r.fd = fd;
     r.cfg = bt_client_get_config(bt);
     tf = tfr_new(cb_event, cb_event_str, cb_event_int, &r);
     metainfo = read_file(torrent_file,&len);
@@ -178,14 +216,17 @@ static int __read_torrent_file(void* bt, const char* torrent_file)
 
 static void __periodic(uv_timer_t* handle, int status)
 {
-
     {
         void* bt;
 
         //bt_trackerclient_funcs_t *funcs
         
         bt =  bt_trackerclient_new(NULL);
-        bt_trackerclient_connect_to_uri(bt, "http://tracker.publicbt.com:80/announce");
+        trackerclient_set_cfg(bt,bt_client_get_config(handle->data));
+        bt_trackerclient_connect_to_uri(bt, "http://bt.ocremix.org/announce");
+//        bt_trackerclient_connect_to_uri(bt, "http://bt.ocremix.org/announce");
+//        bt_trackerclient_connect_to_uri(bt, "http://tracker.publicbt.com:80/announce");
+//        bt_trackerclient_connect_to_uri(bt, "http://exodus.desync.com:80/announce");
 //        bt_trackerclient_connect_to_uri(bt, "http://tracker.openbittorrent.com:80/announce");
 //        bt_trackerclient_connect_to_uri(bt, "http://www.google.com:80/announce");
     }
@@ -241,9 +282,8 @@ int main(int argc, char **argv)
 
     /* do configuration */
     config_set_va(cfg,"shutdown_when_complete","%d",o_shutdown_when_complete);
-
-    /* set peer id */
-    //bt_client_set_peer_id(bt, bt_generate_peer_id());
+    config_set(cfg,"my_peerid",bt_generate_peer_id());
+    assert(config_get(cfg,"my_peerid"));
 
     bt_client_set_logging(bt,
                           open("dump_log", O_CREAT | O_TRUNC | O_RDWR,
@@ -267,36 +307,34 @@ int main(int argc, char **argv)
     }
 
     /* set file system backend functions */
-    {
-        void* fd, *dc, *db;
+    void* fd, *dc, *db;
 
-        bt_piecedb_i pdb_funcs = {
-            .poll_best_from_bitfield = bt_piecedb_poll_best_from_bitfield,
-            .get_piece = bt_piecedb_get
-        };
+    bt_piecedb_i pdb_funcs = {
+        .poll_best_from_bitfield = bt_piecedb_poll_best_from_bitfield,
+        .get_piece = bt_piecedb_get
+    };
 
-        /* database for dumping pieces to disk */
-        fd = bt_filedumper_new();
+    /* database for dumping pieces to disk */
+    fd = bt_filedumper_new();
 
-        /* intermediary between filedumper and DB */
-        dc = bt_diskcache_new();
-        //bt_diskcache_set_func_log(bt->dc, __log, bt);
+    /* intermediary between filedumper and DB */
+    dc = bt_diskcache_new();
+    //bt_diskcache_set_func_log(bt->dc, __log, bt);
 
-        /* point diskcache to filedumper */
-        bt_diskcache_set_disk_blockrw(dc, bt_filedumper_get_blockrw(fd), fd);
+    /* point diskcache to filedumper */
+    bt_diskcache_set_disk_blockrw(dc, bt_filedumper_get_blockrw(fd), fd);
 
-        /* set up piecedb */
-        db = bt_piecedb_new();
-        bt_piecedb_set_diskstorage(db,
-                bt_diskcache_get_blockrw(dc),
-                (void*)bt_filedumper_add_file,
-                dc);
-        bt_client_set_piecedb(bt,&pdb_funcs,db);
-    }
+    /* set up piecedb */
+    db = bt_piecedb_new();
+    bt_piecedb_set_diskstorage(db,
+            bt_diskcache_get_blockrw(dc),
+            NULL,//(void*)bt_filedumper_add_file,
+            dc);
+    bt_client_set_piecedb(bt,&pdb_funcs,db);
 
     if (o_torrent_file_report_only)
     {
-        __read_torrent_file(bt,config_get(cfg,"torrent_file"));
+        __read_torrent_file(bt,db,fd,config_get(cfg,"torrent_file"));
         printf("\n");
     }
 
@@ -307,17 +345,21 @@ int main(int argc, char **argv)
         printf("ERROR: Please specify torrent file\n");
         exit(EXIT_FAILURE);
     }
+#if 0
     else if (0 == __read_torrent_file(bt,argv[optind]))
     {
         exit(EXIT_FAILURE);
     }
+#endif
 
     /* start uv */
     loop = uv_default_loop();
-
     /* create periodic timer */
-    uv_timer_init(loop, &periodic_req);
-    uv_timer_start(&periodic_req, __periodic, 0, 5000);
+    uv_timer_t *periodic_req;
+    periodic_req = malloc(sizeof(uv_timer_t));
+    periodic_req->data = bt;
+    uv_timer_init(loop, periodic_req);
+    uv_timer_start(periodic_req, __periodic, 0, 5000);
     uv_run(loop, UV_RUN_DEFAULT);
 
     if (o_verify_download)

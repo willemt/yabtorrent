@@ -281,32 +281,15 @@ int bt_piecedb_all_pieces_are_complete(bt_piecedb_t* db)
     return 1;
 }
 
-/**
- * Add this file to the bittorrent client
- * This is used for adding new files.
- *
- * @param fname file name
- * @param fname_len length of fname
- * @param flen length in bytes of the file
- * @return 1 on sucess; otherwise 0
- */
-int bt_piecedb_add_file(
-    bt_piecedb_t * db,
-    const char *fname,
-    const int fname_len,
-    const int flen
-)
+/******
+ * FUNCTION
+ *  increase total file size by this file's size
+ ******/
+void bt_piecedb_increase_piece_space(bt_piecedb_t* db, const int size)
 {
-    /* increase total file size by this file's size */
-    bt_piecedb_set_tot_file_size(db, bt_piecedb_get_tot_file_size(db) + flen);
 
-    if (priv(db)->func_addfile)
-    {
-        priv(db)->func_addfile(priv(db)->blockrw_data, fname, flen);
-        return 1;
-    }
-
-    return 0;
+    bt_piecedb_set_tot_file_size(db,
+            bt_piecedb_get_tot_file_size(db) + size);
 }
 
 /**

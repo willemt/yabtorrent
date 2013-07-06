@@ -243,7 +243,7 @@ def build(bld):
             'yabtorrent.c',
             "networkfuncs_tcp.c",
             "mt19937ar.c",
-            cp+"CBTTrackerClient/bt_tracker_client.c",
+            cp+"CBTTrackerClient/tracker_client.c",
             cp+"CBTTrackerClient/tracker_http.c",
             cp+"CBTTrackerClient/network.c",
             cp+"CBTTrackerClient/bt_tracker_client_response_reader.c",

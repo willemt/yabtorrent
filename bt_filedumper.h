@@ -17,8 +17,8 @@ void *bt_filedumper_new();
 void bt_filedumper_add_file(
     void* fl,
     const char *fname,
-    const int size
-);
+    int fname_len,
+    const int size);
 
 int bt_filedumper_get_nfiles( void * fl);
 

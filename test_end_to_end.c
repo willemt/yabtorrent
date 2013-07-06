@@ -163,7 +163,8 @@ void TestBT_Peer_shares_all_pieces(
         config_set(cfg, "piece_length", "5");
         config_set(cfg, "infohash", "00000000000000000000");
         /* add files/pieces */
-        bt_piecedb_add_file(bt_client_get_piecedb(bt),"test.txt",8,5);
+        //bt_piecedb_add_file(bt_client_get_piecedb(bt),"test.txt",8,5);
+        bt_piecedb_increase_piece_space(bt_client_get_piecedb(bt),5);
         bt_piecedb_add(bt_client_get_piecedb(bt),mocktorrent_get_piece_sha1(mt,0));
     }
 
@@ -239,8 +240,10 @@ void TestBT_Peer_shares_all_pieces_between_each_other(
         config_set(cfg, "piece_length", "5");
         config_set(cfg, "infohash", "00000000000000000000");
         /* add files/pieces */
-        bt_piecedb_add_file(bt_client_get_piecedb(bt),"test.txt",8,5);
-        bt_piecedb_add_file(bt_client_get_piecedb(bt),"test2.txt",8,12);
+        //bt_piecedb_add_file(bt_client_get_piecedb(bt),"test.txt",8,5);
+        bt_piecedb_increase_piece_space(bt_client_get_piecedb(bt),5);
+        //bt_piecedb_add_file(bt_client_get_piecedb(bt),"test2.txt",8,12);
+        bt_piecedb_increase_piece_space(bt_client_get_piecedb(bt),12);
         bt_piecedb_add(bt_client_get_piecedb(bt),mocktorrent_get_piece_sha1(mt,0));
         bt_piecedb_add(bt_client_get_piecedb(bt),mocktorrent_get_piece_sha1(mt,1));
     }
@@ -374,7 +377,8 @@ void TestBT_Peer_three_share_all_pieces_between_each_other(
         config_set(cfg, "piece_length", "5");
         config_set(cfg, "infohash", "00000000000000000000");
         /* add files/pieces */
-        bt_piecedb_add_file(bt_client_get_piecedb(bt),"test.txt",8,20);
+        //bt_piecedb_add_file(bt_client_get_piecedb(bt),"test.txt",8,20);
+        bt_piecedb_increase_piece_space(bt_client_get_piecedb(bt),20);
 //        bt_piecedb_add_file(bt_client_get_piecedb(bt),"test2.txt",8,12);
         bt_piecedb_add(bt_client_get_piecedb(bt),mocktorrent_get_piece_sha1(mt,0));
         bt_piecedb_add(bt_client_get_piecedb(bt),mocktorrent_get_piece_sha1(mt,1));
@@ -472,7 +476,8 @@ void TestBT_Peer_share_100_pieces(
         config_set(cfg, "piece_length", "5");
         config_set(cfg, "infohash", "00000000000000000000");
         /* add files/pieces */
-        bt_piecedb_add_file(bt_client_get_piecedb(bt),"test.txt",8,100 * 5);
+        //bt_piecedb_add_file(bt_client_get_piecedb(bt),"test.txt",8,100 * 5);
+        bt_piecedb_increase_piece_space(bt_client_get_piecedb(bt),100 * 5);
 
         for (ii=0; ii<100; ii++)
             bt_piecedb_add(bt_client_get_piecedb(bt),mocktorrent_get_piece_sha1(mt,ii));
