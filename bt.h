@@ -190,3 +190,6 @@ void *bt_client_add_peer(void *bto,
                               const char *ip, const int ip_len, const int port);
 
 void* bt_client_get_config(void *bto);
+
+char *str2sha1hash(const char *str, int len);
+

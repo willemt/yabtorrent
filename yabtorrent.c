@@ -51,6 +51,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "readfile.h"
 #include "config.h"
 #include "networkfuncs.h"
+#include "linked_list_queue.h"
 
 #define PROGRAM_NAME "bt"
 
@@ -126,6 +127,9 @@ typedef struct {
 
     void* cfg;
 
+    /* queue of announces to try */
+    void* announces;
+
     char fname[256];
     int fname_len;
     int flen;
@@ -148,18 +152,40 @@ int cb_event_str(void* udata, const char* key, const char* val, int len)
     if (!strcmp(key,"announce"))
     {
         config_set_va(me->cfg,"tracker_url","%.*s", len, val);
+        llqueue_offer(me->announces, strndup(val,len));
+    }
+    else if (!strcmp(key,"infohash"))
+    {
+        char* ihash;
+
+        ihash = str2sha1hash(val, len);
+        config_set_va(me->cfg,"infohash","%.*s", 20, ihash);
+//        printf("hash: %.*s\n", 20, config_get(me->cfg,"infohash"));
+    }
+    else if (!strcmp(key,"pieces"))
+    {
+        int i;
+
+        for (i=0; i < len; i += 20)
+        {
+            bt_piecedb_add(me->db,val + i);
+        }
+
+        config_set_va(me->cfg, "npieces", "%d",
+                bt_piecedb_get_length(me->cfg));
+        config_set_va(me->cfg, "npieces", "%d",
+                bt_piecedb_get_length(me->cfg));
     }
     else if (!strcmp(key,"file path"))
     {
         assert(len < 256);
         strncpy(me->fname,val,len);
         me->fname_len = len;
-        printf("file path: %.*s\n", len, val);
 
+//        config_set_va(me->cfg, config_get_int(
         bt_piecedb_increase_piece_space(me->db, me->flen);
         bt_filedumper_add_file(me->fd, me->fname, me->fname_len, me->flen);
     }
-
 
     return 1;
 }
@@ -171,14 +197,15 @@ int cb_event_int(void* udata, const char* key, int val)
 #if 0 /* debugging */
     printf("%s %d\n", key, val);
 #endif
+
     if (!strcmp(key,"file length"))
     {
         me->flen = val;
-//        printf("file len\n");
-//        printf("added file: %.*s %d\n", me->fname_len, me->fname, me->flen);
-//        bt_piecedb_add_file(bt_client_get_piecedb(me->bt),
-//                me->fname, me->fname_len, me->flen);
-
+    }
+    else if (!strcmp(key,"piece length"))
+    {
+        config_set_va(me->cfg, "piece_length", "%d", val);
+        printf("piece size: %d\n", val);
     }
 
     return 1;
@@ -195,9 +222,8 @@ int cb_event_int(void* udata, const char* key, int val)
  * RETURNS
  *  1 on sucess; otherwise 0
  ******/
-static int __read_torrent_file(void* bt, void* db, void* fd, const char* torrent_file)
+static int __read_torrent_file(void* bt, void* db, void* fd, void* announces const char* torrent_file)
 {
-    torrent_reader_t r;
     void* tf;
     int len;
     char* metainfo;
@@ -240,6 +266,7 @@ int main(int argc, char **argv)
     void *bt;
     char *str;
     config_t* cfg;
+    torrent_reader_t reader;
 
     o_verify_download = 0;
     o_shutdown_when_complete = 0;
@@ -247,6 +274,7 @@ int main(int argc, char **argv)
 
     bt = bt_client_new();
     cfg = bt_client_get_config(bt);
+    r.announces = llqueue_new();
 
 #if 0
     status = config_read(cfg, "yabtc", "config");
@@ -286,8 +314,8 @@ int main(int argc, char **argv)
     assert(config_get(cfg,"my_peerid"));
 
     bt_client_set_logging(bt,
-                          open("dump_log", O_CREAT | O_TRUNC | O_RDWR,
-                               0666), __log);
+                          open("dump_log", O_CREAT | O_TRUNC | O_RDWR, 0666),
+                          __log);
 
     /* set network functions */
     {
@@ -338,19 +366,17 @@ int main(int argc, char **argv)
         printf("\n");
     }
 
-    config_print(cfg);
-
     if (argc == optind)
     {
         printf("ERROR: Please specify torrent file\n");
         exit(EXIT_FAILURE);
     }
-#if 0
-    else if (0 == __read_torrent_file(bt,argv[optind]))
+    else if (0 == __read_torrent_file(&reader,argv[optind]))
     {
         exit(EXIT_FAILURE);
     }
-#endif
+
+    config_print(cfg);
 
     /* start uv */
     loop = uv_default_loop();
