@@ -266,6 +266,7 @@ def build(bld):
             cp+"CHeaplessBencodeReader",
             cp+"CTorrentFileReader",
             cp+"CHashMapViaLinkedList",
+            cp+"CLinkedListQueue",
             cp+"CBipBuffer",
            ],
            #use=['yabbt','uv'])
