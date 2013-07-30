@@ -26,6 +26,7 @@ char* strndup(const char* str, const unsigned int len)
 
     new = malloc(len+1);
     strncpy(new,str,len);
+    new[len] = '\0';
     return new;
 }
 #endif

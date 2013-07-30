@@ -241,12 +241,12 @@ def build(bld):
     bld.program(
         source=[
             'yabtorrent.c',
-            "networkfuncs_tcp.c",
+            "networkfuncs_libuv.c",
             "mt19937ar.c",
+            cp+"CBTTrackerClient/http-parser/http_parser.c",
             cp+"CBTTrackerClient/tracker_client.c",
+            cp+"CBTTrackerClient/tracker_http_response_reader.c",
             cp+"CBTTrackerClient/tracker_http.c",
-            cp+"CBTTrackerClient/network.c",
-            cp+"CBTTrackerClient/bt_tracker_client_response_reader.c",
             cp+"CBTTrackerClient/url_encoder.c",
             cp+"CBipBuffer/bipbuffer.c"
             ],
@@ -263,6 +263,7 @@ def build(bld):
             './libuv/include',
             cp+"CConfig-re",
             cp+"CBTTrackerClient",
+            cp+"CBTTrackerClient/http-parser",
             cp+"CHeaplessBencodeReader",
             cp+"CTorrentFileReader",
             cp+"CHashMapViaLinkedList",

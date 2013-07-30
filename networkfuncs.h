@@ -1,20 +1,20 @@
 int peer_connect (void **udata,
-                     const char *host, int port, int *peerid);
+                     const char *host, int port, void** nethandle);
 
 int peer_send (void **udata,
-                  const int peerid,
+                  void* nethandle,
                   const unsigned char *send_data, const int len);
 
-int peer_disconnect (void **udata, int peerid);
+int peer_disconnect (void **udata, void* nethandle);
 
 int peers_poll (void **udata,
                    const int msec_timeout,
                    int (*func_process) (void *caller,
-                                    int netid,
+                                    void* nethandle,
                                     const unsigned char* buf,
                                     unsigned int len),
                    void (*func_process_connection) (void *,
-                                                    int netid,
+                                                    void* nethandle,
                                                     char *ip,
                                                     int), void *data);
 

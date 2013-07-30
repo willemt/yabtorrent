@@ -91,7 +91,7 @@ static void __client_setup_disk_backend(void* bt, unsigned int piece_len)
     bt_client_set_piecedb(bt,&pdb_funcs,db);
 }
 
-client_t* client_setup(int log, int id)
+client_t* client_setup(int log, void* id)
 {
     client_t* cli;
     void *bt;
@@ -123,7 +123,6 @@ client_t* client_setup(int log, int id)
     return cli;
 }
 
-
 void TestBT_Peer_shares_all_pieces(
     CuTest * tc
 )
@@ -134,6 +133,8 @@ void TestBT_Peer_shares_all_pieces(
     hashmap_iterator_t iter;
     void* mt;
     void* clients;
+    void* one = malloc(1), *two = malloc(1);
+    char *addr;
 
     network_setup();
 
@@ -141,8 +142,8 @@ void TestBT_Peer_shares_all_pieces(
 
     mt = mocktorrent_new(1,5);
 
-    a = client_setup(log, 1);
-    b = client_setup(log, 2);
+    a = client_setup(log, one);
+    b = client_setup(log, two);
 
     __client_setup_disk_backend(a->bt,5);
     __client_setup_disk_backend(b->bt,5);
@@ -184,9 +185,10 @@ void TestBT_Peer_shares_all_pieces(
         //bt_piecedb_print_pieces_downloaded(bt_client_get_piecedb(a->bt));
         CuAssertTrue(tc, 1 == bt_piecedb_all_pieces_are_complete(bt_client_get_piecedb(a->bt)));
     }
-
+    
     /* B will initiate the connection */
-    bt_client_add_peer(b->bt,NULL,0,"1",1,0);
+    asprintf(&addr,"%p", one);
+    bt_client_add_peer(b->bt,NULL,0,addr,strlen(addr),0);
 
     for (ii=0; ii<10; ii++)
     {
@@ -211,6 +213,8 @@ void TestBT_Peer_shares_all_pieces_between_each_other(
     hashmap_iterator_t iter;
     void* mt;
     void* clients;
+    void* one = malloc(1), *two = malloc(1);
+    char *addr;
 
     network_setup();
 
@@ -218,8 +222,8 @@ void TestBT_Peer_shares_all_pieces_between_each_other(
 
     mt = mocktorrent_new(2,5);
 
-    a = client_setup(log, 1);
-    b = client_setup(log, 2);
+    a = client_setup(log, one);
+    b = client_setup(log, two);
 
     __client_setup_disk_backend(a->bt,5);
     __client_setup_disk_backend(b->bt,5);
@@ -270,7 +274,8 @@ void TestBT_Peer_shares_all_pieces_between_each_other(
     }
 
     /* B will initiate the connection */
-    bt_client_add_peer(b->bt,NULL,0,"1",1,0);
+    asprintf(&addr,"%p", one);
+    bt_client_add_peer(b->bt,NULL,0,addr,strlen(addr),0);
 
 
     for (ii=0; ii<20; ii++)
@@ -346,6 +351,8 @@ void TestBT_Peer_three_share_all_pieces_between_each_other(
     hashmap_iterator_t iter;
     void* mt;
     void* clients;
+    void* one = malloc(1), *two = malloc(1), *thr = malloc(1);
+    char *addr;
 
     network_setup();
 
@@ -353,9 +360,9 @@ void TestBT_Peer_three_share_all_pieces_between_each_other(
 
     mt = mocktorrent_new(3,5);
 
-    a = client_setup(log, 1);
-    b = client_setup(log, 2);
-    c = client_setup(log, 3);
+    a = client_setup(log, one);
+    b = client_setup(log, two);
+    c = client_setup(log, thr);
 
     __client_setup_disk_backend(a->bt,5);
     __client_setup_disk_backend(b->bt,5);
@@ -413,8 +420,10 @@ void TestBT_Peer_three_share_all_pieces_between_each_other(
     }
 
     /* B will initiate the connection */
-    bt_client_add_peer(a->bt,NULL,0,"2",1,0);
-    bt_client_add_peer(b->bt,NULL,0,"3",1,0);
+    asprintf(&addr,"%p", two);
+    bt_client_add_peer(a->bt,NULL,0,addr,strlen(addr),0);
+    asprintf(&addr,"%p", thr);
+    bt_client_add_peer(b->bt,NULL,0,addr,strlen(addr),0);
 
 
     for (ii=0; ii<20; ii++)
@@ -447,6 +456,8 @@ void TestBT_Peer_share_100_pieces(
     hashmap_iterator_t iter;
     void* mt;
     void* clients;
+    void* one = malloc(1), *two = malloc(1);
+    char *addr;
 
     network_setup();
 
@@ -454,8 +465,8 @@ void TestBT_Peer_share_100_pieces(
 
     mt = mocktorrent_new(100,5);
 
-    a = client_setup(log, 1);
-    b = client_setup(log, 2);
+    a = client_setup(log, one);
+    b = client_setup(log, two);
 
     __client_setup_disk_backend(a->bt,5);
     __client_setup_disk_backend(b->bt,5);
@@ -484,7 +495,8 @@ void TestBT_Peer_share_100_pieces(
     }
   
     /* B will initiate the connection */
-    bt_client_add_peer(a->bt,NULL,0,"2",1,0);
+    asprintf(&addr,"%p", two);
+    bt_client_add_peer(a->bt,NULL,0,addr,strlen(addr),0);
 
     __add_random_piece_subset_of_mocktorrent(
             bt_client_get_piecedb(a->bt),

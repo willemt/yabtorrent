@@ -15,7 +15,7 @@ typedef struct {
     void* inbox;
 
     /* id that we use to identify the peer */
-    int peerid;
+    void* nethandle;
 
     connect_status_e connect_status;
 } client_connection_t;
@@ -32,12 +32,12 @@ typedef struct {
 
     /* id that we use to identify ourselves client.
      * This proxies our IP address */
-    int peerid;
+    void *nethandle;
 } client_t;
 
 extern void *__clients;
 
-client_t* networkfuncs_mock_get_client_from_id(int peerid);
+client_t* networkfuncs_mock_get_client_from_id(void* nethandle);
 
-void* networkfuns_mock_client_new(int id);
+void* networkfuns_mock_client_new(void* nethandle);
 

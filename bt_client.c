@@ -117,15 +117,15 @@ void __FUNC_peer_step(void* caller, void* peer, void* udata)
  * */
 static int __process_peer_msg(
         void *bto,
-        const int netpeerid,
+        void* nethandle,
         const unsigned char* buf,
         unsigned int len)
 {
     bt_client_t *bt = bto;
     bt_peer_t* peer;
 
-    /* get the peer that this message is for using the netpeerid*/
-    peer = bt_peermanager_netpeerid_to_peer(bt->pm, netpeerid);
+    /* get the peer that this message is for using the nethandle*/
+    peer = bt_peermanager_nethandle_to_peer(bt->pm, nethandle);
 
     /* handle handshake */
     if (!pwp_conn_flag_is_set(peer->pc, PC_HANDSHAKE_RECEIVED))
@@ -153,7 +153,7 @@ static int __process_peer_msg(
 }
 
 static void __process_peer_connect(void *bto,
-                                   const int netpeerid,
+                                   void* nethandle,
                                    char *ip, const int port)
 {
     bt_client_t *bt = bto;
@@ -161,10 +161,10 @@ static void __process_peer_connect(void *bto,
     void *pc;
 
     peer = bt_client_add_peer(bt, NULL, 0, ip, strlen(ip), port);
-    peer->net_peerid = netpeerid;
+    peer->nethandle = nethandle;
     pwp_conn_connected(peer->pc);
     pwp_conn_send_handshake(peer->pc);
-    __log(bto,NULL,"CONNECTED: peerid:%d ip:%s", netpeerid, ip);
+//    __log(bto,NULL,"CONNECTED: peerid:%d ip:%s", netpeerid, ip);
 }
 
 static void __log_process_info(bt_client_t * bt)
@@ -259,7 +259,7 @@ void *bt_client_new()
     config_set(bt->cfg,"default", "0");
     config_set_if_not_set(bt->cfg,"infohash", "00000000000000000000");
     config_set_if_not_set(bt->cfg,"my_ip", "127.0.0.1");
-    config_set_if_not_set(bt->cfg,"pwp_listen_port", "6000");
+    config_set_if_not_set(bt->cfg,"pwp_listen_port", "6881");
     config_set_if_not_set(bt->cfg,"max_peer_connections", "10");
     config_set_if_not_set(bt->cfg,"select_timeout_msec", "1000");
     config_set_if_not_set(bt->cfg,"max_active_peers", "4");
@@ -354,7 +354,7 @@ int __FUNC_peerconn_send_to_peer(void *bto,
     assert(pc);
     assert(peer);
     assert(bt->func.peer_send);
-    return bt->func.peer_send(&bt->net_udata, peer->net_peerid, data, len);
+    return bt->func.peer_send(&bt->net_udata, peer->nethandle, data, len);
 }
 
 int __FUNC_peerconn_pollblock(void *bto,
@@ -538,7 +538,7 @@ void *bt_client_add_peer(void *bto,
 
         /* connection */
         if (0 == me->func.peer_connect(&me->net_udata, peer->ip,
-                                      peer->port, &peer->net_peerid))
+                                      peer->port, &peer->nethandle))
         {
             __log(me,NULL,"failed connection to peer");
             return 0;

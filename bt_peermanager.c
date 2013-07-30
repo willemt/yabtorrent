@@ -124,19 +124,19 @@ int bt_peermanager_contains(void *pm, const char *ip, const int port)
     return 0;
 }
 
-void *bt_peermanager_netpeerid_to_peer(void * pm, const int netpeerid)
+void *bt_peermanager_nethandle_to_peer(void * pm, void* nethandle)
 {
     bt_peermanager_t *me = pm;
     hashmap_iterator_t iter;
 
-    /* find peerconn that has this netpeerid */
+    /* find peerconn that has this nethandle */
     hashmap_iterator(me->peers,&iter);
     while (hashmap_iterator_has_next(me->peers,&iter))
     {
         bt_peer_t* peer;
 
         peer = hashmap_iterator_next(me->peers,&iter);
-        if (peer->net_peerid == netpeerid)
+        if (peer->nethandle == nethandle)
             return peer;
     }
 
@@ -177,13 +177,11 @@ bt_peer_t *bt_peermanager_add_peer(void *pm,
         asprintf(&peer->peer_id, "");//, peer_id_len, peer_id);
     }
     asprintf(&peer->ip, "%.*s", ip_len, ip);
-    //asprintf(&peer->port, "%d", port);
     peer->port = port;
 
-//    if (me->func_peerconn_init)
-//        me->func_peerconn_init(me->caller);
-
-//    __log(bto,NULL,"adding peer: ip:%.*s port:%d\n", ip_len, ip, port);
+#if 0 /*  debug */
+    __log(bto,NULL,"adding peer: ip:%.*s port:%d\n", ip_len, ip, port);
+#endif
 
     hashmap_put(me->peers,peer,peer);
     return peer;
@@ -217,9 +215,8 @@ void bt_peermanager_forall(
     bt_peermanager_t *me = pm;
     hashmap_iterator_t iter;
 
-    /* find peerconn that has this netpeerid */
-    hashmap_iterator(me->peers,&iter);
-    while (hashmap_iterator_has_next(me->peers,&iter))
+    for (hashmap_iterator(me->peers,&iter);
+            hashmap_iterator_has_next(me->peers,&iter);)
     {
         bt_peer_t* peer;
 

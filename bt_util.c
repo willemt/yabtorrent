@@ -58,9 +58,8 @@ char *bt_generate_peer_id(
     char *str;
     int rand_num;
 
-    rand_num = 0;
     rand_num = rand();
-    asprintf(&str, "-AA-%d-%011d", VERSION_NUM, rand_num);
+    asprintf(&str, "AAAAA%d%011d", VERSION_NUM, rand_num);
     assert(strlen(str) == PEER_ID_LEN);
     return str;
 }

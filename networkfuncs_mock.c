@@ -56,6 +56,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 void *__clients = NULL;
 
+#if 0
 static unsigned long __int_hash(
     const void *e1
 )
@@ -74,7 +75,22 @@ static long __int_compare(
 
     return *i1 - *i2;
 }
+#endif
 
+static unsigned long __vptr_hash(
+    const void *e1
+)
+{
+    return (unsigned long)e1;
+}
+
+static long __vptr_compare(
+    const void *e1,
+    const void *e2
+)
+{
+    return (unsigned long)e1 - (unsigned long)e2;
+}
 
 void __print_client_contents()
 {
@@ -105,8 +121,8 @@ void __print_client_contents()
 #if 0 /* debugging */
             {
                 void* data;
-                printf("cli: %d peerid: %d inbox: %dB ",
-                        cli->peerid, cn->peerid, bipbuf_get_spaceused(cn->inbox));
+                printf("cli: %d nethandle: %d inbox: %dB ",
+                        cli->nethandle, cn->nethandle, bipbuf_get_spaceused(cn->inbox));
                 data = bipbuf_peek(cn->inbox);
                 for (jj=0; jj<bipbuf_get_spaceused(cn->inbox); jj++)
                 {
@@ -121,12 +137,12 @@ void __print_client_contents()
 
 /**
  * Create a connection to this peer */
-static void __client_create_connection(client_t* cli, const int peerid)
+static void __client_create_connection(client_t* cli, void* nethandle)
 {
     client_connection_t* cn;
 
     /* we already connected */
-    if (hashmap_get(cli->connections,&peerid))
+    if (hashmap_get(cli->connections, nethandle))
     {
         return;
     }
@@ -134,31 +150,31 @@ static void __client_create_connection(client_t* cli, const int peerid)
     /* message inbox */
     cn = calloc(0,sizeof(client_connection_t));
     cn->inbox = bipbuf_new(1000);
-    cn->peerid = peerid;
+    cn->nethandle = nethandle;
     cn->connect_status = 0;
 
     /* record on hashmap */
-    hashmap_put(cli->connections,&cn->peerid,cn);
+    hashmap_put(cli->connections,cn->nethandle,cn);
 }
 
 /**
- * Put this message from peerid onto my inbox for this peerid
- * param peerid: the peerid that sent us this data */
-static void __offer_inbox(client_t* me, const void* send_data, int len, int peerid)
+ * Put this message from nethandle onto my inbox for this nethandle
+ * param nethandle: the nethandle that sent us this data */
+static void __offer_inbox(client_t* me, const void* send_data, int len, void* nethandle)
 {
     client_connection_t* cn;
     int ii;
 
     assert(me->connections);
 
-    cn = hashmap_get(me->connections, &peerid);
+    cn = hashmap_get(me->connections, nethandle);
 
     assert(cn);
 
     bipbuf_offer(cn->inbox, send_data, len);
 
 //    printf("|inbox me:%d rawpeer:%d peer:%d inbox:%d %dB",
-//            me->peerid, peerid, cn->peerid, bipbuf_get_spaceused(cn->inbox), len);
+//            me->nethandle, nethandle, cn->nethandle, bipbuf_get_spaceused(cn->inbox), len);
 
 //    for (ii=0; ii<len; ii++)
 //        printf("%c", ((char*)send_data)[ii]);
@@ -167,52 +183,51 @@ static void __offer_inbox(client_t* me, const void* send_data, int len, int peer
 //    __print_client_contents();
 }
 
-void* networkfuns_mock_client_new(int id)
+void* networkfuns_mock_client_new(void* nethandle)
 {
     client_t* cli;
 
     cli = calloc(0,sizeof(client_t));
-    cli->connections = hashmap_new(__int_hash, __int_compare, 11);
+    cli->connections = hashmap_new(__vptr_hash, __vptr_compare, 11);
 
     /* put inside the hashmap */
-    cli->peerid = id;//hashmap_count(__clients);
-    hashmap_put(__clients, &cli->peerid, cli);
-//    printf("created client: %d, %s\n",
-//            cli->peerid, config_get(cfg, "my_peerid"));
+    cli->nethandle = nethandle;
+    hashmap_put(__clients, cli->nethandle, cli);
+//    printf("created client: %p\n", cli->nethandle);//, config_get(cfg, "my_nethandle"));
     return cli;
 }
 
-client_t* networkfuncs_mock_get_client_from_id(int peerid)
+client_t* networkfuncs_mock_get_client_from_id(void* nethandle)
 {
     client_t* cli;
 
-    cli = hashmap_get(__clients, &peerid);
+    cli = hashmap_get(__clients, nethandle);
 
     return cli;
 }
 
 void* network_setup()
 {
-    __clients = hashmap_new(__int_hash, __int_compare, 11);
+    __clients = hashmap_new(__vptr_hash, __vptr_compare, 11);
 
     return NULL;
 }
 
 /*----------------------------------------------------------------------------*/
 
-int peer_connect(void **udata, const char *host, const int port, int *peerid)
+int peer_connect(void **udata, const char *host, const int port, void **nethandle)
 {
     client_t* you;
     client_t* me = *udata;
 
-    /* peerid is IP address */
-    *peerid = atoi(host);
+    /* nethandle is IP address */
+    sscanf(host, "%p", nethandle);
 
-//    printf("connecting me:%d peerid:%d host:%s\n", me->peerid, *peerid, host);
+//    printf("connecting me:%p nethandle:%p host:%s\n", me->nethandle, *nethandle, host);
 
-    you = networkfuncs_mock_get_client_from_id(*peerid);
-    __client_create_connection(you, me->peerid);
-    __client_create_connection(me, you->peerid);
+    you = networkfuncs_mock_get_client_from_id(*nethandle);
+    __client_create_connection(you, me->nethandle);
+    __client_create_connection(me, you->nethandle);
     return 1;
 }
 
@@ -221,63 +236,21 @@ int peer_connect(void **udata, const char *host, const int port, int *peerid)
  * @return 0 if added to buffer due to write failure, -2 if disconnect
  */
 int peer_send(void **udata,
-              const int peerid, const unsigned char *send_data, const int len)
+              void* nethandle, const unsigned char *send_data, const int len)
 {
     client_t* me = *udata;
     client_t* you;
 
-//    printf("send me:%d peer:%d len:%d\n", me->peerid, peerid, len);
+//    printf("send me:%d peer:%d len:%d\n", me->nethandle, nethandle, len);
 
     /* put onto the sendee's inbox */
-    you = networkfuncs_mock_get_client_from_id(peerid);
-    __offer_inbox(you,send_data,len,me->peerid);
+    you = networkfuncs_mock_get_client_from_id(nethandle);
+    __offer_inbox(you,send_data,len,me->nethandle);
 
     return 1;
 }
 
-#if 0
-/**
- * @param len: pointer to how much memory we need to read
- * @return how many we have read */
-int peer_recv_len(void **udata, const int peerid, char *buf, int *len)
-{
-    client_t* me = *udata;
-    client_connection_t* cn;
-    void* data;
-
-    cn = hashmap_get(me->connections, &peerid);
-
-    assert(cn);
-    assert(cn->inbox);
-
-    /* no data on pipe */
-#if 0
-    if (bipbuf_is_empty(cn->inbox))
-    {
-        return 0;
-    }
-#endif
-
-    data = bipbuf_poll(cn->inbox, (unsigned int)*len);
-
-    /* we can't poll enough data */
-    if (!data)
-        return 0;
-
-    /* put memory into buffer */
-    memcpy(buf, data, *len);
-
-#if 0
-    printf("|recv me:%d rpeer;%d peer:%d inbox:%d %dB %.*s\n",
-            me->peerid, peerid, cn->peerid, bipbuf_get_spaceused(cn->inbox), *len,
-            *len, buf);
-#endif
-
-    return 1;
-}
-#endif
-
-int peer_disconnect(void **udata, int peerid)
+int peer_disconnect(void **udata, void* nethandle)
 {
     client_t* me = *udata;
 //    printf("disconnected\n");
@@ -290,11 +263,11 @@ int peer_disconnect(void **udata, int peerid)
 int peers_poll(void **udata,
                const int msec_timeout,
                int (*func_process) (void *caller,
-                                    int netid,
+                                    void* nethandle,
                                     const unsigned char* buf,
                                     unsigned int len),
                void (*func_process_connection) (void *,
-                                                int netid,
+                                                void* nethandle,
                                                 char *ip,
                                                 int ip_len),
                void *caller)
@@ -317,14 +290,14 @@ int peers_poll(void **udata,
         {
             char ip[32];
 
-            sprintf(ip, "%d", cn->peerid);
+            sprintf(ip, "%p", cn->nethandle);
 
 #if 0 /* debugging */
             printf("processing connection me:%d them:%d\n",
-                    me->peerid, cn->peerid);
+                    me->nethandle, cn->nethandle);
 #endif
 
-            func_process_connection(me->bt, cn->peerid, ip, 1);
+            func_process_connection(me->bt, cn->nethandle, ip, strlen(ip));
             cn->connect_status = CS_CONNECTED;
         }
         else if (!bipbuf_is_empty(cn->inbox))
@@ -333,7 +306,7 @@ int peers_poll(void **udata,
 
             len = bipbuf_get_spaceused(cn->inbox);
             if (len > 0)
-                func_process(me->bt, cn->peerid, bipbuf_poll(cn->inbox, len), len);
+                func_process(me->bt, cn->nethandle, bipbuf_poll(cn->inbox, len), len);
         }
     }
 
@@ -346,7 +319,6 @@ int peer_listen_open(void **udata, const int port)
 {
     client_t* me;
 
-//    printf("listen open\n");
     return 1;
 }
 

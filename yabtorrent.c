@@ -46,8 +46,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "bt_piece_db.h"
 #include "bt_diskcache.h"
 #include "bt_filedumper.h"
-#include "bt_tracker_client.h"
 #include "bt_string.h"
+#include "tracker_client.h"
 #include "torrentfile_reader.h"
 #include "readfile.h"
 #include "config.h"
@@ -56,7 +56,52 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #define PROGRAM_NAME "bt"
 
+typedef struct {
+    void* bc;
+
+    /* piece db*/
+    void* db;
+
+    /* file dumper */
+    void* fd;
+
+    void* cfg;
+
+    /* queue of announces to try */
+    void* announces;
+
+    /* tracker client */
+    void* tc;
+} bt_t;
+
+typedef struct {
+    bt_t* bt;
+    char fname[256];
+    int fname_len;
+    int flen;
+} torrent_reader_t;
+
 uv_loop_t *loop;
+
+static void __on_trackerclient_done(void* data, int status);
+static void __on_trackerclient_add_peer(void* callee,
+        char* peer_id,
+        unsigned int peer_id_len,
+        char* ip,
+        unsigned int ip_len,
+        unsigned int port);
+
+static struct option const long_opts[] = {
+    { "archive", no_argument, NULL, 'a'},
+//  {" backup ", optional_argument, NULL, 'b'},
+    /* The bounded network interface for net communications */
+    { "using-interface", required_argument, NULL, 'i'},
+    { "verify-download", no_argument, NULL, 'e'},
+    { "shutdown-when-complete", no_argument, NULL, 's'},
+    { "pwp_listen_port", required_argument, NULL, 'p'},
+    { "torrent_file_report_only", required_argument, NULL, 't'},
+    { NULL, 0, NULL, 0}
+};
 
 static void __log(void *udata, void *src, char *buf)
 {
@@ -68,6 +113,82 @@ static void __log(void *udata, void *src, char *buf)
     sprintf(stamp, "%d,%0.2f,", (int) tv.tv_sec, (float) tv.tv_usec / 100000);
     write(fd, stamp, strlen(stamp));
     write(fd, buf, strlen(buf));
+}
+
+static int __trackerclient_try_announces(bt_t* bt)
+{
+    int waiting_for_response_from_connection = 0;
+
+    /*  connect to one of the announces */
+    if (0 < llqueue_count(bt->announces))
+    {
+        void* tc;
+        char* announce;
+
+        bt->tc = tc = trackerclient_new(
+                __on_trackerclient_done,
+                __on_trackerclient_add_peer, bt);
+        trackerclient_set_cfg(tc,bt->cfg);
+
+        while ((announce = llqueue_poll(bt->announces)))
+        {
+            if (1 == trackerclient_supports_uri(tc, announce))
+            {
+                printf("trying: %s\n", announce);
+                if (0 == trackerclient_connect_to_uri(tc, announce))
+                {
+                    printf("ERROR: connecting to %s\n", announce);
+                    goto skip;
+                }
+                waiting_for_response_from_connection = 1;
+                free(announce);
+                break;
+            }
+            else
+            {
+                printf("ERROR: No support for URI: %s\n", announce);
+            }
+skip:
+            free(announce);
+        }
+    }
+
+    if (0 == waiting_for_response_from_connection)
+    {
+        return 0;
+    }
+
+    return 1;
+}
+
+static void __on_trackerclient_done(void* data, int status)
+{
+    bt_t* bt = data;
+
+    printf("tracker done\n");
+
+    if (0 == status)
+    {
+
+    }
+
+    if (0 == __trackerclient_try_announces(bt))
+    {
+        printf("No connections made, quitting\n");
+        exit(0);
+    }
+}
+
+static void __on_trackerclient_add_peer(void* callee,
+        char* peer_id,
+        unsigned int peer_id_len,
+        char* ip,
+        unsigned int ip_len,
+        unsigned int port)
+{
+    bt_t* bt = callee;
+
+    bt_client_add_peer(bt->bc, peer_id, peer_id_len, ip, ip_len, port);
 }
 
 static void __usage(int status)
@@ -92,51 +213,12 @@ Mandatory arguments to long options are mandatory for short options too. \n\
     }
 }
 
-static struct option const long_opts[] = {
-    { "archive", no_argument, NULL, 'a'},
-//  {" backup ", optional_argument, NULL, 'b'},
-    /* The bounded network interface for net communications */
-    { "using-interface", required_argument, NULL, 'i'},
-    { "verify-download", no_argument, NULL, 'e'},
-    { "shutdown-when-complete", no_argument, NULL, 's'},
-    { "pwp_listen_port", required_argument, NULL, 'p'},
-    { "torrent_file_report_only", required_argument, NULL, 't'},
-    { NULL, 0, NULL, 0}
-};
-
-typedef struct {
-    void* bc;
-
-    /* piece db*/
-    void* db;
-
-    /* file dumper */
-    void* fd;
-
-    void* cfg;
-
-    /* queue of announces to try */
-    void* announces;
-
-    /* tracker client */
-    void* tc;
-} bt_t;
-
-typedef struct {
-
-    bt_t* bt;
-    char fname[256];
-    int fname_len;
-    int flen;
-
-} torrent_reader_t;
-
-int cb_event(void* udata, const char* key)
+static int __event(void* udata, const char* key)
 {
     return 1;
 }
 
-int cb_event_str(void* udata, const char* key, const char* val, int len)
+static int __event_str(void* udata, const char* key, const char* val, int len)
 {
     torrent_reader_t* me = udata;
 
@@ -146,8 +228,9 @@ int cb_event_str(void* udata, const char* key, const char* val, int len)
 
     if (!strcmp(key,"announce"))
     {
-        config_set_va(me->bt->cfg,"tracker_url","%.*s", len, val);
+        //config_set_va(me->bt->cfg,"tracker_url","%.*s", len, val);
         llqueue_offer(me->bt->announces, strndup(val,len));
+        printf("adding: %.*s\n", len, val);
     }
     else if (!strcmp(key,"infohash"))
     {
@@ -185,7 +268,7 @@ int cb_event_str(void* udata, const char* key, const char* val, int len)
     return 1;
 }
 
-int cb_event_int(void* udata, const char* key, int val)
+static int __event_int(void* udata, const char* key, int val)
 {
     torrent_reader_t* me = udata;
 
@@ -224,7 +307,7 @@ static int __read_torrent_file(bt_t* bt, const char* torrent_file)
     printf("\nReading file torrent file\n");
     memset(&r, 0, sizeof(torrent_reader_t));
     r.bt = bt;
-    tf = tfr_new(cb_event, cb_event_str, cb_event_int, &r);
+    tf = tfr_new(__event, __event_str, __event_int, &r);
     metainfo = read_file(torrent_file,&len);
     tfr_read_metainfo(tf, metainfo, len);
     return 1;
@@ -289,9 +372,9 @@ int main(int argc, char **argv)
     config_set(cfg,"my_peerid",bt_generate_peer_id());
     assert(config_get(cfg,"my_peerid"));
 
-    bt_client_set_logging(bc,
-                          open("dump_log", O_CREAT | O_TRUNC | O_RDWR, 0666),
-                          __log);
+    /*  logging */
+    bt_client_set_logging(
+            bc, open("dump_log", O_CREAT | O_TRUNC | O_RDWR, 0666), __log);
 
     /* set network functions */
     {
@@ -299,8 +382,8 @@ int main(int argc, char **argv)
             .peer_connect = peer_connect,
             .peer_send =  peer_send,
             .peer_disconnect =peer_disconnect, 
-            .peers_poll =peers_poll, 
-            .peer_listen_open =peer_listen_open
+//            .peers_poll =peers_poll, 
+//            .peer_listen_open =peer_listen_open
         };
 
         bt_client_set_funcs(bc, &func, NULL);
@@ -357,31 +440,12 @@ int main(int argc, char **argv)
     periodic_req = malloc(sizeof(uv_timer_t));
     periodic_req->data = bc;
     uv_timer_init(loop, periodic_req);
-    uv_timer_start(periodic_req, __periodic, 0, 5000);
+    uv_timer_start(periodic_req, __periodic, 0, 10000);
 
-    /*  connect to one of the announces */
-    if (0 < llqueue_count(bt.announces))
+    if (0 == __trackerclient_try_announces(&bt))
     {
-        void* tc;
-        char* announce;
-
-        bt.tc = tc =  bt_trackerclient_new(NULL);
-        trackerclient_set_cfg(tc,cfg);
-
-        while ((announce = llqueue_poll(bt.announces)))
-        {
-            if (0 == bt_trackerclient_supports_uri(tc, announce))
-            {
-                if (0 == bt_trackerclient_connect_to_uri(tc, announce))
-                {
-                    /*  handle error */
-                }
-
-                free(announce);
-                break;
-            }
-            free(announce);
-        }
+        printf("No connections made, quitting\n");
+        exit(0);
     }
 
     uv_run(loop, UV_RUN_DEFAULT);

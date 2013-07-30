@@ -1,6 +1,6 @@
 int bt_peermanager_contains(void *pm, const char *ip, const int port);
 
-void *bt_peermanager_netpeerid_to_peer(void * pm, const int netpeerid);
+void *bt_peermanager_nethandle_to_peer(void * pm, void* nethandle);
 
 bt_peer_t *bt_peermanager_add_peer(void *pm,
                               const char *peer_id,

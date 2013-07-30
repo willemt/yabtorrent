@@ -73,7 +73,7 @@ typedef struct
     unsigned int port;
 
     /* for network api */
-    int net_peerid;
+    void* nethandle;
 
     /* peer connection */
     void* pc;
