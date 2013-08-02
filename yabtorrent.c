@@ -315,7 +315,7 @@ static int __read_torrent_file(bt_t* bt, const char* torrent_file)
 
 static void __periodic(uv_timer_t* handle, int status)
 {
-
+    printf("periodic\n");
 }
 
 int main(int argc, char **argv)

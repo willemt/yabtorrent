@@ -40,7 +40,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "block.h"
 #include "bt.h"
 
-int peer_connect(void **udata, const char *host, int *port, int *peerid)
+int peer_connect(void **udata, const char *host, int *port, int *peerid,
+        void (*func_process_connection) (void *, void* nethandle, char *ip, int iplen))
 {
     *peerid = 1;
     return 1;

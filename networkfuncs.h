@@ -1,5 +1,5 @@
-int peer_connect (void **udata,
-                     const char *host, int port, void** nethandle);
+int peer_connect(void **udata, const char *host, int port, void **nethandle,
+        void (*func_process_connection) (void *, void* nethandle, char *ip, int iplen));
 
 int peer_send (void **udata,
                   void* nethandle,

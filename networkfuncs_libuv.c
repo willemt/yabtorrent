@@ -42,11 +42,9 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "bt.h"
 
 typedef struct {
-    /*  response so far */
-    char* response;
-
-    /*  response length */
-    int rlen;
+    void (*func_process_connection) (void *, void* nethandle, char *ip, int iplen);
+    void* callee;
+    void* nethandle;
 } connection_attempt_t;
 
 static uv_buf_t __alloc_cb(uv_handle_t* handle, size_t size)
@@ -80,6 +78,8 @@ static void __on_connect(uv_connect_t *req, int status)
 
     assert(req->data);
 
+    printf("connected.\n");
+
     if (status == -1)
     {
         fprintf(stderr, "connect callback error %s\n",
@@ -91,9 +91,12 @@ static void __on_connect(uv_connect_t *req, int status)
 //    write_req = malloc(sizeof(uv_write_t));
 //    r = uv_write(write_req, req->handle, &buf, 1, __write_cb);
     r = uv_read_start(req->handle, __alloc_cb, __read_cb);
+
+    ca->func_process_connection(ca->callee,ca->nethandle, NULL, 0);
 }
 
-int peer_connect(void **udata, const char *host, int *port, void **nethandle)
+int peer_connect(void **udata, const char *host, int port, void **nethandle,
+        void (*func_process_connection) (void *, void* nethandle, char *ip, int iplen))
 {
     uv_connect_t *connect_req;
     uv_tcp_t *socket;
@@ -103,8 +106,9 @@ int peer_connect(void **udata, const char *host, int *port, void **nethandle)
     ca = malloc(sizeof(connection_attempt_t));
 
 //    *peerid = 1;
+//    printf("connecting to: %s:%d\n", host, port);
     
-    addr = uv_ip4_addr(host, *port);
+    addr = uv_ip4_addr(host, port);
     connect_req = malloc(sizeof(uv_connect_t));
     connect_req->data = ca;
     socket = malloc(sizeof(uv_tcp_t));

@@ -63,6 +63,7 @@ typedef struct
     int npieces;
 } bt_piece_info_t;
 
+#if 1
 /** cfg */
 typedef struct
 {
@@ -88,6 +89,7 @@ typedef struct
 
 //    char *tracker_url;
 } bt_client_cfg_t;
+#endif
 
 typedef struct
 {
@@ -96,9 +98,13 @@ typedef struct
      * @param udata use this memory for the connection. It is up to the callee to alloc memory.
      * @param host the hostname
      * @param port the host's port
-     * @param nethanlde pointer available for the callee to identify the peer */
+     * @param nethandle pointer available for the callee to identify the peer
+     * @param func_process_connection Callback for connections. */
     int (*peer_connect) (void **udata,
-                         const char *host, const int port, void **nethandle);
+                         const char *host, const int port, void **nethandle,
+                        void (*func_process_connection) (
+                            void *, void* nethandle,
+                            char *ip, int iplen));
 
     /**
      * Send data to peer

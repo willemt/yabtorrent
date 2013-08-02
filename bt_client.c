@@ -538,7 +538,8 @@ void *bt_client_add_peer(void *bto,
 
         /* connection */
         if (0 == me->func.peer_connect(&me->net_udata, peer->ip,
-                                      peer->port, &peer->nethandle))
+                                      peer->port, &peer->nethandle,
+                                      __process_peer_connect))
         {
             __log(me,NULL,"failed connection to peer");
             return 0;
@@ -607,6 +608,23 @@ int bt_client_step(void *bto)
 //        return 0;
 
     return 1;
+}
+
+void bt_client_periodic(void* bto)
+{
+    bt_client_t *bt = bto;
+    int ii;
+
+    __log_process_info(bt);
+
+    /*  shutdown if we are setup to not seed */
+    if (1 == bt->am_seeding && 1 == config_get_int(bt->cfg,"shutdown_when_complete"))
+    {
+        return;
+    }
+
+    /*  run each peer connection step */
+    bt_peermanager_forall(bt->pm,NULL,NULL,__FUNC_peer_step);
 }
 
 /**
