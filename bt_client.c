@@ -87,8 +87,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *  reads files from disk
  */
 
-/* --------------------------------------------------------------------------*/
-
 static void __log(void *bto, void *src, const char *fmt, ...)
 {
     bt_client_t *bt = bto;
@@ -152,16 +150,29 @@ static int __process_peer_msg(
     return 1;
 }
 
+static void __process_peer_connect_fail(void *bto, void* nethandle)
+{
+    bt_client_t *bt = bto;
+
+    printf("failed connection\n");
+}
+
 static void __process_peer_connect(void *bto,
                                    void* nethandle,
                                    char *ip, const int port)
 {
     bt_client_t *bt = bto;
     bt_peer_t *peer;
-    void *pc;
 
-    peer = bt_client_add_peer(bt, NULL, 0, ip, strlen(ip), port);
-    peer->nethandle = nethandle;
+    peer = bt_peermanager_nethandle_to_peer(bt->pm, nethandle);
+
+    /* this is the first time we have come across this peer */
+    if (!peer)
+    {
+        peer = bt_client_add_peer(bt, NULL, 0, ip, strlen(ip), port);
+        peer->nethandle = nethandle;
+    }
+
     pwp_conn_connected(peer->pc);
     pwp_conn_send_handshake(peer->pc);
 //    __log(bto,NULL,"CONNECTED: peerid:%d ip:%s", netpeerid, ip);
@@ -413,7 +424,6 @@ int __FUNC_peerconn_pushblock(void *bto,
 
     /* write block to disk medium */
     bt_piece_write_block(pce, NULL, block, data);
-//    bt_filedumper_write_block(bt->fd, block, data);
 
     if (bt_piece_is_complete(pce))
     {
@@ -490,8 +500,6 @@ pwp_connection_functions_t funcs = {
     .log = __FUNC_log
 };
 
-/*---------------------------------------------------------------------------*/
-
 /**
  * Add the peer.
  * Initiate connection with 
@@ -539,7 +547,9 @@ void *bt_client_add_peer(void *bto,
         /* connection */
         if (0 == me->func.peer_connect(&me->net_udata, peer->ip,
                                       peer->port, &peer->nethandle,
-                                      __process_peer_connect))
+                                      __process_peer_connect,
+                                      __process_peer_connect_fail
+                                      ))
         {
             __log(me,NULL,"failed connection to peer");
             return 0;
@@ -569,20 +579,12 @@ int bt_client_remove_peer(void *bto, const int peerid)
 }
 
 /**
- * Tell us if the download is done.
- * @return 1 on sucess; otherwise 0
- */
-int bt_client_is_done(void *bto)
-{
-    return 0;
-}
-
-/**
  * Used for stepping the bittorrent logic
  * @return 1 on sucess; otherwise 0
  */
 int bt_client_step(void *bto)
 {
+#if 1
     bt_client_t *bt = bto;
     int ii;
 
@@ -607,6 +609,7 @@ int bt_client_step(void *bto)
 //    if (__all_pieces_are_complete(bt))
 //        return 0;
 
+#endif
     return 1;
 }
 
@@ -625,27 +628,5 @@ void bt_client_periodic(void* bto)
 
     /*  run each peer connection step */
     bt_peermanager_forall(bt->pm,NULL,NULL,__FUNC_peer_step);
-}
-
-/**
- * Used for initiation of downloading
- */
-void bt_client_go(void *bto)
-{
-    bt_client_t *bt = bto;
-    int ii;
-
-    bt->func.peer_listen_open(&bt->net_udata,
-            atoi(config_get(bt->cfg,"pwp_listen_port")));
-
-    while (1)
-    {
-        if (0 == bt_client_step(bt))
-            break;
-    }
-
-    __log(bt, NULL, "download is done");
-
-    //__dumppiece(bt);
 }
 

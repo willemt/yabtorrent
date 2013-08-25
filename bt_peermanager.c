@@ -130,8 +130,8 @@ void *bt_peermanager_nethandle_to_peer(void * pm, void* nethandle)
     hashmap_iterator_t iter;
 
     /* find peerconn that has this nethandle */
-    hashmap_iterator(me->peers,&iter);
-    while (hashmap_iterator_has_next(me->peers,&iter))
+    for (hashmap_iterator(me->peers,&iter);
+        hashmap_iterator_has_next(me->peers,&iter);)
     {
         bt_peer_t* peer;
 
@@ -140,7 +140,6 @@ void *bt_peermanager_nethandle_to_peer(void * pm, void* nethandle)
             return peer;
     }
 
-    assert(FALSE);
     return NULL;
 }
 
@@ -179,8 +178,9 @@ bt_peer_t *bt_peermanager_add_peer(void *pm,
     asprintf(&peer->ip, "%.*s", ip_len, ip);
     peer->port = port;
 
-#if 0 /*  debug */
-    __log(bto,NULL,"adding peer: ip:%.*s port:%d\n", ip_len, ip, port);
+#if 1 /*  debug */
+    printf("adding peer: ip:%.*s port:%d\n", ip_len, ip, port);
+    //__log(bto,NULL,"adding peer: ip:%.*s port:%d\n", ip_len, ip, port);
 #endif
 
     hashmap_put(me->peers,peer,peer);

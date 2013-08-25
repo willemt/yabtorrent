@@ -99,12 +99,14 @@ typedef struct
      * @param host the hostname
      * @param port the host's port
      * @param nethandle pointer available for the callee to identify the peer
-     * @param func_process_connection Callback for connections. */
+     * @param func_process_connection Callback for sucessful connections.
+     * @param func_connection_failed Callback for failed connections. */
     int (*peer_connect) (void **udata,
                          const char *host, const int port, void **nethandle,
                         void (*func_process_connection) (
                             void *, void* nethandle,
-                            char *ip, int iplen));
+                            char *ip, int iplen),
+                        void (*func_connection_failed) (void *, void* nethandle));
 
     /**
      * Send data to peer

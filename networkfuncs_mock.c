@@ -42,8 +42,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "networkfuncs.h"
 #include "mock_torrent.h"
 
-/*----------------------------------------------------------------------------*/
-
 #include "bt_piece_db.h"
 #include "bt_diskmem.h"
 #include "config.h"
@@ -54,28 +52,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <fcntl.h>
 #include <sys/time.h>
 
-void *__clients = NULL;
-
-#if 0
-static unsigned long __int_hash(
-    const void *e1
-)
-{
-    const int *i1 = e1;
-
-    return *i1;
-}
-
-static long __int_compare(
-    const void *e1,
-    const void *e2
-)
-{
-    const int *i1 = e1, *i2 = e2;
-
-    return *i1 - *i2;
-}
-#endif
+//void *__clients = NULL;
 
 static unsigned long __vptr_hash(
     const void *e1
@@ -92,6 +69,7 @@ static long __vptr_compare(
     return (unsigned long)e1 - (unsigned long)e2;
 }
 
+#if 0
 void __print_client_contents()
 {
     hashmap_iterator_t iter;
@@ -134,6 +112,7 @@ void __print_client_contents()
         }
     }
 }
+#endif
 
 /**
  * Create a connection to this peer */
@@ -150,9 +129,8 @@ static void __client_create_connection(client_t* cli, void* nethandle)
     /* message inbox */
     cn = calloc(0,sizeof(client_connection_t));
     cn->inbox = bipbuf_new(1000);
-    cn->nethandle = nethandle;
     cn->connect_status = 0;
-
+    cn->nethandle = nethandle;
     /* record on hashmap */
     hashmap_put(cli->connections,cn->nethandle,cn);
 }
@@ -163,24 +141,20 @@ static void __client_create_connection(client_t* cli, void* nethandle)
 static void __offer_inbox(client_t* me, const void* send_data, int len, void* nethandle)
 {
     client_connection_t* cn;
-    int ii;
 
     assert(me->connections);
-
     cn = hashmap_get(me->connections, nethandle);
-
     assert(cn);
-
     bipbuf_offer(cn->inbox, send_data, len);
 
-//    printf("|inbox me:%d rawpeer:%d peer:%d inbox:%d %dB",
-//            me->nethandle, nethandle, cn->nethandle, bipbuf_get_spaceused(cn->inbox), len);
-
-//    for (ii=0; ii<len; ii++)
-//        printf("%c", ((char*)send_data)[ii]);
- //   printf("\n");
-
-//    __print_client_contents();
+#if 0
+    printf("|inbox me:%d rawpeer:%d peer:%d inbox:%d %dB",
+            me->nethandle, nethandle, cn->nethandle, bipbuf_get_spaceused(cn->inbox), len);
+    for (ii=0; ii<len; ii++)
+        printf("%c", ((char*)send_data)[ii]);
+    printf("\n");
+    __print_client_contents();
+#endif
 }
 
 void* networkfuns_mock_client_new(void* nethandle)
@@ -189,46 +163,28 @@ void* networkfuns_mock_client_new(void* nethandle)
 
     cli = calloc(0,sizeof(client_t));
     cli->connections = hashmap_new(__vptr_hash, __vptr_compare, 11);
-
-    /* put inside the hashmap */
-    cli->nethandle = nethandle;
-    hashmap_put(__clients, cli->nethandle, cli);
-//    printf("created client: %p\n", cli->nethandle);//, config_get(cfg, "my_nethandle"));
+    cli->nethandle = cli;
     return cli;
-}
-
-client_t* networkfuncs_mock_get_client_from_id(void* nethandle)
-{
-    client_t* cli;
-
-    cli = hashmap_get(__clients, nethandle);
-
-    return cli;
-}
-
-void* network_setup()
-{
-    __clients = hashmap_new(__vptr_hash, __vptr_compare, 11);
-
-    return NULL;
 }
 
 /*----------------------------------------------------------------------------*/
 
 int peer_connect(void **udata, const char *host, const int port, void **nethandle,
-        void (*func_process_connection) (void *, void* nethandle, char *ip, int iplen))
+        void (*func_process_connection) (void *, void* nethandle, char *ip, int iplen),
+        void (*func_connection_failed) (void *, void* nethandle)
+        )
 {
     client_t* you;
     client_t* me = *udata;
 
     /* nethandle is IP address */
     sscanf(host, "%p", nethandle);
+    you = *nethandle;
 
 //    printf("connecting me:%p nethandle:%p host:%s\n", me->nethandle, *nethandle, host);
 
-    you = networkfuncs_mock_get_client_from_id(*nethandle);
-    __client_create_connection(you, me->nethandle);
-    __client_create_connection(me, you->nethandle);
+    __client_create_connection(you, me);
+    __client_create_connection(me, you);
     return 1;
 }
 
@@ -245,7 +201,7 @@ int peer_send(void **udata,
 //    printf("send me:%d peer:%d len:%d\n", me->nethandle, nethandle, len);
 
     /* put onto the sendee's inbox */
-    you = networkfuncs_mock_get_client_from_id(nethandle);
+    you = nethandle;
     __offer_inbox(you,send_data,len,me->nethandle);
 
     return 1;

@@ -134,7 +134,7 @@ static int __trackerclient_try_announces(bt_t* bt)
         {
             if (1 == trackerclient_supports_uri(tc, announce))
             {
-                printf("trying: %s\n", announce);
+                printf("Trying: %s\n", announce);
                 if (0 == trackerclient_connect_to_uri(tc, announce))
                 {
                     printf("ERROR: connecting to %s\n", announce);
@@ -437,6 +437,7 @@ int main(int argc, char **argv)
 
     /* start uv */
     loop = uv_default_loop();
+
     /* create periodic timer */
     uv_timer_t *periodic_req;
     periodic_req = malloc(sizeof(uv_timer_t));
@@ -444,6 +445,7 @@ int main(int argc, char **argv)
     uv_timer_init(loop, periodic_req);
     uv_timer_start(periodic_req, __periodic, 0, 10000);
 
+    /* try to connect to tracker */
     if (0 == __trackerclient_try_announces(&bt))
     {
         printf("No connections made, quitting\n");

@@ -55,6 +55,32 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <fcntl.h>
 #include <sys/time.h>
 
+void *__clients = NULL;
+
+
+static unsigned long __vptr_hash(
+    const void *e1
+)
+{
+    return (unsigned long)e1;
+}
+
+static long __vptr_compare(
+    const void *e1,
+    const void *e2
+)
+{
+    return (unsigned long)e1 - (unsigned long)e2;
+}
+
+void* network_setup()
+{
+    __clients = hashmap_new(__vptr_hash, __vptr_compare, 11);
+
+    return NULL;
+}
+
+
 static void __log(void *udata, void *src, char *buf)
 {
     char stamp[32];
@@ -120,8 +146,11 @@ client_t* client_setup(int log, void* id)
         bt_client_set_logging(bt,log , __log);
     }
 
+    hashmap_put(__clients, cli, cli);
+
     return cli;
 }
+
 
 void TestBT_Peer_shares_all_pieces(
     CuTest * tc
@@ -133,7 +162,6 @@ void TestBT_Peer_shares_all_pieces(
     hashmap_iterator_t iter;
     void* mt;
     void* clients;
-    void* one = malloc(1), *two = malloc(1);
     char *addr;
 
     network_setup();
@@ -142,8 +170,8 @@ void TestBT_Peer_shares_all_pieces(
 
     mt = mocktorrent_new(1,5);
 
-    a = client_setup(log, one);
-    b = client_setup(log, two);
+    a = client_setup(log, NULL);
+    b = client_setup(log, NULL);
 
     __client_setup_disk_backend(a->bt,5);
     __client_setup_disk_backend(b->bt,5);
@@ -187,7 +215,7 @@ void TestBT_Peer_shares_all_pieces(
     }
     
     /* B will initiate the connection */
-    asprintf(&addr,"%p", one);
+    asprintf(&addr,"%p", a);
     bt_client_add_peer(b->bt,NULL,0,addr,strlen(addr),0);
 
     for (ii=0; ii<10; ii++)
@@ -197,7 +225,7 @@ void TestBT_Peer_shares_all_pieces(
 #endif
         bt_client_step(a->bt);
         bt_client_step(b->bt);
-        __print_client_contents();
+//        __print_client_contents();
     }
 
     CuAssertTrue(tc, 1 == bt_piecedb_all_pieces_are_complete(bt_client_get_piecedb(b->bt)));
@@ -213,7 +241,6 @@ void TestBT_Peer_shares_all_pieces_between_each_other(
     hashmap_iterator_t iter;
     void* mt;
     void* clients;
-    void* one = malloc(1), *two = malloc(1);
     char *addr;
 
     network_setup();
@@ -222,8 +249,8 @@ void TestBT_Peer_shares_all_pieces_between_each_other(
 
     mt = mocktorrent_new(2,5);
 
-    a = client_setup(log, one);
-    b = client_setup(log, two);
+    a = client_setup(log, NULL);
+    b = client_setup(log, NULL);
 
     __client_setup_disk_backend(a->bt,5);
     __client_setup_disk_backend(b->bt,5);
@@ -274,7 +301,7 @@ void TestBT_Peer_shares_all_pieces_between_each_other(
     }
 
     /* B will initiate the connection */
-    asprintf(&addr,"%p", one);
+    asprintf(&addr,"%p", a);
     bt_client_add_peer(b->bt,NULL,0,addr,strlen(addr),0);
 
 
@@ -285,7 +312,7 @@ void TestBT_Peer_shares_all_pieces_between_each_other(
 #endif
         bt_client_step(a->bt);
         bt_client_step(b->bt);
-        __print_client_contents();
+//        __print_client_contents();
     }
 
     CuAssertTrue(tc, 1 == bt_piecedb_all_pieces_are_complete(bt_client_get_piecedb(a->bt)));
@@ -351,7 +378,6 @@ void TestBT_Peer_three_share_all_pieces_between_each_other(
     hashmap_iterator_t iter;
     void* mt;
     void* clients;
-    void* one = malloc(1), *two = malloc(1), *thr = malloc(1);
     char *addr;
 
     network_setup();
@@ -360,9 +386,9 @@ void TestBT_Peer_three_share_all_pieces_between_each_other(
 
     mt = mocktorrent_new(3,5);
 
-    a = client_setup(log, one);
-    b = client_setup(log, two);
-    c = client_setup(log, thr);
+    a = client_setup(log, NULL);
+    b = client_setup(log, NULL);
+    c = client_setup(log, NULL);
 
     __client_setup_disk_backend(a->bt,5);
     __client_setup_disk_backend(b->bt,5);
@@ -420,9 +446,9 @@ void TestBT_Peer_three_share_all_pieces_between_each_other(
     }
 
     /* B will initiate the connection */
-    asprintf(&addr,"%p", two);
+    asprintf(&addr,"%p", b);
     bt_client_add_peer(a->bt,NULL,0,addr,strlen(addr),0);
-    asprintf(&addr,"%p", thr);
+    asprintf(&addr,"%p", c);
     bt_client_add_peer(b->bt,NULL,0,addr,strlen(addr),0);
 
 
@@ -434,7 +460,7 @@ void TestBT_Peer_three_share_all_pieces_between_each_other(
         bt_client_step(a->bt);
         bt_client_step(b->bt);
         bt_client_step(c->bt);
-        __print_client_contents();
+//        __print_client_contents();
     }
 
 //    bt_piecedb_print_pieces_downloaded(bt_client_get_piecedb(a->bt));
@@ -456,7 +482,6 @@ void TestBT_Peer_share_100_pieces(
     hashmap_iterator_t iter;
     void* mt;
     void* clients;
-    void* one = malloc(1), *two = malloc(1);
     char *addr;
 
     network_setup();
@@ -465,8 +490,8 @@ void TestBT_Peer_share_100_pieces(
 
     mt = mocktorrent_new(100,5);
 
-    a = client_setup(log, one);
-    b = client_setup(log, two);
+    a = client_setup(log, NULL);
+    b = client_setup(log, NULL);
 
     __client_setup_disk_backend(a->bt,5);
     __client_setup_disk_backend(b->bt,5);
@@ -495,7 +520,7 @@ void TestBT_Peer_share_100_pieces(
     }
   
     /* B will initiate the connection */
-    asprintf(&addr,"%p", two);
+    asprintf(&addr,"%p", b);
     bt_client_add_peer(a->bt,NULL,0,addr,strlen(addr),0);
 
     __add_random_piece_subset_of_mocktorrent(

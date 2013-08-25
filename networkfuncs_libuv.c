@@ -43,6 +43,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 typedef struct {
     void (*func_process_connection) (void *, void* nethandle, char *ip, int iplen);
+    void (*func_process_connection_fail) (void *, void* nethandle);
     void* callee;
     void* nethandle;
 } connection_attempt_t;
@@ -78,32 +79,38 @@ static void __on_connect(uv_connect_t *req, int status)
 
     assert(req->data);
 
-    printf("connected.\n");
+    printf("Connected.\n");
 
     if (status == -1)
     {
         fprintf(stderr, "connect callback error %s\n",
                 uv_err_name(uv_last_error(uv_default_loop())));
+        ca->func_process_connection_fail(ca->callee,ca->nethandle);
         return;
     }
 
     req->handle->data = req->data;
 //    write_req = malloc(sizeof(uv_write_t));
 //    r = uv_write(write_req, req->handle, &buf, 1, __write_cb);
-    r = uv_read_start(req->handle, __alloc_cb, __read_cb);
 
-    ca->func_process_connection(ca->callee,ca->nethandle, NULL, 0);
+    r = uv_read_start(req->handle, __alloc_cb, __read_cb);
+    ca->func_process_connection(ca->callee, ca->nethandle, NULL, 0);
+    printf("process connection\n");
 }
 
 int peer_connect(void **udata, const char *host, int port, void **nethandle,
-        void (*func_process_connection) (void *, void* nethandle, char *ip, int iplen))
+        void (*func_process_connection) (void *, void* nethandle, char *ip, int iplen),
+        void (*func_connection_failed) (void *, void* nethandle))
 {
     uv_connect_t *connect_req;
     uv_tcp_t *socket;
     struct sockaddr_in addr;
     connection_attempt_t *ca;
 
-    ca = malloc(sizeof(connection_attempt_t));
+    *nethandle = ca = malloc(sizeof(connection_attempt_t));
+    ca->func_process_connection = func_process_connection;
+    ca->func_process_connection_fail = func_connection_failed;
+    ca->callee = *udata;
 
 //    *peerid = 1;
 //    printf("connecting to: %s:%d\n", host, port);
@@ -134,28 +141,3 @@ int peer_disconnect(void **udata, void* nethandle)
     return 1;
 }
 
-#if 0
-/*
- * poll info peer has information 
- * */
-int peers_poll(void **udata,
-               const int msec_timeout,
-               int (*func_process) (void *caller,
-                                    void* netid,
-                                    const unsigned char* buf,
-                                    unsigned int len),
-               void (*func_process_connection) (void *,
-                                                int netid,
-                                               char *ip, int), void *data)
-
-    return 1;
-}
-
-/*
- * open up to listen to peers */
-int peer_listen_open(void **udata, const int port)
-{
-    return 1;
-}
-
-#endif
