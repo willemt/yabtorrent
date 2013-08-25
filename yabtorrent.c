@@ -228,9 +228,10 @@ static int __event_str(void* udata, const char* key, const char* val, int len)
 
     if (!strcmp(key,"announce"))
     {
-        //config_set_va(me->bt->cfg,"tracker_url","%.*s", len, val);
         llqueue_offer(me->bt->announces, strndup(val,len));
+#if 0 /* debugging */
         printf("adding: %.*s\n", len, val);
+#endif
     }
     else if (!strcmp(key,"infohash"))
     {
@@ -238,7 +239,9 @@ static int __event_str(void* udata, const char* key, const char* val, int len)
 
         ihash = str2sha1hash(val, len);
         config_set_va(me->bt->cfg,"infohash","%.*s", 20, ihash);
-//        printf("hash: %.*s\n", 20, config_get(me->bt->cfg,"infohash"));
+#if 0 /* debugging */
+        printf("hash: %.*s\n", 20, config_get(me->bt->cfg,"infohash"));
+#endif
     }
     else if (!strcmp(key,"pieces"))
     {
@@ -260,7 +263,6 @@ static int __event_str(void* udata, const char* key, const char* val, int len)
         strncpy(me->fname,val,len);
         me->fname_len = len;
 
-//        config_set_va(me->bt->cfg, config_get_int(
         bt_piecedb_increase_piece_space(me->bt->db, me->flen);
         bt_filedumper_add_file(me->bt->fd, me->fname, me->fname_len, me->flen);
     }
@@ -315,7 +317,7 @@ static int __read_torrent_file(bt_t* bt, const char* torrent_file)
 
 static void __periodic(uv_timer_t* handle, int status)
 {
-    printf("periodic\n");
+
 }
 
 int main(int argc, char **argv)
@@ -450,24 +452,7 @@ int main(int argc, char **argv)
 
     uv_run(loop, UV_RUN_DEFAULT);
 
-    if (o_verify_download)
-    {
-
-    }
-    else
-    {
-        while (1)
-        {
-            if (0 == bt_client_step(bc))
-                break;
-        }
-
-        __log(bc, NULL, "download is done\n");
-
-    }
-
     bt_client_release(bc);
-//    bt_connect_to_tracker(bc, bt_get_nbytes_downloaded)
 
-    return uv_run(loop, UV_RUN_DEFAULT);
+    return 1;
 }
