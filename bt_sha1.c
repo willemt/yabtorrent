@@ -113,7 +113,8 @@ char *str2sha1hash(
     unsigned char hash[20];
 
     SHA1Init(&ctx);
-    SHA1Update(&ctx, str, len);
+    for (ii=0; ii<len; ii+=1)
+        SHA1Update(&ctx, str + ii, 1);
     SHA1Final(hash, &ctx);
 
     char *out;

@@ -42,10 +42,16 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "bt.h"
 
 typedef struct {
+    int (*func_process_data) (void *caller,
+                        void* nethandle,
+                        const unsigned char* buf,
+                        unsigned int len);
     void (*func_process_connection) (void *, void* nethandle, char *ip, int iplen);
     void (*func_process_connection_fail) (void *, void* nethandle);
     void* callee;
-    void* nethandle;
+    /*  socket for sending on */
+    uv_stream_t* stream;
+    //uv_tcp_t* socket;
 } connection_attempt_t;
 
 static uv_buf_t __alloc_cb(uv_handle_t* handle, size_t size)
@@ -59,14 +65,20 @@ static void __read_cb(uv_stream_t* tcp, ssize_t nread, uv_buf_t buf)
 
     if (nread >= 0)
     {
-
+//        printf("read: %d\n", nread);
+        ca->func_process_data(ca->callee, ca, buf.base, nread);
     }
     else
     {
-        printf("done reading\n");
+//        printf("done reading: %d\n", nread);
     }
 
     free(buf.base);
+}
+
+static void __write_cb(uv_write_t *req, int status)
+{
+//    free(req);
 }
 
 static void __on_connect(uv_connect_t *req, int status)
@@ -74,31 +86,33 @@ static void __on_connect(uv_connect_t *req, int status)
     connection_attempt_t *ca = req->data;
     int r;
     char *request;
-    uv_buf_t buf;
-    uv_write_t *write_req;
+
+    ca->stream = req->handle;
 
     assert(req->data);
-
-    printf("Connected.\n");
 
     if (status == -1)
     {
         fprintf(stderr, "connect callback error %s\n",
                 uv_err_name(uv_last_error(uv_default_loop())));
-        ca->func_process_connection_fail(ca->callee,ca->nethandle);
+        ca->func_process_connection_fail(ca->callee,ca);
         return;
     }
 
+    /*  start reading from peer */
     req->handle->data = req->data;
-//    write_req = malloc(sizeof(uv_write_t));
-//    r = uv_write(write_req, req->handle, &buf, 1, __write_cb);
-
     r = uv_read_start(req->handle, __alloc_cb, __read_cb);
-    ca->func_process_connection(ca->callee, ca->nethandle, NULL, 0);
-    printf("process connection\n");
+
+    ca->func_process_connection(ca->callee, ca, "", 0);
 }
 
-int peer_connect(void **udata, const char *host, int port, void **nethandle,
+int peer_connect(void* caller, void **udata,
+        const char *host, int port,
+        void **nethandle,
+        int (*func_process_data) (void *caller,
+                        void* nethandle,
+                        const unsigned char* buf,
+                        unsigned int len),
         void (*func_process_connection) (void *, void* nethandle, char *ip, int iplen),
         void (*func_connection_failed) (void *, void* nethandle))
 {
@@ -107,13 +121,15 @@ int peer_connect(void **udata, const char *host, int port, void **nethandle,
     struct sockaddr_in addr;
     connection_attempt_t *ca;
 
-    *nethandle = ca = malloc(sizeof(connection_attempt_t));
+    *nethandle = ca = calloc(1,sizeof(connection_attempt_t));
+    ca->func_process_data = func_process_data;
     ca->func_process_connection = func_process_connection;
     ca->func_process_connection_fail = func_connection_failed;
-    ca->callee = *udata;
+    ca->callee = caller;
 
-//    *peerid = 1;
-//    printf("connecting to: %s:%d\n", host, port);
+#if 0 /* debugging */
+    printf("connecting to: %lx %s:%d\n", ca, host, port);
+#endif
     
     addr = uv_ip4_addr(host, port);
     connect_req = malloc(sizeof(uv_connect_t));
@@ -129,14 +145,36 @@ int peer_connect(void **udata, const char *host, int port, void **nethandle,
  *
  * @return 0 if added to buffer due to write failure, -2 if disconnect
  */
-int peer_send(void **udata,
-              void* nethandle, const unsigned char *send_data, const int len)
+int peer_send(void* caller, void **udata, void* nethandle,
+        const unsigned char *send_data, const int len)
 {
+    connection_attempt_t *ca;
+    uv_write_t *req;
+    uv_buf_t buf;
+    int r;
+
+    ca = nethandle;
+
+    if (!ca->stream)
+    {
+        fprintf(stderr, "unable to send as not connected\n");
+        return 0;
+    }
+
+    /*  create buffer */
+    //buf = uv_buf_init((char*) malloc(len), len);
+    //memcpy(buf.base, send_data, len);
+    buf.base = (void*)send_data;
+    buf.len = len;
+
+    /*  write */
+    req = malloc(sizeof(uv_write_t));
+    r = uv_write(req, ca->stream, &buf, 1, __write_cb);
 
     return 1;
 }
 
-int peer_disconnect(void **udata, void* nethandle)
+int peer_disconnect(void* caller, void **udata, void* nethandle)
 {
     return 1;
 }

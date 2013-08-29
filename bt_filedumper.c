@@ -81,6 +81,11 @@ void *bt_filedumper_read_block(
 {
     bt_filedumper_t *me = flo;
 
+#if 0 /*  debugging */
+    printf("fd-readblock: %d %d %d\n",
+            blk->piece_idx,  blk->block_byte_offset, blk->block_len);
+#endif
+
     return sfa_read(
             me->sfa,
             blk->piece_idx * me->piece_size + blk->block_byte_offset,

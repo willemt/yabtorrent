@@ -65,6 +65,9 @@ typedef struct {
     /* file dumper */
     void* fd;
 
+    /* disk cache */
+    void* dc;
+
     void* cfg;
 
     /* queue of announces to try */
@@ -110,6 +113,7 @@ static void __log(void *udata, void *src, char *buf)
     struct timeval tv;
 
     gettimeofday(&tv, NULL);
+    printf("LOG: %s\n", buf);
     sprintf(stamp, "%d,%0.2f,", (int) tv.tv_sec, (float) tv.tv_usec / 100000);
     write(fd, stamp, strlen(stamp));
     write(fd, buf, strlen(buf));
@@ -252,10 +256,10 @@ static int __event_str(void* udata, const char* key, const char* val, int len)
             bt_piecedb_add(me->bt->db,val + i);
         }
 
+#if 1
         config_set_va(me->bt->cfg, "npieces", "%d",
-                bt_piecedb_get_length(me->bt->cfg));
-        config_set_va(me->bt->cfg, "npieces", "%d",
-                bt_piecedb_get_length(me->bt->cfg));
+                bt_piecedb_get_length(me->bt->db));
+#endif
     }
     else if (!strcmp(key,"file path"))
     {
@@ -285,7 +289,9 @@ static int __event_int(void* udata, const char* key, int val)
     else if (!strcmp(key,"piece length"))
     {
         config_set_va(me->bt->cfg, "piece_length", "%d", val);
-        printf("piece size: %d\n", val);
+        bt_piecedb_set_piece_length(me->bt->db, val);
+        bt_diskcache_set_piece_length(me->bt->dc, val);
+        bt_filedumper_set_piece_length(me->bt->fd, val);
     }
 
     return 1;
@@ -317,7 +323,10 @@ static int __read_torrent_file(bt_t* bt, const char* torrent_file)
 
 static void __periodic(uv_timer_t* handle, int status)
 {
+    bt_t* bt = handle->data;
 
+    if (bt->bc)
+        bt_client_periodic(bt->bc);
 }
 
 int main(int argc, char **argv)
@@ -402,14 +411,13 @@ int main(int argc, char **argv)
     /* database for dumping pieces to disk */
     bt.fd = fd = bt_filedumper_new();
 
-    /* intermediary between filedumper and DB */
-    dc = bt_diskcache_new();
-    //bt_diskcache_set_func_log(bc->dc, __log, bc);
-
+    /* Disk Cache */
+    bt.dc = dc = bt_diskcache_new();
     /* point diskcache to filedumper */
     bt_diskcache_set_disk_blockrw(dc, bt_filedumper_get_blockrw(fd), fd);
+    //bt_diskcache_set_func_log(bc->dc, __log, bc);
 
-    /* set up piecedb */
+    /* Piece DB */
     bt.db = db = bt_piecedb_new();
     bt_piecedb_set_diskstorage(db,
             bt_diskcache_get_blockrw(dc),
@@ -433,7 +441,11 @@ int main(int argc, char **argv)
         exit(EXIT_FAILURE);
     }
 
+    printf("piece db: %d\n", bt_piecedb_get_length(bt.db));
+
     config_print(cfg);
+
+    bt_piecedb_print_pieces_downloaded(bt.db);
 
     /* start uv */
     loop = uv_default_loop();
@@ -441,9 +453,11 @@ int main(int argc, char **argv)
     /* create periodic timer */
     uv_timer_t *periodic_req;
     periodic_req = malloc(sizeof(uv_timer_t));
-    periodic_req->data = bc;
+    periodic_req->data = &bt;
     uv_timer_init(loop, periodic_req);
-    uv_timer_start(periodic_req, __periodic, 0, 10000);
+    uv_timer_start(periodic_req, __periodic, 0, 500);
+
+//    return 1;
 
     /* try to connect to tracker */
     if (0 == __trackerclient_try_announces(&bt))

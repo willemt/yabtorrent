@@ -178,7 +178,7 @@ bt_peer_t *bt_peermanager_add_peer(void *pm,
     asprintf(&peer->ip, "%.*s", ip_len, ip);
     peer->port = port;
 
-#if 1 /*  debug */
+#if 0 /*  debug */
     printf("adding peer: ip:%.*s port:%d\n", ip_len, ip, port);
     //__log(bto,NULL,"adding peer: ip:%.*s port:%d\n", ip_len, ip, port);
 #endif

@@ -58,17 +58,20 @@ typedef struct
 /*  peer */
 typedef struct
 {
+    /*  the pieces that the peer has */
     hashmap_t *have_pieces;
 } peer_t;
 
 /*  piece */
 typedef struct
 {
+    /*  Number of peers that has this piece
+     *  This is for determining rarity */
     int nhaves;
+    /*  Piece IDX */
     int idx;
 } piece_t;
 
-/*----------------------------------------------------------------------------*/
 static unsigned long __peer_hash(
     const void *obj
 )
@@ -96,8 +99,6 @@ static int __cmp_piece(
     return p2->nhaves - p1->nhaves;
 }
 
-/*----------------------------------------------------------------------------*/
-
 void *bt_rarestfirst_selector_new(
     const int npieces
 )
@@ -109,9 +110,19 @@ void *bt_rarestfirst_selector_new(
     rf->peers = hashmap_new(__peer_hash, __peer_compare, 11);
     rf->pieces = hashmap_new(__peer_hash, __peer_compare, 11);
     rf->pieces_polled = hashmap_new(__peer_hash, __peer_compare, 11);
-//    rf->piece_heap = heap_new(__cmp_piece, rf);
-//    = llqueue_new();
     return rf;
+}
+
+static void __peer_release(peer_t* p)
+{
+    hashmap_iterator_t iter;
+    piece_t* pce;
+
+    for (hashmap_iterator(p->have_pieces, &iter);
+        (pce = hashmap_iterator_next(p->have_pieces, &iter));)
+    {
+        hashmap_remove(p->have_pieces, p);
+    }
 }
 
 void bt_rarestfirst_selector_free(
@@ -119,11 +130,19 @@ void bt_rarestfirst_selector_free(
 )
 {
     rarestfirst_t *rf = r;
+    hashmap_iterator_t iter;
+    peer_t* p;
+
+    for (hashmap_iterator(rf->pieces, &iter);
+        (p = hashmap_iterator_next(rf->pieces, &iter));)
+    {
+        hashmap_remove(rf->pieces, p);
+        free(p);
+    }
 
     hashmap_free(rf->peers);
     hashmap_free(rf->pieces);
     hashmap_free(rf->pieces_polled);
-//    heap_free(rf->piece_heap);
     free(rf);
 }
 
@@ -236,7 +255,10 @@ int bt_rarestfirst_selector_get_npieces(void *r)
 }
 
 /**
- * poll best piece from peer */
+ * Poll best piece from peer,
+ * @param r Rarestfirst object
+ * @param peer Best piece in context of this peer
+ * @return idx of piece which is best; otherwise -1 */
 int bt_rarestfirst_selector_poll_best_piece(
     void *r,
     const void *peer
@@ -263,11 +285,9 @@ int bt_rarestfirst_selector_poll_best_piece(
 
     hp = heap_new(__cmp_piece, rf);
 
-    /*  look at master hashmap */
-    hashmap_iterator(rf->pieces, &iter);
-
     /*  add to priority queue */
-    while ((p = hashmap_iterator_next(rf->pieces, &iter)))
+    for (hashmap_iterator(rf->pieces, &iter);
+        (p = hashmap_iterator_next(rf->pieces, &iter));)
     {
         /* only add if peer has it */
         if (hashmap_get(pr->have_pieces, p))

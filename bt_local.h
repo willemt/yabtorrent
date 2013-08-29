@@ -67,19 +67,20 @@ typedef struct
 /* peer */
 typedef struct
 {
+    /* for network api */
+    void* nethandle;
+
     /* 20 byte sha1 string */
     char *peer_id;
     char *ip;
     unsigned int port;
-
-    /* for network api */
-    void* nethandle;
 
     /* peer connection */
     void* pc;
 
     /* message handler */
     void* mh;
+
 
 } bt_peer_t;
 

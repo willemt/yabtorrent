@@ -43,6 +43,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <stdarg.h>
 
+#include <pthread.h>
+
 #include "bitfield.h"
 #include "pwp_connection.h"
 #include "pwp_handshaker.h"
@@ -62,6 +64,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+
 
 #include <time.h>
 
@@ -87,6 +90,50 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *  reads files from disk
  */
 
+typedef struct
+{
+    /* the info_hash of the file to be downloaded */
+    char* info_hash;
+
+    /* my peerid */
+    char* my_peer_id;
+
+    /* database for writing pieces */
+    bt_piecedb_i *ipdb;
+    void* piecedb;
+
+    /*  tracker client */
+    void *tc;
+
+    /* net stuff */
+    bt_client_funcs_t func;
+
+    void *net_udata;
+
+    char fail_reason[255];
+
+    /*  are we seeding? */
+    int am_seeding;
+
+    /*  logging  */
+    func_log_f func_log;
+    void *log_udata;
+
+    void* cfg;
+
+    /* peer manager */
+    void* pm;
+
+    /*  leeching choker */
+    void *lchoke;
+
+    /* timer */
+    void *ticker;
+
+    pthread_mutex_t mtx;
+
+} bt_client_t;
+
 static void __log(void *bto, void *src, const char *fmt, ...)
 {
     bt_client_t *bt = bto;
@@ -107,12 +154,12 @@ void __FUNC_peer_step(void* caller, void* peer, void* udata)
 
     if (!pwp_conn_flag_is_set(p->pc, PC_HANDSHAKE_RECEIVED)) return;
 
-    pwp_conn_step(p->pc);
+    pwp_conn_periodic(p->pc);
 }
 
 /**
  * Take this message and process it on the PeerConnection side
- * */
+ **/
 static int __process_peer_msg(
         void *bto,
         void* nethandle,
@@ -141,7 +188,9 @@ static int __process_peer_msg(
         }
         else if (ret == -1)
         {
-            assert(0);
+            printf("ERROR: bad handshake\n");
+            return 0;
+//            assert(0);
         }
     }
 
@@ -164,18 +213,28 @@ static void __process_peer_connect(void *bto,
     bt_client_t *bt = bto;
     bt_peer_t *peer;
 
+//    pthread_mutex_lock(&bt->mtx);
+
     peer = bt_peermanager_nethandle_to_peer(bt->pm, nethandle);
 
     /* this is the first time we have come across this peer */
     if (!peer)
     {
-        peer = bt_client_add_peer(bt, NULL, 0, ip, strlen(ip), port);
-        peer->nethandle = nethandle;
+        peer = bt_client_add_peer(bt, "", 0, ip, strlen(ip), port);
+
+        if (!peer)
+        {
+            fprintf(stderr, "cant add peer %s:%d %lx\n", ip, port, nethandle);
+            goto cleanup;
+        }
     }
 
-    pwp_conn_connected(peer->pc);
     pwp_conn_send_handshake(peer->pc);
 //    __log(bto,NULL,"CONNECTED: peerid:%d ip:%s", netpeerid, ip);
+
+cleanup:
+    return;
+//    pthread_mutex_unlock(&bt->mtx);
 }
 
 static void __log_process_info(bt_client_t * bt)
@@ -306,6 +365,15 @@ void *bt_client_new()
     /*  start optimistic unchoker timer */
     eventtimer_push_event(bt->ticker, 30, bt, __leecher_peer_optimistic_unchoke);
 
+    int r;
+
+    if (0 != (r = pthread_mutex_init(&bt->mtx, NULL)))
+    {
+        printf("error: %s\n", strerror(r));
+    }
+
+    assert(r==0);
+
     return bt;
 }
 
@@ -324,8 +392,6 @@ void bt_client_set_piecedb(void* bto, bt_piecedb_i* ipdb, void* piecedb)
  */
 int bt_client_release(void *bto)
 {
-    //FIXME_STUB;
-
     return 1;
 }
 
@@ -341,12 +407,10 @@ static void __FUNC_log(void *bto, void *src, const char *fmt, ...)
         return;
 
     sprintf(p, "%s,", config_get(bt->cfg,"my_peerid"));
-
     p += strlen(buf);
 
     va_start(args, fmt);
     vsprintf(p, fmt, args);
-//    printf("%s\n", buf);
     bt->func_log(bt->log_udata, NULL, buf);
 }
 
@@ -354,27 +418,27 @@ static void __FUNC_log(void *bto, void *src, const char *fmt, ...)
  * Peer connections are given this as a callback whenever they want to send
  * information */
 int __FUNC_peerconn_send_to_peer(void *bto,
-                                        const void* pc,
+                                        const void* pc_peer,
                                         const void *data,
                                         const int len)
 {
-    const bt_peer_t * peer = pc;
+    const bt_peer_t * peer = pc_peer;
     bt_client_t *bt = bto;
 
-//    peer = bt_peermanager_get_peer_from_pc(bt->pm,pc);
-    assert(pc);
     assert(peer);
     assert(bt->func.peer_send);
-    return bt->func.peer_send(&bt->net_udata, peer->nethandle, data, len);
+    return bt->func.peer_send(bt, &bt->net_udata, peer->nethandle, data, len);
 }
 
-int __FUNC_peerconn_pollblock(void *bto,
+static int __FUNC_peerconn_pollblock(void *bto,
         void* bitfield, bt_block_t * blk)
 {
-
     bitfield_t * peer_bitfield = bitfield;
     bt_client_t *bt = bto;
     bt_piece_t *pce;
+    int r = 0;
+
+//    pthread_mutex_lock(&bt->mtx);
 
     if ((pce = bt->ipdb->poll_best_from_bitfield(bt->piecedb, peer_bitfield)))
     {
@@ -382,12 +446,16 @@ int __FUNC_peerconn_pollblock(void *bto,
         assert(!bt_piece_is_complete(pce));
         assert(!bt_piece_is_fully_requested(pce));
         bt_piece_poll_block_request(pce, blk);
-        return 0;
+        r = 0;
     }
     else
     {
-        return -1;
+        r = -1;
     }
+
+//    pthread_mutex_unlock(&bt->mtx);
+
+    return r;
 }
 
 static void __FUNC_peerconn_send_have(void* caller, void* peer, void* udata)
@@ -400,8 +468,15 @@ static void __FUNC_peerconn_send_have(void* caller, void* peer, void* udata)
 static void* __FUNC_get_piece(void* caller, unsigned int idx)
 {
     bt_client_t *bt = caller;
+    void* pce;
 
-    return bt->ipdb->get_piece(bt->piecedb, idx);
+//    pthread_mutex_lock(&bt->mtx);
+
+    pce = bt->ipdb->get_piece(bt->piecedb, idx);
+
+//    pthread_mutex_unlock(&bt->mtx);
+
+    return pce;
 }
 
 /**
@@ -417,6 +492,8 @@ int __FUNC_peerconn_pushblock(void *bto,
     bt_peer_t * peer = pr;
     bt_client_t *bt = bto;
     bt_piece_t *pce;
+
+//    pthread_mutex_lock(&bt->mtx);
 
     pce = bt->ipdb->get_piece(bt->piecedb, block->piece_idx);
 
@@ -452,6 +529,8 @@ int __FUNC_peerconn_pushblock(void *bto,
 
     }
 
+//    pthread_mutex_unlock(&bt->mtx);
+
     return 1;
 }
 
@@ -479,8 +558,15 @@ int __FUNC_peerconn_pieceiscomplete(void *bto, void *piece)
 {
     bt_client_t *bt = bto;
     bt_piece_t *pce = piece;
+    int r, status;
 
-    return bt_piece_is_complete(pce);
+//    if (0 != (status = pthread_mutex_lock(&bt->mtx))) {
+//        printf("error: %s\n", strerror(status));
+//    }
+
+    r = bt_piece_is_complete(pce);
+//    pthread_mutex_unlock(&bt->mtx);
+    return r;
 }
 
 void __FUNC_peerconn_write_block_to_stream(void* pce, bt_block_t * blk, byte ** msg)
@@ -493,7 +579,6 @@ pwp_connection_functions_t funcs = {
     .pushblock = __FUNC_peerconn_pushblock,
     .pollblock = __FUNC_peerconn_pollblock,
     .disconnect = __FUNC_peerconn_disconnect,
-//    .connect = __FUNC_peerconn_connect,
     .getpiece = __FUNC_get_piece,
     .write_block_to_stream = __FUNC_peerconn_write_block_to_stream,
     .piece_is_complete = __FUNC_peerconn_pieceiscomplete,
@@ -523,39 +608,45 @@ void *bt_client_add_peer(void *bto,
     /* remember the peer */
     if (!(peer = bt_peermanager_add_peer(me->pm, peer_id, peer_id_len, ip, ip_len, port)))
     {
+        fprintf(stderr, "cant add peer %s:%d as it has been added already\n", ip, port);
         return NULL;
     }
 
+    void* pc;
+
+    /* create a peer connection for this peer */
+    peer->pc = pc = pwp_conn_new();
+    pwp_conn_set_functions(pc, &funcs, me);
+    pwp_conn_set_piece_info(pc,
+            config_get_int(me->cfg,"npieces"),
+            config_get_int(me->cfg,"piece_length"));
+    pwp_conn_set_peer(pc, peer);
+    pwp_conn_set_infohash(pc, config_get(me->cfg,"infohash"));
+    pwp_conn_set_my_peer_id(pc, config_get(me->cfg,"my_peerid"));;
+    pwp_conn_set_their_peer_id(pc, strdup(peer->peer_id));
+
+    /* the remote peer will have always send a handshake */
+    if (NULL == me->func.peer_connect)
     {
-        void* pc;
-
-        /* create a peer connection for this peer */
-        peer->pc = pc = pwp_conn_new();
-        pwp_conn_set_functions(pc, &funcs, me);
-        pwp_conn_set_piece_info(pc,
-                config_get_int(me->cfg,"npieces"),
-                config_get_int(me->cfg,"piece_length"));
-        pwp_conn_set_peer(pc, peer);
-        pwp_conn_set_infohash(pc, config_get(me->cfg,"infohash"));
-        pwp_conn_set_my_peer_id(pc, config_get(me->cfg,"my_peerid"));;
-        pwp_conn_set_their_peer_id(pc, strdup(peer->peer_id));
-
-        /* the remote peer will have always send a handshake */
-        if (NULL == me->func.peer_connect)
-            return 0;
-
-        /* connection */
-        if (0 == me->func.peer_connect(&me->net_udata, peer->ip,
-                                      peer->port, &peer->nethandle,
-                                      __process_peer_connect,
-                                      __process_peer_connect_fail
-                                      ))
-        {
-            __log(me,NULL,"failed connection to peer");
-            return 0;
-        }
+        fprintf(stderr, "cant add peer, peer_connect function not available\n");
+        return NULL;
     }
 
+    /* connection */
+    if (0 == me->func.peer_connect(me,
+                &me->net_udata,
+                peer->ip,
+                peer->port,
+                &peer->nethandle,
+                __process_peer_msg,
+                __process_peer_connect,
+                __process_peer_connect_fail))
+    {
+        __log(me,NULL,"failed connection to peer");
+        return 0;
+    }
+
+    /* create handshaker */
     peer->mh = pwp_handshaker_new(
             config_get(me->cfg,"infohash"),
             config_get(me->cfg,"my_peerid"));
@@ -597,10 +688,10 @@ int bt_client_step(void *bto)
     }
 
     /*  poll data from peer pwp connections */
-    bt->func.peers_poll(&bt->net_udata,
+    bt->func.peers_poll(bt, &bt->net_udata,
                        atoi(config_get(bt->cfg,"select_timeout_msec")),
                        __process_peer_msg,
-                       __process_peer_connect, bt);
+                       __process_peer_connect);
 
     /*  run each peer connection step */
     bt_peermanager_forall(bt->pm,NULL,NULL,__FUNC_peer_step);
@@ -618,15 +709,95 @@ void bt_client_periodic(void* bto)
     bt_client_t *bt = bto;
     int ii;
 
+//    pthread_mutex_lock(&bt->mtx);
+
     __log_process_info(bt);
 
     /*  shutdown if we are setup to not seed */
     if (1 == bt->am_seeding && 1 == config_get_int(bt->cfg,"shutdown_when_complete"))
     {
-        return;
+        goto cleanup;
     }
 
     /*  run each peer connection step */
     bt_peermanager_forall(bt->pm,NULL,NULL,__FUNC_peer_step);
+
+cleanup:
+//    pthread_mutex_unlock(&bt->mtx);
+    return;
+}
+
+void* bt_client_get_config(void *bto)
+{
+    bt_client_t *bt = bto;
+
+    return bt->cfg;
+}
+
+/**
+ * Set the logging function
+ */
+void bt_client_set_logging(void *bto, void *udata, func_log_f func)
+{
+    bt_client_t *bt = bto;
+
+    bt->func_log = func;
+    bt->log_udata = udata;
+}
+
+/**
+ * Set callback functions
+ */
+void bt_client_set_funcs(void *bto, bt_client_funcs_t * func, void* caller)
+{
+    bt_client_t *bt = bto;
+
+    memcpy(&bt->func, func, sizeof(bt_client_funcs_t));
+    bt->net_udata = caller;
+}
+
+/**
+ * @return number of peers this client is involved with
+ */
+int bt_client_get_num_peers(void *bto)
+{
+    bt_client_t *bt = bto;
+
+    return bt_peermanager_count(bt->pm);
+}
+
+/**
+ * @return reason for failure
+ */
+char *bt_client_get_fail_reason(void *bto)
+{
+    bt_client_t *bt = bto;
+
+    return bt->fail_reason;
+}
+
+/**
+ * @return number of bytes downloaded
+ */
+int bt_client_get_nbytes_downloaded(void *bto)
+{
+    //FIXME_STUB;
+    return 0;
+}
+
+/**
+ * @todo implement
+ * @return 1 if client has failed 
+ */
+int bt_client_is_failed(void *bto)
+{
+    return 0;
+}
+
+void *bt_client_get_piecedb(void *bto)
+{
+    bt_client_t *bt = bto;
+
+    return bt->piecedb;
 }
 

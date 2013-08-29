@@ -57,6 +57,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 typedef struct
 {
+    int pieces_size;
     int npieces;
     bt_piece_t **pieces;
     int piece_length_bytes;
@@ -79,6 +80,8 @@ bt_piecedb_t *bt_piecedb_new()
 
     db = calloc(1, sizeof(bt_piecedb_private_t));
     priv(db)->tot_file_size_bytes = 0;
+    priv(db)->pieces_size = 999;
+    priv(db)->pieces = malloc(sizeof(bt_piece_t *) * priv(db)->pieces_size);
 
     return db;
 }
@@ -94,7 +97,6 @@ void bt_piecedb_set_piece_length(bt_piecedb_t * db,
                                  const int piece_length_bytes)
 {
     priv(db)->piece_length_bytes = piece_length_bytes;
-//    printf("piece length: %d\n", priv(db)->piece_length_bytes);
 }
 
 void bt_piecedb_set_tot_file_size(bt_piecedb_t * db,
@@ -137,6 +139,11 @@ void *bt_piecedb_poll_best_from_bitfield(void * dbo, void * bf_possibles)
 {
     bt_piecedb_t* db = dbo;
     int ii;
+
+#if 0 /*  debugging */
+    printf("polling best %d %d\n",
+            priv(db)->npieces, bitfield_get_length(bf_possibles));
+#endif
 
     for (ii = 0; ii < priv(db)->npieces; ii++)
     {
@@ -224,8 +231,18 @@ void bt_piecedb_add(bt_piecedb_t * db, const char *sha1)
 #endif
 
     priv(db)->npieces += 1;
-    priv(db)->pieces =
-        realloc(priv(db)->pieces, sizeof(bt_piece_t *) * priv(db)->npieces);
+
+    assert(priv(db)->pieces);
+
+    /*  double capacity */
+    if (priv(db)->pieces_size <= priv(db)->npieces)
+    {
+        priv(db)->pieces_size *= 2;
+        priv(db)->pieces =
+            realloc(priv(db)->pieces, sizeof(bt_piece_t *) * priv(db)->pieces_size);
+    }
+
+    assert(priv(db)->pieces);
 
     /* create piece */
     pce = bt_piece_new((const unsigned char*)sha1, size);

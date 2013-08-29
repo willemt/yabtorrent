@@ -20,3 +20,5 @@ void bt_diskcache_set_disk_blockrw(
 bt_blockrw_i *bt_diskcache_get_blockrw( void *dco);
 
 void bt_diskcache_disk_dump( void *dco);
+
+void bt_diskcache_set_piece_length(void* dco, int piece_length);

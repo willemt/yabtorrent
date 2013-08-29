@@ -147,7 +147,7 @@ static void __offer_inbox(client_t* me, const void* send_data, int len, void* ne
     assert(cn);
     bipbuf_offer(cn->inbox, send_data, len);
 
-#if 0
+#if 0 /*  debuggin */
     printf("|inbox me:%d rawpeer:%d peer:%d inbox:%d %dB",
             me->nethandle, nethandle, cn->nethandle, bipbuf_get_spaceused(cn->inbox), len);
     for (ii=0; ii<len; ii++)
@@ -169,7 +169,11 @@ void* networkfuns_mock_client_new(void* nethandle)
 
 /*----------------------------------------------------------------------------*/
 
-int peer_connect(void **udata, const char *host, const int port, void **nethandle,
+int peer_connect(void* caller, void **udata, const char *host, const int port, void **nethandle,
+        int (*func_process_data) (void *caller,
+                        void* nethandle,
+                        const unsigned char* buf,
+                        unsigned int len),
         void (*func_process_connection) (void *, void* nethandle, char *ip, int iplen),
         void (*func_connection_failed) (void *, void* nethandle)
         )
@@ -181,7 +185,9 @@ int peer_connect(void **udata, const char *host, const int port, void **nethandl
     sscanf(host, "%p", nethandle);
     you = *nethandle;
 
-//    printf("connecting me:%p nethandle:%p host:%s\n", me->nethandle, *nethandle, host);
+#if 0 /*  debugging */
+    printf("connecting me:%p nethandle:%p host:%s\n", me->nethandle, *nethandle, host);
+#endif
 
     __client_create_connection(you, me);
     __client_create_connection(me, you);
@@ -192,13 +198,15 @@ int peer_connect(void **udata, const char *host, const int port, void **nethandl
  *
  * @return 0 if added to buffer due to write failure, -2 if disconnect
  */
-int peer_send(void **udata,
+int peer_send(void* caller, void **udata,
               void* nethandle, const unsigned char *send_data, const int len)
 {
     client_t* me = *udata;
     client_t* you;
 
+#if 0 /* debugging */
 //    printf("send me:%d peer:%d len:%d\n", me->nethandle, nethandle, len);
+#endif
 
     /* put onto the sendee's inbox */
     you = nethandle;
@@ -207,17 +215,16 @@ int peer_send(void **udata,
     return 1;
 }
 
-int peer_disconnect(void **udata, void* nethandle)
+int peer_disconnect(void* caller, void **udata, void* nethandle)
 {
     client_t* me = *udata;
-//    printf("disconnected\n");
     return 1;
 }
 
 /**
  * poll info peer has information 
  * */
-int peers_poll(void **udata,
+int peers_poll(void* caller, void **udata,
                const int msec_timeout,
                int (*func_process) (void *caller,
                                     void* nethandle,
@@ -226,8 +233,8 @@ int peers_poll(void **udata,
                void (*func_process_connection) (void *,
                                                 void* nethandle,
                                                 char *ip,
-                                                int ip_len),
-               void *caller)
+                                                int ip_len)
+               )
 {
     client_t* me = *udata;
     hashmap_iterator_t iter;
@@ -272,7 +279,7 @@ int peers_poll(void **udata,
 
 /**
  * open up to listen to peers */
-int peer_listen_open(void **udata, const int port)
+int peer_listen_open(void* caller, void **udata, const int port)
 {
     client_t* me;
 

@@ -96,7 +96,9 @@ int bt_piece_write_block(
 
     assert(me);
 
-//    printf("writing block: %d\n", blk->piece_idx, blk->block_byte_offset);
+#if 0 /*  debugging */
+    printf("writing block: %d\n", blk->piece_idx, blk->block_byte_offset);
+#endif
 
     if (!priv(me)->disk)
     {
@@ -119,13 +121,22 @@ int bt_piece_write_block(
         sparsecounter_mark_complete(priv(me)->progress_downloaded, offset, len);
 //        sparsecounter_get_incomplete(priv(me)->progress_requested, &off, &ln,
 //                                  priv(me)->piece_length);
+
+        if (sparsecounter_get_nbytes_completed(priv(me)->progress_downloaded) ==
+                priv(me)->piece_length)
+        {
+            if (bt_piece_is_complete(me))
+            {
+//                printf("FINISHED %d\n", me->idx);
+            }
+        }
     }
 
-#if 0
+#if 0 /*  debugging */
     printf("%d left to go: %d/%d\n",
            me->idx,
-           sparsecounter_get_nbytes_completed(me->progress_downloaded),
-           me->piece_length);
+           sparsecounter_get_nbytes_completed(priv(me)->progress_downloaded),
+           priv(me)->piece_length);
 #endif
 
     return 1;
@@ -194,9 +205,10 @@ static void *__get_data(
 {
     bt_block_t tmp;
 
-    /*  fail without disk writing functions */
+    /*  fail without disk reading functions */
     if (!priv(me)->disk || !priv(me)->disk->read_block)
     {
+        printf("ERROR: no disk reading functions available\n");
         return NULL;
     }
 
@@ -204,7 +216,10 @@ static void *__get_data(
     tmp.piece_idx = priv(me)->idx;
     tmp.block_byte_offset = 0;
     tmp.block_len = priv(me)->piece_length;
-    //printf("%d %d %d\n", tmp.piece_idx, tmp.block_byte_offset, tmp.block_len);
+
+#if 0 /*  debugging */
+    printf("loading: %d %d %d\n", tmp.piece_idx, tmp.block_byte_offset, tmp.block_len);
+#endif
 
     /*  go to the disk */
     return priv(me)->disk->read_block(priv(me)->disk_udata, me, &tmp);

@@ -29,6 +29,7 @@ def configure(conf):
         conf.check_cc(lib='ws2_32')
         conf.check_cc(lib='psapi')
 
+    conf.check_cc(lib='pthread')
 #    conf.check_cc(lib='uv',libpath="./libuv/")
 
     # Get the required contributions via GIT
@@ -61,6 +62,9 @@ def unittest(bld, src, ccflag=None):
         # collect tests into one area
         bld(rule='sh ../make-tests.sh ../'+src+' > ${TGT}', target="t_"+src)
 
+        libs = []
+        libs += ['pthread']
+
         # build the test program
         bld.program(
                 source=[
@@ -75,6 +79,7 @@ def unittest(bld, src, ccflag=None):
                     '-Werror'
                 ],
                 use='yabbt',
+                lib = libs,
                 unit_test='yes',
                 includes=[
                     '.',
@@ -95,6 +100,8 @@ def end2end(bld, src, ccflag=None):
         # collect tests into one area
         bld(rule='sh make-tests.sh '+src+' > ${TGT}', target="t_"+src)
 
+        libs = []
+        libs += ['pthread']
         bld.program(
                 source=[
                     src,
@@ -111,6 +118,7 @@ def end2end(bld, src, ccflag=None):
 #                    bld.env.CONTRIB_PATH+"CBTTrackerClient/url_encoder.c",
                     bld.env.CONTRIB_PATH+"CBipBuffer/bipbuffer.c"
                     ],
+                stlibpath = ['libuv','.'],
                 target='test_end_to_end',
                 cflags=[
                     '-g',
@@ -118,6 +126,7 @@ def end2end(bld, src, ccflag=None):
                     '-Werror=uninitialized',
                     '-Werror=return-type'
                     ],
+                lib = libs,
                 unit_test='yes',
                 includes=[
                     bld.env.CONTRIB_PATH+"CConfig-re",
@@ -156,6 +165,10 @@ def build(bld):
         platform = '-DLINUX'
     else:
         platform = ''
+
+    libs = []
+    if sys.platform == 'win32':
+        libs += ['pthread']
 
     bld.shlib(
         source= [
@@ -196,6 +209,7 @@ def build(bld):
         #CCircularBuffer/cbuffer.c
         #use='config',
         target='yabbt',
+        lib = libs,
         includes=[
             cp+"CHeaplessBencodeReader",
             cp+"CLinkedListQueue",
@@ -231,6 +245,7 @@ def build(bld):
     end2end(bld,'test_end_to_end.c')
 
     libs = []
+    libs += ['yabbt']
     libs += ['uv']
     if sys.platform == 'win32':
         libs += ['ws2_32']
@@ -269,7 +284,5 @@ def build(bld):
             cp+"CHashMapViaLinkedList",
             cp+"CLinkedListQueue",
             cp+"CBipBuffer",
-           ],
-           #use=['yabbt','uv'])
-           use=['yabbt'])
+           ])
 

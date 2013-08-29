@@ -43,8 +43,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "networkfuncs.h"
 #include "mock_torrent.h"
 
-/*----------------------------------------------------------------------------*/
-
 #include "bt_piece_db.h"
 #include "bt_diskmem.h"
 #include "config.h"
@@ -143,14 +141,12 @@ client_t* client_setup(int log, void* id)
         };
 
         bt_client_set_funcs(bt, &func, cli);
-        bt_client_set_logging(bt,log , __log);
+//        bt_client_set_logging(bt,log , __log);
     }
 
     hashmap_put(__clients, cli, cli);
-
     return cli;
 }
-
 
 void TestBT_Peer_shares_all_pieces(
     CuTest * tc
@@ -486,7 +482,8 @@ void TestBT_Peer_share_100_pieces(
 
     network_setup();
 
-    log = open("dump_log", O_CREAT | O_TRUNC | O_RDWR, 0666);
+    log = 0;
+//    log = open("dump_log", O_CREAT | O_TRUNC | O_RDWR, 0666);
 
     mt = mocktorrent_new(100,5);
 
@@ -506,17 +503,21 @@ void TestBT_Peer_share_100_pieces(
 
         cli = hashmap_iterator_next_value(__clients, &iter);
         bt = cli->bt;
-        cfg = bt_client_get_config(bt);
+
         /* default configuration for clients */
+        cfg = bt_client_get_config(bt);
         config_set(cfg, "npieces", "100");
         config_set(cfg, "piece_length", "5");
         config_set(cfg, "infohash", "00000000000000000000");
-        /* add files/pieces */
-        //bt_piecedb_add_file(bt_client_get_piecedb(bt),"test.txt",8,100 * 5);
-        bt_piecedb_increase_piece_space(bt_client_get_piecedb(bt),100 * 5);
 
+        /* add files/pieces */
+        bt_piecedb_increase_piece_space(bt_client_get_piecedb(bt),100 * 5);
         for (ii=0; ii<100; ii++)
-            bt_piecedb_add(bt_client_get_piecedb(bt),mocktorrent_get_piece_sha1(mt,ii));
+        {
+            void* pd=bt_client_get_piecedb(bt);
+            void* sha1=mocktorrent_get_piece_sha1(mt,ii);
+            bt_piecedb_add(pd,sha1);
+        }
     }
   
     /* B will initiate the connection */
