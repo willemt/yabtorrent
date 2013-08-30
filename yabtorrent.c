@@ -57,6 +57,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define PROGRAM_NAME "bt"
 
 typedef struct {
+    /* bitorrent client */
     void* bc;
 
     /* piece db*/
@@ -68,6 +69,7 @@ typedef struct {
     /* disk cache */
     void* dc;
 
+    /* configuration */
     void* cfg;
 
     /* queue of announces to try */
@@ -86,8 +88,8 @@ typedef struct {
 
 uv_loop_t *loop;
 
-static void __on_trackerclient_done(void* data, int status);
-static void __on_trackerclient_add_peer(void* callee,
+static void __on_tc_done(void* data, int status);
+static void __on_tc_add_peer(void* callee,
         char* peer_id,
         unsigned int peer_id_len,
         char* ip,
@@ -96,7 +98,6 @@ static void __on_trackerclient_add_peer(void* callee,
 
 static struct option const long_opts[] = {
     { "archive", no_argument, NULL, 'a'},
-//  {" backup ", optional_argument, NULL, 'b'},
     /* The bounded network interface for net communications */
     { "using-interface", required_argument, NULL, 'i'},
     { "verify-download", no_argument, NULL, 'e'},
@@ -119,42 +120,45 @@ static void __log(void *udata, void *src, char *buf)
     write(fd, buf, strlen(buf));
 }
 
+/**
+ * Try to connect to this list of announces
+ * @return 0 when no attempts could be made */
 static int __trackerclient_try_announces(bt_t* bt)
 {
+    void* tc;
+    char* a; /*  announcement */
     int waiting_for_response_from_connection = 0;
 
     /*  connect to one of the announces */
-    if (0 < llqueue_count(bt->announces))
+    if (0 == llqueue_count(bt->announces))
     {
-        void* tc;
-        char* announce;
+        return 0;
+    }
 
-        bt->tc = tc = trackerclient_new(
-                __on_trackerclient_done,
-                __on_trackerclient_add_peer, bt);
-        trackerclient_set_cfg(tc,bt->cfg);
+    bt->tc = tc = trackerclient_new(__on_tc_done, __on_tc_add_peer, bt);
+    trackerclient_set_cfg(tc,bt->cfg);
 
-        while ((announce = llqueue_poll(bt->announces)))
+    while ((a = llqueue_poll(bt->announces)))
+    {
+        if (1 == trackerclient_supports_uri(tc, a))
         {
-            if (1 == trackerclient_supports_uri(tc, announce))
+            printf("Trying: %s\n", a);
+
+            if (0 == trackerclient_connect_to_uri(tc, a))
             {
-                printf("Trying: %s\n", announce);
-                if (0 == trackerclient_connect_to_uri(tc, announce))
-                {
-                    printf("ERROR: connecting to %s\n", announce);
-                    goto skip;
-                }
-                waiting_for_response_from_connection = 1;
-                free(announce);
-                break;
+                printf("ERROR: connecting to %s\n", a);
+                goto skip;
             }
-            else
-            {
-                printf("ERROR: No support for URI: %s\n", announce);
-            }
-skip:
-            free(announce);
+            waiting_for_response_from_connection = 1;
+            free(a);
+            break;
         }
+        else
+        {
+            printf("ERROR: No support for URI: %s\n", a);
+        }
+skip:
+        free(a);
     }
 
     if (0 == waiting_for_response_from_connection)
@@ -165,7 +169,9 @@ skip:
     return 1;
 }
 
-static void __on_trackerclient_done(void* data, int status)
+/**
+ * Tracker client is done. */
+static void __on_tc_done(void* data, int status)
 {
     bt_t* bt = data;
 
@@ -183,7 +189,9 @@ static void __on_trackerclient_done(void* data, int status)
     }
 }
 
-static void __on_trackerclient_add_peer(void* callee,
+/**
+ * Tracker client wants to add peer. */
+static void __on_tc_add_peer(void* callee,
         char* peer_id,
         unsigned int peer_id_len,
         char* ip,
@@ -255,7 +263,6 @@ static int __event_str(void* udata, const char* key, const char* val, int len)
         {
             bt_piecedb_add(me->bt->db,val + i);
         }
-
 #if 1
         config_set_va(me->bt->cfg, "npieces", "%d",
                 bt_piecedb_get_length(me->bt->db));
@@ -388,17 +395,13 @@ int main(int argc, char **argv)
             bc, open("dump_log", O_CREAT | O_TRUNC | O_RDWR, 0666), __log);
 
     /* set network functions */
-    {
-        bt_client_funcs_t func = {
-            .peer_connect = peer_connect,
-            .peer_send =  peer_send,
-            .peer_disconnect =peer_disconnect, 
-//            .peers_poll =peers_poll, 
-//            .peer_listen_open =peer_listen_open
-        };
+    bt_client_funcs_t func = {
+        .peer_connect = peer_connect,
+        .peer_send =  peer_send,
+        .peer_disconnect =peer_disconnect, 
+    };
 
-        bt_client_set_funcs(bc, &func, NULL);
-    }
+    bt_client_set_funcs(bc, &func, NULL);
 
     /* set file system backend functions */
     void* fd, *dc, *db;
@@ -440,8 +443,6 @@ int main(int argc, char **argv)
     {
         exit(EXIT_FAILURE);
     }
-
-    printf("piece db: %d\n", bt_piecedb_get_length(bt.db));
 
     config_print(cfg);
 

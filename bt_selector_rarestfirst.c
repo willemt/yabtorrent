@@ -146,36 +146,6 @@ void bt_rarestfirst_selector_free(
     free(rf);
 }
 
-/**
- * Add this piece back to the selector */
-void bt_rarestfirst_selector_offer_piece(
-    void *r,
-    int piece_idx
-)
-{
-    rarestfirst_t *rf = r;
-
-    piece_t *pce;
-
-    if ((pce = hashmap_remove(rf->pieces_polled, (void *) (long) piece_idx)))
-    {
-        hashmap_put(rf->pieces, (void *) (long) piece_idx, pce);
-    }
-}
-
-void bt_rarestfirst_selector_announce_have_piece(
-    void *r,
-    int piece_idx
-)
-{
-    rarestfirst_t *rf = r;
-    piece_t *pce;
-
-    pce = hashmap_remove(rf->pieces, (void *) (long) piece_idx);
-    pce = hashmap_put(rf->pieces_polled, (void *) (long) piece_idx, pce);
-    /*  possible memory leak here */
-}
-
 void bt_rarestfirst_selector_remove_peer(
     void *r,
     void *peer
@@ -205,6 +175,36 @@ void bt_rarestfirst_selector_add_peer(
         pr->have_pieces = hashmap_new(__peer_hash, __peer_compare, 11);
         hashmap_put(rf->peers, peer, pr);
     }
+}
+
+/**
+ * Add this piece back to the selector */
+void bt_rarestfirst_selector_offer_piece(
+    void *r,
+    int piece_idx
+)
+{
+    rarestfirst_t *rf = r;
+
+    piece_t *pce;
+
+    if ((pce = hashmap_remove(rf->pieces_polled, (void *) (long) piece_idx)))
+    {
+        hashmap_put(rf->pieces, (void *) (long) piece_idx, pce);
+    }
+}
+
+void bt_rarestfirst_selector_announce_have_piece(
+    void *r,
+    int piece_idx
+)
+{
+    rarestfirst_t *rf = r;
+    piece_t *pce;
+
+    pce = hashmap_remove(rf->pieces, (void *) (long) piece_idx);
+    pce = hashmap_put(rf->pieces_polled, (void *) (long) piece_idx, pce);
+    /*  possible memory leak here */
 }
 
 /**
