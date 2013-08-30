@@ -112,7 +112,7 @@ static void __client_setup_disk_backend(void* bt, unsigned int piece_len)
     db = bt_piecedb_new();
     bt_piecedb_set_diskstorage(db, bt_diskmem_get_blockrw(dc), NULL, dc);
     bt_piecedb_set_piece_length(db,piece_len);
-    bt_client_set_piecedb(bt,&pdb_funcs,db);
+    bt_client_set_piece_db(bt,&pdb_funcs,db);
 }
 
 client_t* client_setup(int log, void* id)

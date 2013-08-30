@@ -32,13 +32,12 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 
-typedef unsigned char byte;
-
-#include <stdbool.h>
-#include <sys/types.h>
+//typedef unsigned char byte;
 
 #define TRUE 1
-#define FALSE 0
+#define FALSE 1
+
+#include <sys/types.h>
 
 typedef struct
 {
@@ -83,78 +82,4 @@ typedef struct
 
 
 } bt_peer_t;
-
-/*----------------------------------------------------------------------------*/
-
-char *read_file(const char *name, int *len);
-
-/*----------------------------------------------------------------------------*/
-
-void *bt_rarestfirst_selector_new(int npieces);
-
-void bt_rarestfirst_selector_offer_piece(void *r, int piece_idx);
-
-void bt_rarestfirst_selector_announce_have_piece(void *r, int piece_idx);
-
-void bt_rarestfirst_selector_remove_peer(void *r, void *peer);
-
-void bt_rarestfirst_selector_add_peer(void *r, void *peer);
-
-void bt_rarestfirst_selector_announce_peer_have_piece(void *r,
-                                                      void *peer,
-                                                      int piece_idx);
-
-int bt_rarestfirst_selector_get_npeers(void *r);
-
-
-int bt_rarestfirst_selector_get_npieces(void *r);
-
-int bt_rarestfirst_selector_poll_best_piece(void *r, const void *peer);
-
-/*----------------------------------------------------------------------------*/
-
-void *bt_leeching_choker_new(const int size);
-
-void bt_leeching_choker_add_peer(void *ckr, void *peer);
-
-void bt_leeching_choker_remove_peer(void *ckr, void *peer);
-
-void bt_leeching_choker_announce_interested_peer(void *cho, void *peer);
-
-void bt_leeching_choker_decide_best_npeers(void *ckr);
-
-void bt_leeching_choker_optimistically_unchoke(void *ckr);
-
-void bt_leeching_choker_unchoke_peer(void *ckr, void *peer);
-
-int bt_leeching_choker_get_npeers(void *ckr);
-
-void bt_leeching_choker_set_choker_peer_iface(void *ckr,
-                                              void *udata,
-                                              bt_choker_peer_i * iface);
-
-void bt_leeching_choker_get_iface(bt_choker_i * iface);
-
-/*----------------------------------------------------------------------------*/
-void *bt_seeding_choker_new(const int size);
-
-void bt_seeding_choker_add_peer(void *ckr, void *peer);
-
-void bt_seeding_choker_remove_peer(void *ckr, void *peer);
-
-void bt_seeding_choker_decide_best_npeers(void *ckr);
-
-void bt_seeding_choker_unchoke_peer(void *ckr, void *peer);
-
-void bt_seeding_choker_set_choker_peer_iface(void *ckr,
-                                             void *udata,
-                                             bt_choker_peer_i * iface);
-
-int bt_seeding_choker_get_npeers(void *ckr);
-
-void bt_seeding_choker_get_iface(bt_choker_i * iface);
-
-/*----------------------------------------------------------------------------*/
-
-/*----------------------------------------------------------------------------*/
 

@@ -72,8 +72,6 @@ typedef struct
 
 #define priv(x) ((bt_piecedb_private_t*)(x))
 
-/*----------------------------------------------------------------------------*/
-
 bt_piecedb_t *bt_piecedb_new()
 {
     bt_piecedb_t *db;
@@ -130,7 +128,6 @@ void* bt_piecedb_get_diskstorage(bt_piecedb_t * db)
     assert(db);
     return priv(db)->blockrw_data;
 }
-
 
 /**
  * Get the best piece to download from this bitfield
@@ -298,10 +295,9 @@ int bt_piecedb_all_pieces_are_complete(bt_piecedb_t* db)
     return 1;
 }
 
-/******
- * FUNCTION
- *  increase total file size by this file's size
- ******/
+/**
+ * Increase total file size by this file's size
+ */
 void bt_piecedb_increase_piece_space(bt_piecedb_t* db, const int size)
 {
 

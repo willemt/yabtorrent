@@ -50,6 +50,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "block.h"
 #include "bt.h"
 #include "bt_local.h"
+#include "bt_choker_peer.h"
+#include "bt_choker.h"
 
 #include "linked_list_queue.h"
 #include "linked_list_hashmap.h"
@@ -75,7 +77,7 @@ typedef struct
     void *udata;
 } choker_t;
 
-/*----------------------------------------------------------------------------*/
+void bt_leeching_choker_unchoke_peer(void *ckr, void *peer);
 
 static unsigned long __peer_hash(const void *obj)
 {
@@ -86,8 +88,6 @@ static long __peer_compare(const void *obj, const void *other)
 {
     return obj - other;
 }
-
-/*----------------------------------------------------------------------------*/
 
 /**
  * Create a new leeching choker
@@ -133,8 +133,6 @@ void bt_leeching_choker_remove_peer(void *ckr, void *peer)
     hashmap_remove(ch->peers, peer);
 }
 
-/*----------------------------------------------------------------------------*/
-
 static void __choke_peer(choker_t * ch, void *peer)
 {
     llqueue_remove_item(ch->peers_unchoked, peer);
@@ -148,8 +146,6 @@ void bt_leeching_choker_announce_interested_peer(void *cho, void *peer)
 {
  // @TODO
 }
-
-/*----------------------------------------------------------------------------*/
 
 /** 
  * function used in heap for priority 
@@ -183,8 +179,6 @@ static int __cmp_peer_priority_datarate_inverse(const void *i1,
 {
     return -__cmp_peer_priority_datarate(i1, i2, ckr);
 }
-
-/*----------------------------------------------------------------------------*/
 
 void bt_leeching_choker_decide_best_npeers(void *ckr)
 {

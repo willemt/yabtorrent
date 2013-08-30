@@ -426,7 +426,7 @@ int main(int argc, char **argv)
             bt_diskcache_get_blockrw(dc),
             NULL,//(void*)bt_filedumper_add_file,
             dc);
-    bt_client_set_piecedb(bc,&pdb_funcs,db);
+    bt_client_set_piece_db(bc,&pdb_funcs,db);
 
     if (o_torrent_file_report_only)
     {

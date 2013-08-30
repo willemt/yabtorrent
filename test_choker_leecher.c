@@ -30,6 +30,9 @@
 #include "block.h"
 #include "bt.h"
 #include "bt_local.h"
+#include "bt_choker_peer.h"
+#include "bt_choker.h"
+#include "bt_choker_leecher.h"
 
 
 #if 0
@@ -66,8 +69,6 @@ static void __pset(
     pr->urate = urate;
     pr->isInterested = isInterested;
 }
-
-/*----------------------------------------------------------------------------*/
 
 int __get_drate(
     const void *udata,
@@ -173,8 +174,6 @@ void TestBTleechingChoke_remove_peer(
     bt_leeching_choker_remove_peer(cr, &peers[0]);
     CuAssertTrue(tc, 0 == bt_leeching_choker_get_npeers(cr));
 }
-
-/*----------------------------------------------------------------------------*/
 
 void TestBTleechingChoke_select_best_4_peers_based_off_upload(
     CuTest * tc

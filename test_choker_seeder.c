@@ -12,7 +12,9 @@
 #include "block.h"
 #include "bt.h"
 #include "bt_local.h"
-
+#include "bt_choker_peer.h"
+#include "bt_choker.h"
+#include "bt_choker_seeder.h"
 
 #if 0
 void TxestBTPiece_new_has_set_size_and_hashsum(
@@ -49,8 +51,6 @@ static void __pset(
     pr->isInterested = isInterested;
     pr->isChoked = isChoked;
 }
-
-/*----------------------------------------------------------------------------*/
 
 int __get_drate(
     const void *data,
@@ -110,7 +110,6 @@ bt_choker_peer_i iface_choker_peer = {
     .unchoke_peer = __unchoke_peer
 };
 
-/*----------------------------------------------------------------------------*/
 void TestBTSeedingChoker_add_peer(
     CuTest * tc
 )
@@ -139,7 +138,6 @@ void TestBTSeedingChoker_remove_peer(
     CuAssertTrue(tc, 0 == bt_seeding_choker_get_npeers(cr));
 }
 
-/*----------------------------------------------------------------------------*/
 void TestBTSeedingChoker_decide_unchokes_interested_choked(
     CuTest * tc
 )

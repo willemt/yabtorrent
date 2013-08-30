@@ -416,10 +416,10 @@ int bt_piece_get_size(
 void bt_piece_write_block_to_stream(
     bt_piece_t * me,
     bt_block_t * blk,
-    byte ** msg
+    unsigned char ** msg
 )
 {
-    byte *data;
+    unsigned char *data;
     int ii;
 
     if (!(data = __get_data(me)))
@@ -429,7 +429,7 @@ void bt_piece_write_block_to_stream(
 
     for (ii = 0; ii < blk->block_len; ii++)
     {
-        byte val;
+        unsigned char val;
 
         val = *(data + ii);
         bitstream_write_ubyte(msg, val);
@@ -448,7 +448,7 @@ int bt_piece_write_block_to_str(
     data = __get_data(me);
     offset = blk->block_byte_offset;
     len = blk->block_len;
-    memcpy(out, (byte *) data + offset, len);
+    memcpy(out, (unsigned char *) data + offset, len);
 
     return 1;
 }

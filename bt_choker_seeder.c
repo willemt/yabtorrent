@@ -50,6 +50,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "block.h"
 #include "bt.h"
 #include "bt_local.h"
+#include "bt_choker_peer.h"
+#include "bt_choker.h"
 #include "linked_list_queue.h"
 #include "linked_list_hashmap.h"
 
@@ -77,8 +79,6 @@ typedef struct
     void *udata;
 } choker_t;
 
-/*----------------------------------------------------------------------------*/
-
 static unsigned long __peer_hash(const void *obj)
 {
     return (unsigned long) obj;
@@ -89,7 +89,7 @@ static long __peer_compare(const void *obj, const void *other)
     return obj - other;
 }
 
-/*----------------------------------------------------------------------------*/
+void bt_seeding_choker_unchoke_peer(void *ckr, void *peer);
 
 /* @param size : the most number of unchoked peers we can have */
 void *bt_seeding_choker_new(const int size)
@@ -183,8 +183,6 @@ void bt_seeding_choker_unchoke_peer(void *ckr, void *peer)
     llqueue_offer(ch->peers_unchoked, peer);
 //    pr->unchoke_id = pr
 }
-
-/*----------------------------------------------------------------------------*/
 
 void bt_seeding_choker_set_choker_peer_iface(void *ckr,
                                              void *udata,

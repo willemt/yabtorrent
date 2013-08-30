@@ -2,6 +2,30 @@
 //#include "bt_block_readwriter_i.h"
 
 typedef int (
+    *func_object_get_int_f
+)   (
+    void *
+);
+
+#ifndef HAVE_FUNC_GET_INT
+#define HAVE_FUNC_GET_INT
+typedef int (
+    *func_get_int_f
+)   (
+    void *,
+    void *pr
+);
+#endif
+
+typedef int (
+    *func_get_int_const_f
+)   (
+    const void *,
+    const void *pr
+);
+
+
+typedef int (
     *func_write_block_f
 )   (
     void *udata,
@@ -26,7 +50,6 @@ typedef void *(
     const int size
 );
 
-
 #ifndef HAVE_FUNC_LOG
 #define HAVE_FUNC_LOG
 typedef void (
@@ -42,54 +65,58 @@ typedef void (
 typedef struct
 {
     func_write_block_f write_block;
-
     func_read_block_f read_block;
-
-    /*  release this block from the holder of it */
-//    func_giveup_block_f giveup_block;
 } bt_blockrw_i;
 
-/*  piece info
- *  this is how this torrent has */
+/**
+ * Piece info
+ * This is how this torrent has */
 typedef struct
 {
     /* a string containing the 20 byte sha1 of every file, concatenated.
      * (from protocol)
      * sha1 hash = 20 bytes */
     char *pieces_hash;
+
     /* the length of a piece (from protocol) */
     int piece_len;
+
     /* number of pieces (from protocol) */
     int npieces;
 } bt_piece_info_t;
 
-#if 1
-/** cfg */
+/*  bittorrent piece */
 typedef struct
 {
-    int select_timeout_msec;
-    int max_peer_connections;
-    int max_active_peers;
-    int max_cache_mem;
-//    int tracker_scrape_interval;
-    /*  don't seed, shutdown when complete */
-    int o_shutdown_when_complete;
-    /*  the size of the piece, etc */
-    bt_piece_info_t pinfo;
-    /*  how many seconds between tracker scrapes */
-//    int o_tracker_scrape_interval;
-    /* listen for pwp messages on this port */
-    int pwp_listen_port;
-    /*  this holds my IP. I figure it out */
-    char my_ip[32];
-    /* sha1 hash of the info_hash */
-    char *info_hash;
-    /* 20-byte self-designated ID of the peer */
-    char *p_peer_id;
+    /* index on 'bit stream' */
+    const int idx;
 
-//    char *tracker_url;
-} bt_client_cfg_t;
-#endif
+} bt_piece_t;
+
+typedef struct {
+    void* (*poll_best_from_bitfield)(void * db, void * bf_possibles);
+    void* (*get_piece)(void *db, const unsigned int piece_idx);
+} bt_piecedb_i;
+
+typedef struct {
+    void* (*new)(int npieces);
+    /* add a new peer to the selector */
+    void (*add_peer)(void *r, void *peer);
+    /* remove a peer from the selector */
+    void (*remove_peer)(void *r, void *peer);
+    /* register this piece as something we have */
+    void (*have_piece)(void *r, int piece_idx);
+    /* register this piece as being available from the peer */
+    void (*peer_have_piece)(void *r, void* peer, int piece_idx);
+    /* give this piece back to the selector */
+    void (*offer_piece)(void *r, int piece_idx);
+    /* poll a piece */
+    int (*poll_piece)(void* r, const void* peer);
+    /* get number of peers */
+    int (*get_npeers)(void* r);
+    /* get number of pieces */
+    int (*get_npieces)(void* r);
+} bt_pieceselector_i;
 
 typedef struct
 {
@@ -166,20 +193,9 @@ typedef struct
 
 } bt_client_funcs_t;
 
-/*  bittorrent piece */
-typedef struct
-{
-    /* index on 'bit stream' */
-    const int idx;
+void bt_client_set_piece_db(void* bto, bt_piecedb_i* ipdb, void* piecedb);
 
-} bt_piece_t;
-
-typedef struct {
-    void* (*poll_best_from_bitfield)(void * db, void * bf_possibles);
-    void* (*get_piece)(void *db, const unsigned int piece_idx);
-} bt_piecedb_i;
-
-void bt_client_set_piecedb(void* bto, bt_piecedb_i* ipdb, void* piecedb);
+void bt_client_set_piece_db(void* bto, bt_piecedb_i* ipdb, void* piecedb);
 
 char *bt_generate_peer_id();
 

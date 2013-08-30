@@ -56,7 +56,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 typedef struct
 {
-    byte *data;
+    unsigned char *data;
     int idx;
 } mpiece_t;
 

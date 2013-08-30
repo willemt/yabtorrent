@@ -194,7 +194,7 @@ void bt_rarestfirst_selector_offer_piece(
     }
 }
 
-void bt_rarestfirst_selector_announce_have_piece(
+void bt_rarestfirst_selector_have_piece(
     void *r,
     int piece_idx
 )
@@ -210,7 +210,7 @@ void bt_rarestfirst_selector_announce_have_piece(
 /**
  * Let us know that there is a peer who has this piece
  */
-void bt_rarestfirst_selector_announce_peer_have_piece(
+void bt_rarestfirst_selector_peer_have_piece(
     void *r,
     void *peer,
     const int piece_idx
