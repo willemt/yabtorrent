@@ -472,7 +472,7 @@ void TestBT_Peer_share_100_pieces(
     CuTest * tc
 )
 {
-    int log;
+    int log, num_pieces;
     int ii;
     client_t* a, *b;
     hashmap_iterator_t iter;
@@ -482,10 +482,12 @@ void TestBT_Peer_share_100_pieces(
 
     network_setup();
 
+    num_pieces = 100;
+
     log = 0;
 //    log = open("dump_log", O_CREAT | O_TRUNC | O_RDWR, 0666);
 
-    mt = mocktorrent_new(100,5);
+    mt = mocktorrent_new(num_pieces,5);
 
     a = client_setup(log, NULL);
     b = client_setup(log, NULL);
@@ -506,13 +508,13 @@ void TestBT_Peer_share_100_pieces(
 
         /* default configuration for clients */
         cfg = bt_client_get_config(bt);
-        config_set(cfg, "npieces", "100");
+        config_set_va(cfg, "npieces", "%d", num_pieces);
         config_set(cfg, "piece_length", "5");
         config_set(cfg, "infohash", "00000000000000000000");
 
         /* add files/pieces */
-        bt_piecedb_increase_piece_space(bt_client_get_piecedb(bt),100 * 5);
-        for (ii=0; ii<100; ii++)
+        bt_piecedb_increase_piece_space(bt_client_get_piecedb(bt),num_pieces * 5);
+        for (ii=0; ii<num_pieces; ii++)
         {
             void* pd=bt_client_get_piecedb(bt);
             void* sha1=mocktorrent_get_piece_sha1(mt,ii);
@@ -526,14 +528,17 @@ void TestBT_Peer_share_100_pieces(
 
     __add_random_piece_subset_of_mocktorrent(
             bt_client_get_piecedb(a->bt),
-            mt, 100);
+            mt, num_pieces);
 
     __add_piece_intersection_of_mocktorrent(
             bt_client_get_piecedb(b->bt),
             bt_client_get_piecedb(a->bt),
-            mt, 100);
+            mt, num_pieces);
 
-    for (ii=0; ii<150; ii++)
+    bt_piecedb_print_pieces_downloaded(bt_client_get_piecedb(a->bt));
+    bt_piecedb_print_pieces_downloaded(bt_client_get_piecedb(b->bt));
+
+    for (ii=0; ii<80; ii++)
     {
 #if 0 /* debugging */
         printf("\nStep %d:\n", ii+1);
@@ -544,8 +549,8 @@ void TestBT_Peer_share_100_pieces(
 //        bt_piecedb_print_pieces_downloaded(bt_client_get_piecedb(b->bt));
     }
 
-//    bt_piecedb_print_pieces_downloaded(bt_client_get_piecedb(a->bt));
-//    bt_piecedb_print_pieces_downloaded(bt_client_get_piecedb(b->bt));
+    bt_piecedb_print_pieces_downloaded(bt_client_get_piecedb(a->bt));
+    bt_piecedb_print_pieces_downloaded(bt_client_get_piecedb(b->bt));
 
     CuAssertTrue(tc, 1 == bt_piecedb_all_pieces_are_complete(bt_client_get_piecedb(a->bt)));
     CuAssertTrue(tc, 1 == bt_piecedb_all_pieces_are_complete(bt_client_get_piecedb(b->bt)));

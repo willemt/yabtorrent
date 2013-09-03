@@ -75,7 +75,6 @@ typedef struct
 
 #define priv(x) ((__piece_private_t*)(x))
 
-/*----------------------------------------------------------------------------*/
 bt_blockrw_i *bt_piece_get_blockrw(
     bt_piece_t * me
 )
@@ -163,8 +162,6 @@ void *bt_piece_read_block(
     return priv(me)->disk->read_block(priv(me)->disk_udata, me, blk);
 }
 
-/*----------------------------------------------------------------------------*/
-
 bt_piece_t *bt_piece_new(
     const unsigned char *sha1sum,
     const int piece_bytes_size
@@ -224,8 +221,6 @@ static void *__get_data(
     /*  go to the disk */
     return priv(me)->disk->read_block(priv(me)->disk_udata, me, &tmp);
 }
-
-/*----------------------------------------------------------------------------*/
 
 void bt_piece_set_disk_blockrw(
     bt_piece_t * me,
@@ -330,8 +325,6 @@ int bt_piece_is_fully_requested(bt_piece_t * me)
     return sparsecounter_is_complete(priv(me)->progress_requested);
 }
 
-/*----------------------------------------------------------------------------*/
-
 /**
  * Build the following request block for the peer, from this piece.
  * Assume that we want to complete the piece by going through the piece in 
@@ -370,8 +363,6 @@ void bt_piece_poll_block_request(
     sparsecounter_mark_complete(priv(me)->progress_requested, offset, len);
 }
 
-/*----------------------------------------------------------------------------*/
-
 void bt_piece_set_complete(
     bt_piece_t * me,
     int yes
@@ -408,8 +399,6 @@ int bt_piece_get_size(
 {
     return priv(me)->piece_length;
 }
-
-/*----------------------------------------------------------------------------*/
 
 /**
  * Write the block to the byte stream */

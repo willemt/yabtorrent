@@ -35,7 +35,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //typedef unsigned char byte;
 
 #define TRUE 1
-#define FALSE 1
+#define FALSE 0
 
 #include <sys/types.h>
 
@@ -52,7 +52,6 @@ typedef struct
 
 #include "bt_interfaces.h"
 
-/*----------------------------------------------------------------------------*/
 #define PROTOCOL_NAME "BitTorrent protocol"
 #define INFOKEY_LEN 20
 #define BLOCK_SIZE 1 << 14      // 16kb
@@ -60,8 +59,6 @@ typedef struct
 #define VERSION_NUM 1000
 #define PEER_ID_LEN 20
 #define INFO_HASH_LEN 20
-
-/*----------------------------------------------------------------------------*/
 
 /* peer */
 typedef struct

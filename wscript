@@ -96,51 +96,49 @@ def unittest(bld, src, ccflag=None):
             #bld(rule='pwd && ./build/'+src[:-2])
 
 def end2end(bld, src, ccflag=None):
-        bld(rule='cp ../make-tests.sh .')
-        bld(rule='cp ../%s .' % src)
-        # collect tests into one area
-        bld(rule='sh make-tests.sh '+src+' > ${TGT}', target="t_"+src)
+    bld(rule='cp ../make-tests.sh .')
+    bld(rule='cp ../%s .' % src)
+    # collect tests into one area
+    bld(rule='sh make-tests.sh '+src+' > ${TGT}', target="t_"+src)
 
-        libs = []
-        libs += ['pthread']
-        bld.program(
-                source=[
-                    src,
-                    "t_"+src,
-                    'CuTest.c',
-                    "networkfuncs_mock.c",
-                    "mt19937ar.c",
-                    "mock_torrent.c",
-                    bld.env.CONTRIB_PATH+"CBipBuffer/bipbuffer.c"
-                    ],
-                stlibpath = ['libuv','.'],
-                target='test_end_to_end',
-                cflags=[
-                    '-g',
-                    '-Werror',
-                    '-Werror=uninitialized',
-                    '-Werror=return-type'
-                    ],
-                lib = libs,
-                unit_test='yes',
-                includes=[
-                    bld.env.CONTRIB_PATH+"CConfig-re",
-                    bld.env.CONTRIB_PATH+"CBTTrackerClient",
-                    bld.env.CONTRIB_PATH+"CHeaplessBencodeReader",
-                    bld.env.CONTRIB_PATH+"CTorrentFileReader",
-                    bld.env.CONTRIB_PATH+"CHashMapViaLinkedList",
-                    bld.env.CONTRIB_PATH+"CBipBuffer",
-                   ], 
-                use='yabbt')
+    libs = []
+    libs += ['pthread']
+    bld.program(
+        source=[
+            src,
+            "t_"+src,
+            'CuTest.c',
+            "networkfuncs_mock.c",
+            "mt19937ar.c",
+            "mock_torrent.c",
+            bld.env.CONTRIB_PATH+"CBipBuffer/bipbuffer.c"
+            ],
+        stlibpath = ['libuv','.'],
+        target='test_end_to_end',
+        cflags=[
+            '-g',
+            '-Werror',
+            '-Werror=uninitialized',
+            '-Werror=return-type'
+            ],
+        lib = libs,
+        unit_test='yes',
+        includes=[
+            bld.env.CONTRIB_PATH+"CConfig-re",
+            bld.env.CONTRIB_PATH+"CBTTrackerClient",
+            bld.env.CONTRIB_PATH+"CHeaplessBencodeReader",
+            bld.env.CONTRIB_PATH+"CTorrentFileReader",
+            bld.env.CONTRIB_PATH+"CHashMapViaLinkedList",
+            bld.env.CONTRIB_PATH+"CBipBuffer",
+           ], 
+        use='yabbt')
 
-        # run the test
-        if sys.platform == 'win32':
-            bld(rule='${SRC}',source=src[:-2]+'.exe')
-        else:
-            bld(rule='export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:. && ./${SRC}',source=src[:-2])
-            #bld(rule='pwd && export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:. && ./'+src[:-2])
-
-
+    # run the test
+    if sys.platform == 'win32':
+        bld(rule='${SRC}',source=src[:-2]+'.exe')
+    else:
+        bld(rule='export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:. && ./${SRC}',source=src[:-2])
+        #bld(rule='pwd && export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:. && ./'+src[:-2])
 
 
 #def shutdown(bld):
@@ -178,6 +176,7 @@ def build(bld):
             "bt_choker_leecher.c",
             "bt_selector_random.c",
             "bt_selector_rarestfirst.c",
+            "bt_selector_sequential.c",
             "bt_util.c",
             "bt_sha1.c",
             "bt_string.c",
@@ -237,6 +236,8 @@ def build(bld):
     unittest(bld,'test_choker_leecher.c')
     unittest(bld,'test_choker_seeder.c')
     unittest(bld,'test_rarestfirst.c')
+    unittest(bld,'test_selector_random.c')
+    unittest(bld,'test_selector_sequential.c')
     unittest(bld,'test_piece.c',ccflag='-I../'+cp+"CBitfield")
     unittest(bld,'test_piece_db.c')
     end2end(bld,'test_end_to_end.c')

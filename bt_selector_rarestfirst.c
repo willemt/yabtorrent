@@ -179,8 +179,9 @@ void bt_rarestfirst_selector_add_peer(
 
 /**
  * Add this piece back to the selector */
-void bt_rarestfirst_selector_offer_piece(
+void bt_rarestfirst_selector_giveback_piece(
     void *r,
+    void* peer,
     int piece_idx
 )
 {

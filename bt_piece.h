@@ -18,3 +18,5 @@ int bt_piecedb_add_file(
     const int fname_len,
     const int flen
 );
+
+int bt_piece_is_complete(bt_piece_t * me);

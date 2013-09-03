@@ -29,7 +29,8 @@ void *mocktorrent_new(int size, int piece_len)
 
     init_genrand(0);
 
-    for (ii=0; ii<(size * piece_len)/4; ii++)
+    /* create random data */
+    for (ii=0; ii < (size * piece_len)/sizeof(int); ii++)
     {
         ((int*)me->data)[ii] = genrand_int32();
     }

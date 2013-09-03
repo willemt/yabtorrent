@@ -109,7 +109,7 @@ typedef struct {
     /* register this piece as being available from the peer */
     void (*peer_have_piece)(void *r, void* peer, int piece_idx);
     /* give this piece back to the selector */
-    void (*offer_piece)(void *r, int piece_idx);
+    void (*peer_giveback_piece)(void *r, void* peer, int piece_idx);
     /* poll a piece */
     int (*poll_piece)(void* r, const void* peer);
     /* get number of peers */
