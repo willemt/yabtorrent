@@ -131,8 +131,6 @@ typedef struct
     bt_pieceselector_i ips;
     void* pselector;
 
-    pthread_mutex_t mtx;
-
 } bt_client_t;
 
 static void __log(void *bto, void *src, const char *fmt, ...)
@@ -242,8 +240,6 @@ void bt_client_peer_connect(void *bto, void* nethandle, char *ip, const int port
     bt_client_t *me = bto;
     bt_peer_t *peer;
 
-//    pthread_mutex_lock(&me->mtx);
-
     peer = bt_peermanager_nethandle_to_peer(me->pm, nethandle);
 
     /* this is the first time we have come across this peer */
@@ -263,7 +259,6 @@ void bt_client_peer_connect(void *bto, void* nethandle, char *ip, const int port
 
 cleanup:
     return;
-//    pthread_mutex_unlock(&me->mtx);
 }
 
 static void __log_process_info(bt_client_t * me)
@@ -392,15 +387,6 @@ void *bt_client_new()
     /*  start optimistic unchoker timer */
     eventtimer_push_event(me->ticker, 30, me, __leecher_peer_optimistic_unchoke);
 
-    int r;
-
-    if (0 != (r = pthread_mutex_init(&me->mtx, NULL)))
-    {
-        printf("error: %s\n", strerror(r));
-    }
-
-    assert(r==0);
-
     /* Selector */
 #if 0
     me->ips.new = bt_rarestfirst_selector_new,
@@ -509,7 +495,6 @@ static int __FUNC_peerconn_pollblock(
     bt_piece_t* pce;
 
 #if 1
-//    pthread_mutex_lock(&me->mtx);
 
     while (1)
     {
@@ -549,8 +534,6 @@ static int __FUNC_peerconn_pollblock(
 
     return r;
 #endif
-
-//    pthread_mutex_unlock(&me->mtx);
 }
 
 static void __FUNC_peerconn_send_have(void* caller, void* peer, void* udata)
@@ -565,12 +548,7 @@ static void* __FUNC_get_piece(void* caller, unsigned int idx)
     bt_client_t *me = caller;
     void* pce;
 
-//    pthread_mutex_lock(&me->mtx);
-
     pce = me->ipdb->get_piece(me->pdb, idx);
-
-//    pthread_mutex_unlock(&me->mtx);
-
     return pce;
 }
 
@@ -587,8 +565,6 @@ int __FUNC_peerconn_pushblock(void *bto,
     bt_peer_t * peer = pr;
     bt_client_t *me = bto;
     bt_piece_t *pce;
-
-//    pthread_mutex_lock(&me->mtx);
 
     assert(me->ipdb->get_piece);
     pce = me->ipdb->get_piece(me->pdb, block->piece_idx);
@@ -627,8 +603,6 @@ int __FUNC_peerconn_pushblock(void *bto,
 
     }
 
-//    pthread_mutex_unlock(&me->mtx);
-
     return 1;
 }
 
@@ -662,12 +636,7 @@ static int __FUNC_peerconn_pieceiscomplete(void *bto, void *piece)
     bt_piece_t *pce = piece;
     int r, status;
 
-//    if (0 != (status = pthread_mutex_lock(&me->mtx))) {
-//        printf("error: %s\n", strerror(status));
-//    }
-
     r = bt_piece_is_complete(pce);
-//    pthread_mutex_unlock(&me->mtx);
     return r;
 }
 
@@ -853,8 +822,6 @@ void bt_client_periodic(void* bto)
     bt_client_t *me = bto;
     int ii;
 
-//    pthread_mutex_lock(&me->mtx);
-
     __log_process_info(me);
 
     /*  shutdown if we are setup to not seed */
@@ -875,9 +842,8 @@ cleanup:
     memset(&stat,0,sizeof(peer_stats_t));
     bt_peermanager_forall(me->pm,me,&stat,__FUNC_peer_stats);
 
-    printf("peers: %d choked: %d\n", stat.peers, stat.choked);
+//    printf("peers: %d choked: %d\n", stat.peers, stat.choked);
 
-//    pthread_mutex_unlock(&me->mtx);
     return;
 }
 

@@ -248,9 +248,7 @@ static void __on_tc_add_peer(void* callee,
 
     sprintf(ip_string,"%.*s", ip_len, ip);
     
-    peer_nethandle = NULL;//malloc(sizeof(int));
-
-    //peer_nethandle = bt_peer_get_nethandle(peer);
+    peer_nethandle = NULL;
 
     /* connect to the peer */
     if (0 == peer_connect(bt,
