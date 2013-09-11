@@ -205,6 +205,30 @@ static int __dispatch_from_buffer(
     return 1;
 }
 
+static void __on_peer_connect(
+        void *callee,
+        void* peer_nethandle,
+        char *ip,
+        const int port)
+{
+    bt_t* bt = callee;
+
+    uv_mutex_lock(&bt->mutex);
+    bt_client_peer_connect(bt->bc,peer_nethandle,ip,port);
+    uv_mutex_unlock(&bt->mutex);
+}
+
+static void __on_peer_connect_fail(
+    void *callee,
+    void* peer_nethandle)
+{
+    bt_t* bt = callee;
+
+    uv_mutex_lock(&bt->mutex);
+    bt_client_peer_connect_fail(bt->bc,peer_nethandle);
+    uv_mutex_unlock(&bt->mutex);
+}
+
 /**
  * Tracker client wants to add peer. */
 static void __on_tc_add_peer(void* callee,
@@ -222,11 +246,11 @@ static void __on_tc_add_peer(void* callee,
 
     uv_mutex_lock(&bt->mutex);
 
-    peer = bt_client_add_peer(bt->bc, peer_id, peer_id_len, ip, ip_len, port);
+    sprintf(ip_string,"%.*s", ip_len, ip);
+    
+    peer_nethandle = NULL;//malloc(sizeof(int));
 
-    sprintf(ip_string,"%*.s", ip_len, ip);
-
-    peer_nethandle = bt_peer_get_nethandle(peer);
+    //peer_nethandle = bt_peer_get_nethandle(peer);
 
     /* connect to the peer */
     if (0 == peer_connect(bt,
@@ -234,11 +258,13 @@ static void __on_tc_add_peer(void* callee,
                 &peer_nethandle,
                 ip_string, port,
                 __dispatch_from_buffer,
-                bt_client_peer_connect,
-                bt_client_peer_connect_fail))
+                __on_peer_connect,
+                __on_peer_connect_fail))
     {
         printf("failed connection to peer");
     }
+
+    peer = bt_client_add_peer(bt->bc, peer_id, peer_id_len, ip, ip_len, port, peer_nethandle);
 
     uv_mutex_unlock(&bt->mutex);
 }

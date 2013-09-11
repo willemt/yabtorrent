@@ -129,7 +129,7 @@ typedef struct
      * @param port Host's port
      * @param func_process_connection Callback for sucessful connections.
      * @param func_connection_failed Callback for failed connections.
-     * @return 1 if successful; otherwise 0*/
+     * @return 1 if successful; otherwise 0 */
     int (*peer_connect) (void* caller,
                         void **udata,
                         void **nethandle,
@@ -189,27 +189,6 @@ typedef struct
      */
     int (*peer_disconnect) (void* caller,void **udata, void* nethandle);
 
-#if 0
-    /**
-     * Call the network stack and receive packets for our peers
-     */
-    int (*peers_poll) (void* caller, void **udata,
-                       const int msec_timeout,
-
-                       int (*func_process) (void *caller,
-                                            void* nethandle,
-                                            const unsigned char* buf,
-                                            unsigned int len),
-
-                       void (*func_process_connection) (void *caller,
-                                                        void *nethandle,
-                                                        char *ip,
-                                                        int)
-                       );
-
-    int (*peer_listen_open) (void* caller, void **udata, const int port);
-#endif
-
 } bt_client_funcs_t;
 
 int bt_client_dispatch_from_buffer(
@@ -249,7 +228,8 @@ void *bt_client_get_piecedb(void *bto);
 void *bt_client_add_peer(void *bto,
                               const char *peer_id,
                               const int peer_id_len,
-                              const char *ip, const int ip_len, const int port);
+                              const char *ip, const int ip_len, const int port,
+                              void* nethandle);
 
 void* bt_client_get_config(void *bto);
 

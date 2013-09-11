@@ -153,7 +153,15 @@ void __FUNC_peer_step(void* caller, void* peer, void* udata)
 {
     bt_peer_t* p = peer;
 
-//    if (!pwp_conn_flag_is_set(p->pc, PC_HANDSHAKE_RECEIVED)) return;
+#if 0
+    /*  unchoke peer */
+    if (pwp_conn_peer_is_choked(p->pc) && pwp_conn_peer_is_interested(p->pc))
+    {
+        pwp_conn_unchoke_peer(p->pc);
+    }
+#endif
+
+    if (!pwp_conn_flag_is_set(p->pc, PC_HANDSHAKE_RECEIVED)) return;
     pwp_conn_periodic(p->pc);
 }
 
@@ -241,7 +249,7 @@ void bt_client_peer_connect(void *bto, void* nethandle, char *ip, const int port
     /* this is the first time we have come across this peer */
     if (!peer)
     {
-        peer = bt_client_add_peer(me, "", 0, ip, strlen(ip), port);
+        peer = bt_client_add_peer(me, "", 0, ip, strlen(ip), port, nethandle);
 
         if (!peer)
         {
@@ -714,7 +722,8 @@ pwp_connection_functions_t funcs = {
 void *bt_client_add_peer(void *bto,
                               const char *peer_id,
                               const int peer_id_len,
-                              const char *ip, const int ip_len, const int port)
+                              const char *ip, const int ip_len, const int port,
+                              void* nethandle)
 {
     bt_client_t *me = bto;
     bt_peer_t* peer;
@@ -737,6 +746,9 @@ void *bt_client_add_peer(void *bto,
         me->ips.add_peer(me->pselector, peer);
     }
 
+    if (nethandle)
+        peer->nethandle = nethandle;
+
     void* pc;
 
     /* create a peer connection for this peer */
@@ -758,18 +770,21 @@ void *bt_client_add_peer(void *bto,
     }
 
 #if 0
-    /* connection */
-    if (0 == me->func.peer_connect(me,
-                &me->net_udata,
-                peer->ip,
-                peer->port,
-                &peer->nethandle,
-                bt_client_dispatch_from_buffer,
-                bt_client_peer_connect,
-                bt_client_peer_connect_fail))
+    if (!nethandle)
     {
-        __log(me,NULL,"failed connection to peer");
-        return 0;
+        /* connection */
+        if (0 == me->func.peer_connect(me,
+                    &me->net_udata,
+                    &peer->nethandle,
+                    peer->ip,
+                    peer->port,
+                    bt_client_dispatch_from_buffer,
+                    bt_client_peer_connect,
+                    bt_client_peer_connect_fail))
+        {
+            __log(me,NULL,"failed connection to peer");
+            return 0;
+        }
     }
 #endif
 
@@ -849,7 +864,7 @@ void bt_client_periodic(void* bto)
     }
 
     /*  run each peer connection step */
-    bt_peermanager_forall(me->pm,NULL,NULL,__FUNC_peer_step);
+    bt_peermanager_forall(me->pm,me,NULL,__FUNC_peer_step);
 
     /* TODO: dispatch eventtimer events */
     peer_stats_t stat;
@@ -858,7 +873,7 @@ cleanup:
 
 //    bt_piecedb_print_pieces_downloaded(bt_client_get_piecedb(me));
     memset(&stat,0,sizeof(peer_stats_t));
-    bt_peermanager_forall(me->pm,NULL,&stat,__FUNC_peer_stats);
+    bt_peermanager_forall(me->pm,me,&stat,__FUNC_peer_stats);
 
     printf("peers: %d choked: %d\n", stat.peers, stat.choked);
 

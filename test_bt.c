@@ -47,7 +47,7 @@ void TestBT_client_add_peer(
 
     CuAssertTrue(tc, 0 == bt_client_get_num_peers(id));
 
-    bt_client_add_peer(id, peerid, strlen(peerid), ip, strlen(ip), 4000);
+    bt_client_add_peer(id, peerid, strlen(peerid), ip, strlen(ip), 4000, NULL);
 
     CuAssertTrue(tc, 1 == bt_client_get_num_peers(id));
 }

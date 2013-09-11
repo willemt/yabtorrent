@@ -7,7 +7,7 @@ int peer_connect(
                         void* nethandle,
                         const unsigned char* buf,
                         unsigned int len),
-        void (*func_process_connection) (void *, void* nethandle, char *ip, int iplen),
+        void (*func_process_connection) (void *, void* nethandle, char *ip, int port),
         void (*func_connection_failed) (void *, void* nethandle)
         );
 
@@ -17,15 +17,3 @@ int peer_send(void* caller, void **udata,
 
 int peer_disconnect(void* caller, void **udata, void* nethandle);
 
-int peers_poll(void* caller, void **udata,
-                   const int msec_timeout,
-                   int (*func_process) (void *caller,
-                                    void* nethandle,
-                                    const unsigned char* buf,
-                                    unsigned int len),
-                   void (*func_process_connection) (void *,
-                                                    void* nethandle,
-                                                    char *ip,
-                                                    int));
-
-int peer_listen_open(void* caller, void **udata, const int port);

@@ -116,12 +116,12 @@ void __print_client_contents()
 
 /**
  * Create a connection to this peer */
-static void __client_create_connection(client_t* cli, void* nethandle)
+static void __client_create_connection(client_t* me, void* nethandle)
 {
     client_connection_t* cn;
 
     /* we already connected */
-    if (hashmap_get(cli->connections, nethandle))
+    if (hashmap_get(me->connections, nethandle))
     {
         return;
     }
@@ -132,7 +132,7 @@ static void __client_create_connection(client_t* cli, void* nethandle)
     cn->connect_status = 0;
     cn->nethandle = nethandle;
     /* record on hashmap */
-    hashmap_put(cli->connections,cn->nethandle,cn);
+    hashmap_put(me->connections,cn->nethandle,cn);
 }
 
 /**
@@ -206,7 +206,7 @@ int peer_send(void* caller, void **udata,
     client_t* me = *udata;
     client_t* you;
 
-#if 1 /* debugging */
+#if 0 /* debugging */
     printf("send me:%d peer:%d len:%d\n", me->nethandle, nethandle, len);
 #endif
 
@@ -232,17 +232,10 @@ int network_poll(void* caller, void **udata,
                                     void* nethandle,
                                     const unsigned char* buf,
                                     unsigned int len),
-#if 0
-               void (*func_process_connection) (void *,
-                                                void* nethandle,
-                                                char *ip,
-                                                int ip_len)
-#else
                void (*func_process_connection) (void *,
                                                 void* nethandle,
                                                 char *ip,
                                                 int port)
-#endif
                )
 {
     client_t* me = *udata;
@@ -283,15 +276,6 @@ int network_poll(void* caller, void **udata,
                 func_process(me->bt, cn->nethandle, bipbuf_poll(cn->inbox, len), len);
         }
     }
-
-    return 1;
-}
-
-/**
- * open up to listen to peers */
-int peer_listen_open(void* caller, void **udata, const int port)
-{
-    client_t* me;
 
     return 1;
 }

@@ -84,8 +84,8 @@ static void __write_cb(uv_write_t *req, int status)
 static void __on_connect(uv_connect_t *req, int status)
 {
     connection_attempt_t *ca = req->data;
-    int r;
     char *request;
+    int r;
 
     ca->stream = req->handle;
 
@@ -128,7 +128,7 @@ int peer_connect(void* caller,
     ca->func_process_connection_fail = func_connection_failed;
     ca->callee = caller;
 
-#if 0 /* debugging */
+#if 1 /* debugging */
     printf("connecting to: %lx %s:%d\n", ca, host, port);
 #endif
     
@@ -136,8 +136,18 @@ int peer_connect(void* caller,
     connect_req = malloc(sizeof(uv_connect_t));
     connect_req->data = ca;
     socket = malloc(sizeof(uv_tcp_t));
-    uv_tcp_init(uv_default_loop(), socket);
-    uv_tcp_connect(connect_req, socket, addr, __on_connect);
+
+    if (0 != uv_tcp_init(uv_default_loop(), socket))
+    {
+        printf("FAILED TCP socket creation\n");
+        return 0;
+    }
+
+    if (0 != uv_tcp_connect(connect_req, socket, addr, __on_connect))
+    {
+        printf("FAILED connection creation\n");
+        return 0;
+    }
 
     return 1;
 }
