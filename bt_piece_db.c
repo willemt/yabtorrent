@@ -129,6 +129,7 @@ void* bt_piecedb_get_diskstorage(bt_piecedb_t * db)
     return priv(db)->blockrw_data;
 }
 
+#if 0
 /**
  * Get the best piece to download from this bitfield
  */
@@ -158,6 +159,7 @@ void *bt_piecedb_poll_best_from_bitfield(void * dbo, void * bf_possibles)
 
     return NULL;
 }
+#endif
 
 /**
  * Obtain this piece from the piece database

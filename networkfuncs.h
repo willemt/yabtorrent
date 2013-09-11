@@ -1,4 +1,8 @@
-int peer_connect(void* caller, void **udata, const char *host, int port, void **nethandle,
+int peer_connect(
+        void* caller,
+        void **udata,
+        void **nethandle,
+        const char *host, int port,
         int (*func_process_data) (void *caller,
                         void* nethandle,
                         const unsigned char* buf,

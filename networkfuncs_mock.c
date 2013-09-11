@@ -167,9 +167,11 @@ void* networkfuns_mock_client_new(void* nethandle)
     return cli;
 }
 
-/*----------------------------------------------------------------------------*/
-
-int peer_connect(void* caller, void **udata, const char *host, const int port, void **nethandle,
+int peer_connect(
+        void* caller,
+        void **udata,
+        void **nethandle,
+        const char *host, const int port,
         int (*func_process_data) (void *caller,
                         void* nethandle,
                         const unsigned char* buf,
@@ -204,8 +206,8 @@ int peer_send(void* caller, void **udata,
     client_t* me = *udata;
     client_t* you;
 
-#if 0 /* debugging */
-//    printf("send me:%d peer:%d len:%d\n", me->nethandle, nethandle, len);
+#if 1 /* debugging */
+    printf("send me:%d peer:%d len:%d\n", me->nethandle, nethandle, len);
 #endif
 
     /* put onto the sendee's inbox */
@@ -224,16 +226,23 @@ int peer_disconnect(void* caller, void **udata, void* nethandle)
 /**
  * poll info peer has information 
  * */
-int peers_poll(void* caller, void **udata,
+int network_poll(void* caller, void **udata,
                const int msec_timeout,
                int (*func_process) (void *caller,
                                     void* nethandle,
                                     const unsigned char* buf,
                                     unsigned int len),
+#if 0
                void (*func_process_connection) (void *,
                                                 void* nethandle,
                                                 char *ip,
                                                 int ip_len)
+#else
+               void (*func_process_connection) (void *,
+                                                void* nethandle,
+                                                char *ip,
+                                                int port)
+#endif
                )
 {
     client_t* me = *udata;
@@ -261,7 +270,8 @@ int peers_poll(void* caller, void **udata,
                     me->nethandle, cn->nethandle);
 #endif
 
-            func_process_connection(me->bt, cn->nethandle, ip, strlen(ip));
+            //func_process_connection(me->bt, cn->nethandle, ip, strlen(ip));
+            func_process_connection(me->bt, cn->nethandle, ip, 4000);
             cn->connect_status = CS_CONNECTED;
         }
         else if (!bipbuf_is_empty(cn->inbox))
@@ -285,6 +295,4 @@ int peer_listen_open(void* caller, void **udata, const int port)
 
     return 1;
 }
-
-/*----------------------------------------------------------------------------*/
 

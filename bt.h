@@ -123,23 +123,54 @@ typedef struct
     /**
      * Connect to the peer
      * @param caller 
-     * @param udata use this memory for the connection. It is up to the callee to alloc memory.
-     * @param host the hostname
-     * @param port the host's port
-     * @param nethandle pointer available for the callee to identify the peer
+     * @param nethandle Pointer available for the callee to identify the peer
+     * @param udata Memory to be used for connection. Callee's responsibility to alloc memory.
+     * @param host Hostname
+     * @param port Host's port
      * @param func_process_connection Callback for sucessful connections.
-     * @param func_connection_failed Callback for failed connections. */
+     * @param func_connection_failed Callback for failed connections.
+     * @return 1 if successful; otherwise 0*/
     int (*peer_connect) (void* caller,
                         void **udata,
-                        const char *host, const int port, void **nethandle,
-                        int (*func_process_data) (void *caller,
-                        void* nethandle,
-                        const unsigned char* buf,
-                        unsigned int len),
-                        void (*func_process_connection) (
-                            void *, void* nethandle,
-                            char *ip, int iplen),
-                        void (*func_connection_failed) (void *, void* nethandle));
+                        void **nethandle,
+                        const char *host, const int port,
+
+       /**
+        * We've received data from the peer.
+        * Announce this to the caller.
+        *
+        * @param caller The caller
+        * @param nethandle Peer ID 
+        * @param buf Buffer containing data
+        * @param len Bytes available in buffer
+        */
+        int (*func_process_data) (void *caller,
+        void* nethandle,
+        const unsigned char* buf,
+        unsigned int len),
+
+       /**
+        * We've determined that we are now connected.
+        * Announce the connection to the caller.
+        *
+        * @param caller The caller
+        * @param nethandle Peer ID 
+        * @param ip The IP that connected to us
+        */
+        void (*func_process_connection) (
+            void *caller,
+            void *nethandle,
+            char *ip,
+            int port),
+
+       /**
+        * The connection attempt failed.
+        * Announce the failed connection to the caller.
+        *
+        * @param caller The caller
+        * @param nethandle Peer ID 
+        */
+        void (*func_connection_failed) (void *, void* nethandle));
 
     /**
      * Send data to peer
@@ -158,31 +189,18 @@ typedef struct
      */
     int (*peer_disconnect) (void* caller,void **udata, void* nethandle);
 
+#if 0
     /**
      * Call the network stack and receive packets for our peers
      */
     int (*peers_poll) (void* caller, void **udata,
                        const int msec_timeout,
-                       /**
-                        * We've received data from the peer.
-                        * Announce this to the caller.
-                        *
-                        * @param caller The caller
-                        * @param nethandle Peer ID 
-                        * @param buf Buffer containing data
-                        * @param len Bytes available in buffer
-                        */
+
                        int (*func_process) (void *caller,
                                             void* nethandle,
                                             const unsigned char* buf,
                                             unsigned int len),
-                       /**
-                        * We've determined that we are now connected.
-                        * Announce the connection to the caller.
-                        *
-                        * @param caller The caller
-                        * @param nethandle Peer ID 
-                        */
+
                        void (*func_process_connection) (void *caller,
                                                         void *nethandle,
                                                         char *ip,
@@ -190,8 +208,21 @@ typedef struct
                        );
 
     int (*peer_listen_open) (void* caller, void **udata, const int port);
+#endif
 
 } bt_client_funcs_t;
+
+int bt_client_dispatch_from_buffer(
+        void *bto,
+        void *peer_nethandle,
+        const unsigned char* buf,
+        unsigned int len);
+
+void *bt_peer_get_nethandle(void* pr);
+
+void bt_client_peer_connect_fail(void *bto, void* nethandle);
+
+void bt_client_peer_connect(void *bto, void* nethandle, char *ip, const int port);
 
 void bt_client_set_piece_db(void* bto, bt_piecedb_i* ipdb, void* piecedb);
 

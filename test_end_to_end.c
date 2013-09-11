@@ -98,7 +98,7 @@ static void __log(void *udata, void *src, char *buf)
 }
 
 bt_piecedb_i pdb_funcs = {
-    .poll_best_from_bitfield = bt_piecedb_poll_best_from_bitfield,
+//    .poll_best_from_bitfield = bt_piecedb_poll_best_from_bitfield,
     .get_piece = bt_piecedb_get
 };
 
@@ -135,9 +135,9 @@ client_t* client_setup(int log, void* id)
         bt_client_funcs_t func = {
             .peer_connect = peer_connect,
             .peer_send =  peer_send,
-            .peer_disconnect =peer_disconnect, 
-            .peers_poll =peers_poll, 
-            .peer_listen_open =peer_listen_open
+            .peer_disconnect =peer_disconnect
+//            .peers_poll = peers_poll, 
+//            .peer_listen_open =peer_listen_open
         };
 
         bt_client_set_funcs(bt, &func, cli);
@@ -219,8 +219,15 @@ void TestBT_Peer_shares_all_pieces(
 #if 0 /* debugging */
         printf("\nStep %d:\n", ii+1);
 #endif
-        bt_client_step(a->bt);
-        bt_client_step(b->bt);
+        network_poll(
+                a->bt,
+                &a,
+                0,
+                bt_client_dispatch_from_buffer,
+                bt_client_peer_connect);
+
+        bt_client_periodic(a->bt);
+        bt_client_periodic(b->bt);
 //        __print_client_contents();
     }
 
@@ -306,8 +313,8 @@ void TestBT_Peer_shares_all_pieces_between_each_other(
 #if 0 /* debugging */
         printf("\nStep %d:\n", ii+1);
 #endif
-        bt_client_step(a->bt);
-        bt_client_step(b->bt);
+        bt_client_periodic(a->bt);
+        bt_client_periodic(b->bt);
 //        __print_client_contents();
     }
 
@@ -453,9 +460,9 @@ void TestBT_Peer_three_share_all_pieces_between_each_other(
 #if 0 /* debugging */
         printf("\nStep %d:\n", ii+1);
 #endif
-        bt_client_step(a->bt);
-        bt_client_step(b->bt);
-        bt_client_step(c->bt);
+        bt_client_periodic(a->bt);
+        bt_client_periodic(b->bt);
+        bt_client_periodic(c->bt);
 //        __print_client_contents();
     }
 
@@ -543,8 +550,8 @@ void TestBT_Peer_share_100_pieces(
 #if 0 /* debugging */
         printf("\nStep %d:\n", ii+1);
 #endif
-        bt_client_step(a->bt);
-        bt_client_step(b->bt);
+        bt_client_periodic(a->bt);
+        bt_client_periodic(b->bt);
 //        __print_client_contents();
 //        bt_piecedb_print_pieces_downloaded(bt_client_get_piecedb(b->bt));
     }

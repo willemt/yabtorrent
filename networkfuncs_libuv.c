@@ -106,9 +106,10 @@ static void __on_connect(uv_connect_t *req, int status)
     ca->func_process_connection(ca->callee, ca, "", 0);
 }
 
-int peer_connect(void* caller, void **udata,
-        const char *host, int port,
+int peer_connect(void* caller,
+        void **udata,
         void **nethandle,
+        const char *host, int port,
         int (*func_process_data) (void *caller,
                         void* nethandle,
                         const unsigned char* buf,

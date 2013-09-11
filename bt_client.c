@@ -157,12 +157,36 @@ void __FUNC_peer_step(void* caller, void* peer, void* udata)
     pwp_conn_periodic(p->pc);
 }
 
+typedef struct {
+    int peers;
+    int choking;
+    int choked;
+} peer_stats_t;
+
+void __FUNC_peer_stats(void* caller, void* peer, void* udata)
+{
+    peer_stats_t *stats = udata;
+    bt_peer_t* p = peer;
+
+    if (pwp_conn_im_choked(p->pc))
+        stats->choked++;
+
+    stats->peers++;
+}
+
+void *bt_peer_get_nethandle(void* pr)
+{
+    bt_peer_t* peer = pr;
+
+    return peer->nethandle;
+}
+
 /**
  * Take this message and process it on the PeerConnection side
  **/
-static int __process_peer_msg(
+int bt_client_dispatch_from_buffer(
         void *bto,
-        void* nethandle,
+        void *peer_nethandle,
         const unsigned char* buf,
         unsigned int len)
 {
@@ -170,7 +194,7 @@ static int __process_peer_msg(
     bt_peer_t* peer;
 
     /* get the peer that this message is for using the nethandle*/
-    peer = bt_peermanager_nethandle_to_peer(me->pm, nethandle);
+    peer = bt_peermanager_nethandle_to_peer(me->pm, peer_nethandle);
 
     /* handle handshake */
     if (!pwp_conn_flag_is_set(peer->pc, PC_HANDSHAKE_RECEIVED))
@@ -198,16 +222,14 @@ static int __process_peer_msg(
     return 1;
 }
 
-static void __process_peer_connect_fail(void *bto, void* nethandle)
+void bt_client_peer_connect_fail(void *bto, void* nethandle)
 {
     bt_client_t *me = bto;
 
     printf("failed connection\n");
 }
 
-static void __process_peer_connect(void *bto,
-                                   void* nethandle,
-                                   char *ip, const int port)
+void bt_client_peer_connect(void *bto, void* nethandle, char *ip, const int port)
 {
     bt_client_t *me = bto;
     bt_peer_t *peer;
@@ -617,8 +639,12 @@ void __FUNC_peerconn_log(void *bto, void *src_peer, const char *buf, ...)
 int __FUNC_peerconn_disconnect(void *bto,
         void* pr, char *reason)
 {
+    bt_client_t *me = bto;
     bt_peer_t * peer = pr;
+
     __log(bto,NULL,"disconnecting,%s", reason);
+    bt_client_remove_peer(me,peer);
+
     return 1;
 }
 
@@ -731,19 +757,21 @@ void *bt_client_add_peer(void *bto,
         return NULL;
     }
 
+#if 0
     /* connection */
     if (0 == me->func.peer_connect(me,
                 &me->net_udata,
                 peer->ip,
                 peer->port,
                 &peer->nethandle,
-                __process_peer_msg,
-                __process_peer_connect,
-                __process_peer_connect_fail))
+                bt_client_dispatch_from_buffer,
+                bt_client_peer_connect,
+                bt_client_peer_connect_fail))
     {
         __log(me,NULL,"failed connection to peer");
         return 0;
     }
+#endif
 
     /* create handshaker */
     peer->mh = pwp_handshaker_new(
@@ -763,10 +791,13 @@ void *bt_client_add_peer(void *bto,
  *
  * @return 1 on sucess; otherwise 0
  */
-int bt_client_remove_peer(void *bto, const int peerid)
+int bt_client_remove_peer(void *bto, void* pr)
 {
+    bt_client_t* me = bto;
+    bt_peer_t* peer = pr;
 
-//    me->ips.remove_peer(me->pselector, peer);
+    bt_peermanager_remove_peer(me->pm,peer);
+    me->ips.remove_peer(me->pselector, peer);
 
     return 1;
 }
@@ -777,7 +808,7 @@ int bt_client_remove_peer(void *bto, const int peerid)
  */
 int bt_client_step(void *bto)
 {
-#if 1
+#if 0
     bt_client_t *me = bto;
     int ii;
 
@@ -792,11 +823,12 @@ int bt_client_step(void *bto)
     /*  poll data from peer pwp connections */
     me->func.peers_poll(me, &me->net_udata,
                        atoi(config_get(me->cfg,"select_timeout_msec")),
-                       __process_peer_msg,
-                       __process_peer_connect);
+                       bt_client_dispatch_from_buffer,
+                       bt_client_peer_connect);
 
     /*  run each peer connection step */
     bt_peermanager_forall(me->pm,NULL,NULL,__FUNC_peer_step);
+    
 #endif
     return 1;
 }
@@ -820,8 +852,16 @@ void bt_client_periodic(void* bto)
     bt_peermanager_forall(me->pm,NULL,NULL,__FUNC_peer_step);
 
     /* TODO: dispatch eventtimer events */
+    peer_stats_t stat;
 
 cleanup:
+
+//    bt_piecedb_print_pieces_downloaded(bt_client_get_piecedb(me));
+    memset(&stat,0,sizeof(peer_stats_t));
+    bt_peermanager_forall(me->pm,NULL,&stat,__FUNC_peer_stats);
+
+    printf("peers: %d choked: %d\n", stat.peers, stat.choked);
+
 //    pthread_mutex_unlock(&me->mtx);
     return;
 }

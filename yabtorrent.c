@@ -77,6 +77,8 @@ typedef struct {
 
     /* tracker client */
     void* tc;
+
+    uv_mutex_t mutex;
 } bt_t;
 
 typedef struct {
@@ -189,6 +191,20 @@ static void __on_tc_done(void* data, int status)
     }
 }
 
+static int __dispatch_from_buffer(
+        void *callee,
+        void *peer_nethandle,
+        const unsigned char* buf,
+        unsigned int len)
+{
+    bt_t* bt = callee;
+
+    uv_mutex_lock(&bt->mutex);
+    bt_client_dispatch_from_buffer(bt->bc,peer_nethandle,buf,len);
+    uv_mutex_unlock(&bt->mutex);
+    return 1;
+}
+
 /**
  * Tracker client wants to add peer. */
 static void __on_tc_add_peer(void* callee,
@@ -199,8 +215,32 @@ static void __on_tc_add_peer(void* callee,
         unsigned int port)
 {
     bt_t* bt = callee;
+    void* peer;
+    void* netdata;
+    void* peer_nethandle;
+    char ip_string[32];
 
-    bt_client_add_peer(bt->bc, peer_id, peer_id_len, ip, ip_len, port);
+    uv_mutex_lock(&bt->mutex);
+
+    peer = bt_client_add_peer(bt->bc, peer_id, peer_id_len, ip, ip_len, port);
+
+    sprintf(ip_string,"%*.s", ip_len, ip);
+
+    peer_nethandle = bt_peer_get_nethandle(peer);
+
+    /* connect to the peer */
+    if (0 == peer_connect(bt,
+                &netdata,
+                &peer_nethandle,
+                ip_string, port,
+                __dispatch_from_buffer,
+                bt_client_peer_connect,
+                bt_client_peer_connect_fail))
+    {
+        printf("failed connection to peer");
+    }
+
+    uv_mutex_unlock(&bt->mutex);
 }
 
 static void __usage(int status)
@@ -332,8 +372,10 @@ static void __periodic(uv_timer_t* handle, int status)
 {
     bt_t* bt = handle->data;
 
+    uv_mutex_lock(&bt->mutex);
     if (bt->bc)
         bt_client_periodic(bt->bc);
+    uv_mutex_unlock(&bt->mutex);
 }
 
 int main(int argc, char **argv)
@@ -397,8 +439,8 @@ int main(int argc, char **argv)
     /* set network functions */
     bt_client_funcs_t func = {
         .peer_connect = peer_connect,
-        .peer_send =  peer_send,
-        .peer_disconnect =peer_disconnect, 
+        .peer_send = peer_send,
+        .peer_disconnect = peer_disconnect, 
     };
 
     bt_client_set_funcs(bc, &func, NULL);
@@ -407,7 +449,7 @@ int main(int argc, char **argv)
     void* fd, *dc, *db;
 
     bt_piecedb_i pdb_funcs = {
-        .poll_best_from_bitfield = bt_piecedb_poll_best_from_bitfield,
+//        .poll_best_from_bitfield = bt_piecedb_poll_best_from_bitfield,
         .get_piece = bt_piecedb_get
     };
 
@@ -450,6 +492,8 @@ int main(int argc, char **argv)
 
     /* start uv */
     loop = uv_default_loop();
+
+    uv_mutex_init(&bt.mutex);
 
     /* create periodic timer */
     uv_timer_t *periodic_req;

@@ -195,13 +195,14 @@ bt_peer_t *bt_peermanager_add_peer(void *pm,
  *
  * @return 1 on sucess; otherwise 0
  */
-#if 0
-int bt_peermanager_remove_peer(void *pm, const int peerid)
+#if 1
+int bt_peermanager_remove_peer(void *pm, bt_peer_t* peer)
 {
-//    bt_peermanager_t *me = pm;
-//    me->peerconnects[me->npeers - 1]
+    bt_peermanager_t *me = pm;
 
 //    bt_leeching_choker_add_peer(me->lchoke, peer);
+
+    hashmap_remove(me->peers,peer);
     return 1;
 }
 #endif

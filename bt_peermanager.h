@@ -7,6 +7,7 @@ bt_peer_t *bt_peermanager_add_peer(void *pm,
                               const int peer_id_len,
                               const char *ip, const int ip_len, const int port);
 
+int bt_peermanager_remove_peer(void *pm, bt_peer_t* peer);
 
 void bt_peermanager_forall(
         void* pm,

@@ -269,6 +269,7 @@ def build(bld):
             '-Werror',
             '-Werror=uninitialized',
             '-Werror=return-type',
+            '-pthread',
             ],
         stlibpath = ['libuv','.'],
         lib = libs,
