@@ -1,8 +1,8 @@
-/*  bt block */
+
 typedef struct
 {
-    int piece_idx;
-    int block_byte_offset;
-    int block_len;
+    unsigned int piece_idx;
+    unsigned int offset;
+    unsigned int len;
 } bt_block_t;
 

@@ -67,11 +67,10 @@ int bt_filedumper_write_block(
 
     return sfa_write(
             me->sfa,
-            blk->piece_idx * me->piece_size + blk->block_byte_offset,
-            blk->block_len,
+            blk->piece_idx * me->piece_size + blk->offset,
+            blk->len,
             data);
 }
-
 
 void *bt_filedumper_read_block(
     void *flo,
@@ -83,16 +82,33 @@ void *bt_filedumper_read_block(
 
 #if 0 /*  debugging */
     printf("fd-readblock: %d %d %d\n",
-            blk->piece_idx,  blk->block_byte_offset, blk->block_len);
+            blk->piece_idx,  blk->offset, blk->len);
 #endif
 
     return sfa_read(
             me->sfa,
-            blk->piece_idx * me->piece_size + blk->block_byte_offset,
-            blk->block_len);
+            blk->piece_idx * me->piece_size + blk->offset,
+            blk->len);
 }
 
-/*----------------------------------------------------------------------------*/
+int bt_filedumper_flush_block(
+    void *flo,
+    void *caller __attribute__((__unused__)),
+    const bt_block_t * blk
+)
+{
+#if 0
+    bt_filedumper_t *me = flo;
+
+    return sfa_write(
+            me->sfa,
+            blk->piece_idx * me->piece_size + blk->offset,
+            blk->len,
+            data);
+#endif
+    return 0;
+}
+
 void *bt_filedumper_new(
 )
 {
@@ -103,6 +119,7 @@ void *bt_filedumper_new(
     assert(me->sfa);
     me->irw.write_block = bt_filedumper_write_block;
     me->irw.read_block = bt_filedumper_read_block;
+    me->irw.flush_block = bt_filedumper_flush_block;
     return me;
 }
 

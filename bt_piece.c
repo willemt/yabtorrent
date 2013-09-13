@@ -47,11 +47,19 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "bt_block_readwriter_i.h"
 #include "sparse_counter.h"
 
+enum {
+    VALIDITY_NOTCHECKED,
+    VALIDITY_VALID,
+    VALIDITY_INVALID
+};
+
 /*  bittorrent piece */
 typedef struct
 {
     /* index on 'bit stream' */
     int idx;
+
+    int validity;
 
     int piece_length;
 
@@ -96,7 +104,7 @@ int bt_piece_write_block(
     assert(me);
 
 #if 0 /*  debugging */
-    printf("writing block: %d\n", blk->piece_idx, blk->block_byte_offset);
+    printf("writing block: %d\n", blk->piece_idx, blk->offset);
 #endif
 
     if (!priv(me)->disk)
@@ -110,23 +118,30 @@ int bt_piece_write_block(
 
     priv(me)->disk->write_block(priv(me)->disk_udata, me, blk, blkdata);
 
+    priv(me)->validity = VALIDITY_NOTCHECKED;
+
     /* mark progress */
     {
         int offset, len;
 
-        offset = blk->block_byte_offset;
-        len = blk->block_len;
-        sparsecounter_mark_complete(priv(me)->progress_requested, offset, len);
-        sparsecounter_mark_complete(priv(me)->progress_downloaded, offset, len);
-//        sparsecounter_get_incomplete(priv(me)->progress_requested, &off, &ln,
+        offset = blk->offset;
+        len = blk->len;
+        sc_mark_complete(priv(me)->progress_requested, offset, len);
+        sc_mark_complete(priv(me)->progress_downloaded, offset, len);
+//        sc_get_incomplete(priv(me)->progress_requested, &off, &ln,
 //                                  priv(me)->piece_length);
 
-        if (sparsecounter_get_nbytes_completed(priv(me)->progress_downloaded) ==
+        if (sc_get_nbytes_completed(priv(me)->progress_downloaded) ==
                 priv(me)->piece_length)
         {
             if (bt_piece_is_complete(me))
             {
-//                printf("FINISHED %d\n", me->idx);
+                bt_block_t p;
+                p.piece_idx = blk->piece_idx;
+                p.len = priv(me)->piece_length;
+                p.offset = 0;
+                if (priv(me)->disk->flush_block)
+                    priv(me)->disk->flush_block(priv(me)->disk_udata, me, &p);
             }
         }
     }
@@ -134,7 +149,7 @@ int bt_piece_write_block(
 #if 0 /*  debugging */
     printf("%d left to go: %d/%d\n",
            me->idx,
-           sparsecounter_get_nbytes_completed(priv(me)->progress_downloaded),
+           sc_get_nbytes_completed(priv(me)->progress_downloaded),
            priv(me)->piece_length);
 #endif
 
@@ -154,9 +169,9 @@ void *bt_piece_read_block(
     if (!priv(me)->disk->read_block)
         return NULL;
 
-    if (!sparsecounter_have(
-        priv(me)->progress_downloaded, blk->block_byte_offset,
-         blk->block_len))
+    if (!sc_have(
+        priv(me)->progress_downloaded, blk->offset,
+         blk->len))
         return NULL;
 
     return priv(me)->disk->read_block(priv(me)->disk_udata, me, blk);
@@ -172,8 +187,8 @@ bt_piece_t *bt_piece_new(
     me = calloc(1,sizeof(__piece_private_t));
     priv(me)->sha1 = malloc(20);
     memcpy(priv(me)->sha1, sha1sum, 20);
-    priv(me)->progress_downloaded = sparsecounter_init(piece_bytes_size);
-    priv(me)->progress_requested = sparsecounter_init(piece_bytes_size);
+    priv(me)->progress_downloaded = sc_init(piece_bytes_size);
+    priv(me)->progress_requested = sc_init(piece_bytes_size);
     priv(me)->piece_length = piece_bytes_size;
     priv(me)->irw.read_block = bt_piece_read_block;
     priv(me)->irw.write_block = bt_piece_write_block;
@@ -189,8 +204,8 @@ void bt_piece_free(
 )
 {
     free(priv(me)->sha1);
-    sparsecounter_free(priv(me)->progress_downloaded);
-    sparsecounter_free(priv(me)->progress_requested);
+    sc_free(priv(me)->progress_downloaded);
+    sc_free(priv(me)->progress_requested);
     free(me);
 }
 
@@ -211,11 +226,11 @@ static void *__get_data(
 
     /*  read this block */
     tmp.piece_idx = priv(me)->idx;
-    tmp.block_byte_offset = 0;
-    tmp.block_len = priv(me)->piece_length;
+    tmp.offset = 0;
+    tmp.len = priv(me)->piece_length;
 
 #if 0 /*  debugging */
-    printf("loading: %d %d %d\n", tmp.piece_idx, tmp.block_byte_offset, tmp.block_len);
+    printf("loading: %d %d %d\n", tmp.piece_idx, tmp.offset, tmp.len);
 #endif
 
     /*  go to the disk */
@@ -249,6 +264,15 @@ int bt_piece_is_valid(bt_piece_t * me)
     unsigned char *sha1;
     void *data;
 
+    if (priv(me)->validity == VALIDITY_VALID)
+    {
+        return 1;
+    }
+    else if (priv(me)->validity == VALIDITY_INVALID)
+    {
+        return 0;
+    }
+
     if (!(data = __get_data(me)))
     {
         return 0;
@@ -256,6 +280,15 @@ int bt_piece_is_valid(bt_piece_t * me)
 
     hash = str2sha1hash(data, priv(me)->piece_length);
     ret = bt_sha1_equal(hash, priv(me)->sha1);
+
+    if (1 == ret)
+    {
+        priv(me)->validity = VALIDITY_VALID;
+    }
+    else
+    {
+        priv(me)->validity = VALIDITY_INVALID;
+    }
 
 #if 0 /* debugging */
     {
@@ -271,10 +304,17 @@ int bt_piece_is_valid(bt_piece_t * me)
             printf("%02x ", ((unsigned char*)hash)[ii]);
         printf("\n");
     }
+
+    printf("valid: %d\n", ret);
 #endif
 
     free(hash);
     return ret;
+}
+
+int bt_piece_is_downloaded(bt_piece_t * me)
+{
+    return sc_is_complete(priv(me)->progress_downloaded);
 }
 
 /**
@@ -284,23 +324,34 @@ int bt_piece_is_valid(bt_piece_t * me)
  * @return 1 if complete; 0 otherwise */
 int bt_piece_is_complete(bt_piece_t * me)
 {
+
+    /*  cached the fact it's completed */
     if (priv(me)->is_completed)
     {
         return TRUE;
     }
-    else if (sparsecounter_is_complete(priv(me)->progress_downloaded))
+    /*  check the counter if it is fully downloaded */
+    else if (sc_is_complete(priv(me)->progress_downloaded))
     {
+        //printf("fully complete\n");
         if (1 == bt_piece_is_valid(me))
         {
             priv(me)->is_completed = TRUE;
             return  TRUE;
+        }
+        else
+        {
+//            printf("invalid piece data\n");
+            // TODO: set this to false
+            printf("invalid piece: %d\n", me->idx);
+            return FALSE;
         }
     }
     else
     {
         int off, ln;
 
-        sparsecounter_get_incomplete(priv(me)->progress_downloaded, &off, &ln,
+        sc_get_incomplete(priv(me)->progress_downloaded, &off, &ln,
                                   priv(me)->piece_length);
 
         /*  if we haven't downloaded any of the file */
@@ -322,7 +373,7 @@ int bt_piece_is_complete(bt_piece_t * me)
 
 int bt_piece_is_fully_requested(bt_piece_t * me)
 {
-    return sparsecounter_is_complete(priv(me)->progress_requested);
+    return sc_is_complete(priv(me)->progress_requested);
 }
 
 /**
@@ -348,19 +399,38 @@ void bt_piece_poll_block_request(
     }
 
     /* get an incomplete block */
-    sparsecounter_get_incomplete(priv(me)->progress_requested, &offset, &len,
+    sc_get_incomplete(priv(me)->progress_requested, &offset, &len,
                               block_size);
 
     /* create the request */
     request->piece_idx = priv(me)->idx;
-    request->block_byte_offset = offset;
-    request->block_len = len;
+    request->offset = offset;
+    request->len = len;
 
-//    printf("polled: zpceidx: %d block_byte_offset: %d block_len: %d\n",
-//           request->piece_idx, request->block_byte_offset, request->block_len);
+//    printf("polled: zpceidx: %d offset: %d len: %d\n",
+//           request->piece_idx, request->offset, request->len);
 
     /* mark requested counter */
-    sparsecounter_mark_complete(priv(me)->progress_requested, offset, len);
+    sc_mark_complete(priv(me)->progress_requested, offset, len);
+
+}
+
+void bt_piece_giveback_block(
+    bt_piece_t * me,
+    bt_block_t * b
+)
+{
+//    printf("giveback: %d %d\n", b->offset, b->offset + b->len);
+//    sc_print_contents(priv(me)->progress_requested);
+//    printf("\n");
+    sc_mark_incomplete(priv(me)->progress_requested,
+            b->offset, b->len);
+//    sc_print_contents(priv(me)->progress_requested);
+//    printf("\n");
+//    printf("requested:\n");
+//    sc_print_contents(priv(me)->progress_requested);
+//    printf("downloaded:\n");
+//    sc_print_contents(priv(me)->progress_downloaded);
 }
 
 void bt_piece_set_complete(
@@ -414,9 +484,9 @@ void bt_piece_write_block_to_stream(
     if (!(data = __get_data(me)))
         return;
 
-    data += blk->block_byte_offset;
+    data += blk->offset;
 
-    for (ii = 0; ii < blk->block_len; ii++)
+    for (ii = 0; ii < blk->len; ii++)
     {
         unsigned char val;
 
@@ -435,8 +505,8 @@ int bt_piece_write_block_to_str(
     void *data;
     
     data = __get_data(me);
-    offset = blk->block_byte_offset;
-    len = blk->block_len;
+    offset = blk->offset;
+    len = blk->len;
     memcpy(out, (unsigned char *) data + offset, len);
 
     return 1;

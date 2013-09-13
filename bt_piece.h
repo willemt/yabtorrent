@@ -20,3 +20,5 @@ int bt_piecedb_add_file(
 );
 
 int bt_piece_is_complete(bt_piece_t * me);
+
+int bt_piece_is_downloaded(bt_piece_t * me);

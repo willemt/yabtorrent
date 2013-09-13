@@ -116,7 +116,7 @@ static void __log(void *udata, void *src, char *buf)
     struct timeval tv;
 
     gettimeofday(&tv, NULL);
-    printf("LOG: %s\n", buf);
+//    printf("LOG: %s\n", buf);
     sprintf(stamp, "%d,%0.2f,", (int) tv.tv_sec, (float) tv.tv_usec / 100000);
     write(fd, stamp, strlen(stamp));
     write(fd, buf, strlen(buf));
@@ -244,11 +244,12 @@ static void __on_tc_add_peer(void* callee,
     void* peer_nethandle;
     char ip_string[32];
 
-    uv_mutex_lock(&bt->mutex);
 
     sprintf(ip_string,"%.*s", ip_len, ip);
     
     peer_nethandle = NULL;
+
+    uv_mutex_lock(&bt->mutex);
 
     /* connect to the peer */
     if (0 == peer_connect(bt,
@@ -396,10 +397,12 @@ static void __periodic(uv_timer_t* handle, int status)
 {
     bt_t* bt = handle->data;
 
-    uv_mutex_lock(&bt->mutex);
     if (bt->bc)
+    {
+        uv_mutex_lock(&bt->mutex);
         bt_client_periodic(bt->bc);
-    uv_mutex_unlock(&bt->mutex);
+        uv_mutex_unlock(&bt->mutex);
+    }
 }
 
 int main(int argc, char **argv)
@@ -524,9 +527,7 @@ int main(int argc, char **argv)
     periodic_req = malloc(sizeof(uv_timer_t));
     periodic_req->data = &bt;
     uv_timer_init(loop, periodic_req);
-    uv_timer_start(periodic_req, __periodic, 0, 500);
-
-//    return 1;
+    uv_timer_start(periodic_req, __periodic, 0, 1000);
 
     /* try to connect to tracker */
     if (0 == __trackerclient_try_announces(&bt))

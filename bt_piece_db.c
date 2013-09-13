@@ -271,6 +271,54 @@ void bt_piecedb_add_all(bt_piecedb_t * db, const char *pieces, const int len)
     }
 }
 
+/**
+ * @return number of pieces downloaded */
+int bt_piecedb_get_num_downloaded(bt_piecedb_t * db)
+{
+    int ii;
+    int downloaded = 0;
+
+    for (ii = 0; ii < bt_piecedb_get_length(db); ii++)
+    {
+        bt_piece_t *pce;
+        
+        pce = bt_piecedb_get(db, ii);
+
+        if (bt_piece_is_downloaded(pce))
+        {
+            downloaded += 1;
+        }
+    }
+
+    return downloaded;
+
+}
+
+/**
+ * @return number of pieces downloaded */
+int bt_piecedb_get_num_completed(bt_piecedb_t * db)
+{
+    int ii;
+    int cnt = 0;
+
+    for (ii = 0; ii < bt_piecedb_get_length(db); ii++)
+    {
+        bt_piece_t *pce;
+        
+        pce = bt_piecedb_get(db, ii);
+
+        if (bt_piece_is_complete(pce))
+        {
+            cnt += 1;
+        }
+    }
+
+    return cnt;
+}
+
+/**
+ * @return 1 if all complete, 0 otherwise */
+
 int bt_piecedb_get_length(bt_piecedb_t * db)
 {
     return priv(db)->npieces;

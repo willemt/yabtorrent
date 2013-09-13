@@ -65,12 +65,11 @@ static void __read_cb(uv_stream_t* tcp, ssize_t nread, uv_buf_t buf)
 
     if (nread >= 0)
     {
-//        printf("read: %d\n", nread);
         ca->func_process_data(ca->callee, ca, buf.base, nread);
     }
     else
     {
-//        printf("done reading: %d\n", nread);
+
     }
 
     free(buf.base);
@@ -128,7 +127,7 @@ int peer_connect(void* caller,
     ca->func_process_connection_fail = func_connection_failed;
     ca->callee = caller;
 
-#if 1 /* debugging */
+#if 0 /* debugging */
     printf("connecting to: %lx %s:%d\n", ca, host, port);
 #endif
     

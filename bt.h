@@ -24,6 +24,21 @@ typedef int (
     const void *pr
 );
 
+#if 0
+enum {
+    BT_WRITEBLOCK_NONE,
+    /*  commit this block as much as possible */
+    BT_WRITEBLOCK_FLUSH
+};
+#endif
+
+typedef int (
+    *func_flush_block_f
+)   (
+    void *udata,
+    void *caller,
+    const bt_block_t * blk
+);
 
 typedef int (
     *func_write_block_f
@@ -32,6 +47,7 @@ typedef int (
     void *caller,
     const bt_block_t * blk,
     const void *blkdata
+//    int opt
 );
 
 typedef void *(
@@ -66,6 +82,7 @@ typedef struct
 {
     func_write_block_f write_block;
     func_read_block_f read_block;
+    func_flush_block_f flush_block;
 } bt_blockrw_i;
 
 /**

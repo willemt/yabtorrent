@@ -154,8 +154,6 @@ void bt_diskcache_set_func_log(
     priv(dc)->logger_data = udata;
 }
 
-/*----------------------------------------------------------------------------*/
-
 /**
  * Dump this piece_idx to the disk */
 static void __diskdump_piece(
@@ -171,8 +169,8 @@ static void __diskdump_piece(
     mpce = __get_piece(dc, piece_idx);
 
     blk.piece_idx = piece_idx;
-    blk.block_byte_offset = 0;
-    blk.block_len = priv(dc)->piece_length;
+    blk.offset = 0;
+    blk.len = priv(dc)->piece_length;
     priv(dc)->disk->write_block(priv(dc)->disk_udata, dc, &blk, mpce->data);
 
     pseudolru_remove(priv(dc)->lru_piece, (void *) mpce);
@@ -204,18 +202,19 @@ static int __write_block(
 
 #if 0 /* debugging */
     printf("dc-writeblock: %d %d %d %d\n",
-           blk->piece_idx, blk->block_byte_offset, blk->block_len,
+           blk->piece_idx, blk->offset, blk->len,
            pseudolru_count(priv(dc)->lru_piece));
 #endif
 
     assert(0 < priv(dc)->piece_length);
     assert(mpce->data);
 
-    memcpy(mpce->data + blk->block_byte_offset, blkdata, blk->block_len);
+    memcpy(mpce->data + blk->offset, blkdata, blk->len);
 
     /*  touch piece to show how recent it is */
     pseudolru_put(priv(dc)->lru_piece, (void *) mpce, (void *) mpce);
 
+#if 0
     /* check if we have enough pieces to write out to disk */
     if (20 < pseudolru_count(priv(dc)->lru_piece))
     {
@@ -229,6 +228,29 @@ static int __write_block(
             __diskdump_piece(dc, mpce->idx);
         }
     }
+#endif
+
+    return 1;
+}
+
+static int __flush_block(
+    void *udata,
+    void *caller,
+    const bt_block_t * blk
+)
+{
+    bt_diskcache_t *dc = udata;
+    mpiece_t *mpce;
+
+    mpce = __get_piece(dc, blk->piece_idx);
+
+    if (!mpce->data)
+    {
+        return 0;
+    }
+
+    __diskdump_piece(dc,blk->piece_idx);
+    //__write_block(udata,caller,blk,blkdata);
 
     return 1;
 }
@@ -241,8 +263,8 @@ static void *__get_piece_data_from_disk(
     bt_block_t blk;
 
     blk.piece_idx = piece_idx;
-    blk.block_byte_offset = 0;
-    blk.block_len = priv(dc)->piece_length;
+    blk.offset = 0;
+    blk.len = priv(dc)->piece_length;
     return priv(dc)->disk->read_block(priv(dc)->disk_udata, dc, &blk);
 }
 
@@ -264,7 +286,7 @@ static void *__read_block(
 
 #if 0 /*  debugging */
     printf("dc-readblock: %d %d %d\n",
-            blk->piece_idx, blk->block_byte_offset, blk->block_len);
+            blk->piece_idx, blk->offset, blk->len);
 #endif
 
     mpce = __get_piece(dc, blk->piece_idx);
@@ -288,10 +310,9 @@ static void *__read_block(
     /*  touch piece to show how recent it is */
     pseudolru_put(priv(dc)->lru_piece, (void *) mpce, (void *) mpce);
 
-    return mpce->data + blk->block_byte_offset;
+    return mpce->data + blk->offset;
 }
 
-/*----------------------------------------------------------------------------*/
 void *bt_diskcache_new(
 )
 {
@@ -300,6 +321,7 @@ void *bt_diskcache_new(
     dc = calloc(1, sizeof(diskcache_private_t));
     priv(dc)->irw.write_block = __write_block;
     priv(dc)->irw.read_block = __read_block;
+    priv(dc)->irw.flush_block = __flush_block;
     priv(dc)->piece_length = 0;
 //    priv(dc)->npieces_in_mem = 0;
 //    priv(dc)->irw.giveup_block = NULL;
@@ -307,7 +329,6 @@ void *bt_diskcache_new(
     return dc;
 }
 
-/*----------------------------------------------------------------------------*/
 void bt_diskcache_set_size(
     void *dco,
     const int piece_bytes_size

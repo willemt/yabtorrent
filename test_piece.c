@@ -66,7 +66,7 @@ void TestBTPiece_full_request_means_piece_is_fully_requested(
     CuAssertTrue(tc, 0 == bt_piece_is_fully_requested(pce));
 
     bt_piece_poll_block_request(pce, &req);
-    CuAssertTrue(tc, req.block_len == 40);
+    CuAssertTrue(tc, req.len == 40);
     CuAssertTrue(tc, 1 == bt_piece_is_fully_requested(pce));
 }
 
@@ -80,7 +80,7 @@ void TestBTPiece_unfull_request_means_piece_is_not_fully_requested(
 
     pce = bt_piece_new("00000000000000000000", 400000);
     bt_piece_poll_block_request(pce, &req);
-    CuAssertTrue(tc, req.block_len == BLOCK_SIZE);
+    CuAssertTrue(tc, req.len == BLOCK_SIZE);
     CuAssertTrue(tc, 0 == bt_piece_is_fully_requested(pce));
 }
 
@@ -94,7 +94,7 @@ void TestBTPiece_pollBlockRequest_has_default_blockSize(
 
     pce = bt_piece_new("00000000000000000000", 400000);
     bt_piece_poll_block_request(pce, &req);
-    CuAssertTrue(tc, req.block_len == BLOCK_SIZE);
+    CuAssertTrue(tc, req.len == BLOCK_SIZE);
 }
 
 void TestBTPiece_pollBlockRequest_sized_under_threshhold(
@@ -107,7 +107,7 @@ void TestBTPiece_pollBlockRequest_sized_under_threshhold(
 
     pce = bt_piece_new("00000000000000000000", 10);
     bt_piece_poll_block_request(pce, &req);
-    CuAssertTrue(tc, req.block_len == 10);
+    CuAssertTrue(tc, req.len == 10);
 }
 
 void TestBTPiece_write_block_needs_disk_blockrw(
@@ -122,12 +122,11 @@ void TestBTPiece_write_block_needs_disk_blockrw(
 
     pce = bt_piece_new("00000000000000000000", 40);
     blk.piece_idx = 0;
-    blk.block_byte_offset = 0;
-    blk.block_len = 10;
+    blk.offset = 0;
+    blk.len = 10;
     CuAssertTrue(tc, 0 == bt_piece_write_block(pce, NULL, &blk, msg));
 }
 
-/*----------------------------------------------------------------------------*/
 /**  The below tests will be using the blockrw disk backend to store data.
  *  A mock blockrw has been provided and is defined below: */
 
@@ -146,7 +145,7 @@ static int __mock_disk_write_block(
 {
     mockdisk_t *md = udata;
 
-    memcpy(md->data, blkdata + blk->block_byte_offset, blk->block_len);
+    memcpy(md->data, blkdata + blk->offset, blk->len);
 }
 
 static void *__mock_disk_read_block(
@@ -157,7 +156,7 @@ static void *__mock_disk_read_block(
 {
     mockdisk_t *md = udata;
 
-    return md->data + blk->block_byte_offset;
+    return md->data + blk->offset;
 }
 
 bt_blockrw_i __mock_disk_rw = {.read_block =
@@ -178,8 +177,8 @@ void TestBTPiece_cannot_read_block_we_dont_have(
 
     pce = bt_piece_new("00000000000000000000", 40);
     blk.piece_idx = 0;
-    blk.block_byte_offset = 0;
-    blk.block_len = 10;
+    blk.offset = 0;
+    blk.len = 10;
     bt_piece_set_disk_blockrw(pce, &__mock_disk_rw, &__mockdisk);
     CuAssertTrue(tc, NULL == bt_piece_read_block(pce, NULL, &blk));
 }
@@ -196,15 +195,13 @@ void TestBTPiece_write_block_means_block_can_be_read(
 
     pce = bt_piece_new("00000000000000000000", 40);
     blk.piece_idx = 0;
-    blk.block_byte_offset = 0;
-    blk.block_len = 10;
+    blk.offset = 0;
+    blk.len = 10;
     bt_piece_set_disk_blockrw(pce, &__mock_disk_rw, &__mockdisk);
     bt_piece_write_block(pce, NULL, &blk, msg);
     CuAssertTrue(tc,
                  0 == strncmp(bt_piece_read_block(pce, NULL, &blk), msg, 10));
 }
-
-/*----------------------------------------------------------------------------*/
 
 /*
  *
@@ -229,8 +226,8 @@ void TestBTPiece_doneness_is_valid(
     bt_piece_set_disk_blockrw(pce, &__mock_disk_rw, &__mockdisk);
     CuAssertTrue(tc, 0 == bt_piece_is_complete(pce));
     blk.piece_idx = 0;
-    blk.block_byte_offset = 0;
-    blk.block_len = 40;
+    blk.offset = 0;
+    blk.len = 40;
     bt_piece_write_block(pce, NULL, &blk, msg);
     CuAssertTrue(tc, 1 == bt_piece_is_complete(pce));
     CuAssertTrue(tc, 1 == bt_piece_is_valid(pce));
@@ -254,14 +251,14 @@ void TestBTPiece_Write_Block_To_Stream(
 
     /*  write the whole message out */
     blk.piece_idx = 0;
-    blk.block_byte_offset = 0;
-    blk.block_len = 40;
+    blk.offset = 0;
+    blk.len = 40;
     bt_piece_write_block(pce, NULL, &blk, msg);
 
     /*  read offset of 10 and length of 20 */
     blk.piece_idx = 0;
-    blk.block_byte_offset = 10;
-    blk.block_len = 20;
+    blk.offset = 10;
+    blk.len = 20;
     bt_piece_write_block_to_stream(pce, &blk, &bs);
     CuAssertTrue(tc, !strncmp(out, msg + 10, 20));
     bt_piece_free(pce);
@@ -281,11 +278,11 @@ void TestBTPiece_Write_Block_To_Str(
 
     pce = bt_piece_new("00000000000000000000", 40);
     CuAssertTrue(tc, 0 == bt_piece_is_complete(pce));
-    blk.block_byte_offset = 0;
-    blk.block_len = 20;
+    blk.offset = 0;
+    blk.len = 20;
     bt_piece_write_block(pce, NULL, &blk, msg);
-    blk.block_byte_offset = 10;
-    blk.block_len = 20;
+    blk.offset = 10;
+    blk.len = 20;
     bt_piece_write_block_to_str(pce, &blk, out);
     CuAssertTrue(tc, 0 == strncmp(out, msg + 10, 10));
 #endif

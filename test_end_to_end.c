@@ -85,15 +85,17 @@ static void __log(void *udata, void *src, char *buf)
     int fd = (unsigned long) udata;
     struct timeval tv;
 
-#if 0 /* debugging */
+#if 1 /* debugging */
     printf(buf);
     printf("\n");
 
+    /*
     gettimeofday(&tv, NULL);
     sprintf(stamp, "%d,%0.2f,", (int) tv.tv_sec, (float) tv.tv_usec / 100000);
     write(fd, stamp, strlen(stamp));
     write(fd, buf, strlen(buf));
     write(fd, "\n", 1);
+    */
 #endif
 }
 
@@ -232,8 +234,8 @@ void TestBT_Peer_shares_all_pieces(
 
         data = mocktorrent_get_data(mt,0);
         blk.piece_idx = 0;
-        blk.block_byte_offset = 0;
-        blk.block_len = 5;
+        blk.offset = 0;
+        blk.len = 5;
         bt_diskmem_write_block(
                 bt_piecedb_get_diskstorage(bt_client_get_piecedb(a->bt)),
                 NULL, &blk, data);
@@ -325,8 +327,8 @@ void TestBT_Peer_shares_all_pieces_between_each_other(
         bt_block_t blk;
 
         blk.piece_idx = 0;
-        blk.block_byte_offset = 0;
-        blk.block_len = 5;
+        blk.offset = 0;
+        blk.len = 5;
 
         data = mocktorrent_get_data(mt,0);
         bt_diskmem_write_block(
@@ -384,8 +386,8 @@ static void __add_piece_intersection_of_mocktorrent(void* db, void* db2, void* m
             continue;
 
         blk.piece_idx = ii;
-        blk.block_byte_offset = 0;
-        blk.block_len = 5;
+        blk.offset = 0;
+        blk.len = 5;
         data = mocktorrent_get_data(mt,ii);
         bt_diskmem_write_block(bt_piecedb_get_diskstorage(db), NULL, &blk, data);
     }
@@ -409,8 +411,8 @@ static void __add_random_piece_subset_of_mocktorrent(void* db, void* mt, int npi
              continue;
 
         blk.piece_idx = ii;
-        blk.block_byte_offset = 0;
-        blk.block_len = 5;
+        blk.offset = 0;
+        blk.len = 5;
         data = mocktorrent_get_data(mt,ii);
         bt_diskmem_write_block(bt_piecedb_get_diskstorage(db), NULL, &blk, data);
     }
@@ -469,8 +471,8 @@ void TestBT_Peer_three_share_all_pieces_between_each_other(
         bt_block_t blk;
 
         blk.piece_idx = 0;
-        blk.block_byte_offset = 0;
-        blk.block_len = 5;
+        blk.offset = 0;
+        blk.len = 5;
 
         data = mocktorrent_get_data(mt,0);
         bt_diskmem_write_block(
@@ -493,13 +495,16 @@ void TestBT_Peer_three_share_all_pieces_between_each_other(
     /* B will initiate the connection */
     asprintf(&addr,"%p", b);
     __client_add_peer(a,NULL,0,addr,strlen(addr),0);
-    //bt_client_add_peer(a->bt,NULL,0,addr,strlen(addr),0,b);
     asprintf(&addr,"%p", c);
     __client_add_peer(b,NULL,0,addr,strlen(addr),0);
-    //bt_client_add_peer(b->bt,NULL,0,addr,strlen(addr),0,a);
 
+    bt_client_set_logging(a->bt, 0, __log);
 
-    for (ii=0; ii<20; ii++)
+    bt_piecedb_print_pieces_downloaded(bt_client_get_piecedb(a->bt));
+    bt_piecedb_print_pieces_downloaded(bt_client_get_piecedb(b->bt));
+    bt_piecedb_print_pieces_downloaded(bt_client_get_piecedb(c->bt));
+
+    for (ii=0; ii<10; ii++)
     {
 #if 0 /* debugging */
         printf("\nStep %d:\n", ii+1);
@@ -522,9 +527,9 @@ void TestBT_Peer_three_share_all_pieces_between_each_other(
 //        __print_client_contents();
     }
 
-//    bt_piecedb_print_pieces_downloaded(bt_client_get_piecedb(a->bt));
-//    bt_piecedb_print_pieces_downloaded(bt_client_get_piecedb(b->bt));
-//    bt_piecedb_print_pieces_downloaded(bt_client_get_piecedb(c->bt));
+    bt_piecedb_print_pieces_downloaded(bt_client_get_piecedb(a->bt));
+    bt_piecedb_print_pieces_downloaded(bt_client_get_piecedb(b->bt));
+    bt_piecedb_print_pieces_downloaded(bt_client_get_piecedb(c->bt));
 
     CuAssertTrue(tc, 1 == bt_piecedb_all_pieces_are_complete(bt_client_get_piecedb(a->bt)));
     CuAssertTrue(tc, 1 == bt_piecedb_all_pieces_are_complete(bt_client_get_piecedb(b->bt)));

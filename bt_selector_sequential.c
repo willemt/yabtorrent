@@ -92,25 +92,25 @@ void *bt_sequential_selector_new(
     const int npieces
 )
 {
-    sequential_t *rf;
+    sequential_t *me;
 
-    rf = calloc(1, sizeof(sequential_t));
-    rf->npieces = npieces;
-    rf->peers = hashmap_new(__peer_hash, __peer_compare, 11);
-    rf->p_polled = hashmap_new(__peer_hash, __peer_compare, 11);
-    return rf;
+    me = calloc(1, sizeof(sequential_t));
+    me->npieces = npieces;
+    me->peers = hashmap_new(__peer_hash, __peer_compare, 11);
+    me->p_polled = hashmap_new(__peer_hash, __peer_compare, 11);
+    return me;
 }
 
 void bt_sequential_selector_free(
     void *r
 )
 {
-    sequential_t *rf = r;
+    sequential_t *me = r;
 
-    hashmap_free(rf->peers);
-//    heap_free(rf->p_candidates);
-    hashmap_free(rf->p_polled);
-    free(rf);
+    hashmap_free(me->peers);
+//    heap_free(me->p_candidates);
+    hashmap_free(me->p_polled);
+    free(me);
 }
 
 void bt_sequential_selector_remove_peer(
@@ -118,10 +118,10 @@ void bt_sequential_selector_remove_peer(
     void *peer
 )
 {
-    sequential_t *rf = r;
+    sequential_t *me = r;
     peer_t *pr;
 
-    if ((pr = hashmap_remove(rf->peers, peer)))
+    if ((pr = hashmap_remove(me->peers, peer)))
     {
 //        hashmap_free(pr->have_pieces);
         free(pr);
@@ -133,16 +133,16 @@ void bt_sequential_selector_add_peer(
     void *peer
 )
 {
-    sequential_t *rf = r;
+    sequential_t *me = r;
     peer_t *pr;
 
     /* make sure not to add duplicates */
-    if ((pr = hashmap_get(rf->peers, peer)))
+    if ((pr = hashmap_get(me->peers, peer)))
         return;
 
     pr = calloc(1,sizeof(peer_t));
     pr->p_candidates = heap_new(__cmp_piece, NULL);
-    hashmap_put(rf->peers, peer, pr);
+    hashmap_put(me->peers, peer, pr);
 }
 
 /**
@@ -154,7 +154,24 @@ void bt_sequential_selector_giveback_piece(
     int piece_idx
 )
 {
+    sequential_t *me = r;
+    peer_t *pr;
+    void* p;
 
+    /*  get the peer */
+    pr = hashmap_get(me->peers, peer);
+
+    assert(pr);
+
+    heap_offer(pr->p_candidates, (void *) (long) piece_idx + 1);
+    hashmap_remove(me->p_polled, (void *) (long) piece_idx + 1);
+
+#if 0
+    if (!(p = hashmap_get(me->p_polled, (void *) (long) piece_idx + 1)))
+    {
+        heap_offer(pr->p_candidates, (void *) (long) piece_idx + 1);
+    }
+#endif
 }
 
 /**
@@ -164,10 +181,10 @@ void bt_sequential_selector_have_piece(
     int piece_idx
 )
 {
-    sequential_t *rf = r;
+    sequential_t *me = r;
 
-    assert(rf->p_polled);
-    hashmap_put(rf->p_polled, (void *) (long) piece_idx + 1, (void *) (long) piece_idx + 1);
+    assert(me->p_polled);
+    hashmap_put(me->p_polled, (void *) (long) piece_idx + 1, (void *) (long) piece_idx + 1);
 }
 
 /**
@@ -179,16 +196,16 @@ void bt_sequential_selector_peer_have_piece(
     const int piece_idx
 )
 {
-    sequential_t *rf = r;
+    sequential_t *me = r;
     peer_t *pr;
     void* p;
 
     /*  get the peer */
-    pr = hashmap_get(rf->peers, peer);
+    pr = hashmap_get(me->peers, peer);
 
     assert(pr);
 
-    if (!(p = hashmap_get(rf->p_polled, (void *) (long) piece_idx + 1)))
+    if (!(p = hashmap_get(me->p_polled, (void *) (long) piece_idx + 1)))
     {
         heap_offer(pr->p_candidates, (void *) (long) piece_idx + 1);
     }
@@ -196,16 +213,16 @@ void bt_sequential_selector_peer_have_piece(
 
 int bt_sequential_selector_get_npeers(void *r)
 {
-    sequential_t *rf = r;
+    sequential_t *me = r;
 
-    return hashmap_count(rf->peers);
+    return hashmap_count(me->peers);
 }
 
 int bt_sequential_selector_get_npieces(void *r)
 {
-    sequential_t *rf = r;
+    sequential_t *me = r;
 
-    return rf->npieces;
+    return me->npieces;
 }
 
 /**
@@ -218,12 +235,12 @@ int bt_sequential_selector_poll_best_piece(
     const void *peer
 )
 {
-    sequential_t *rf = r;
+    sequential_t *me = r;
     heap_t *hp;
     peer_t *pr;
     int piece_idx;
 
-    if (!(pr = hashmap_get(rf->peers, peer)))
+    if (!(pr = hashmap_get(me->peers, peer)))
     {
         return -1;
     }
@@ -232,9 +249,9 @@ int bt_sequential_selector_poll_best_piece(
     {
         piece_idx = (int)heap_poll(pr->p_candidates) - 1;
 
-        if (!(hashmap_get(rf->p_polled, (void *) (long) piece_idx + 1)))
+        if (!(hashmap_get(me->p_polled, (void *) (long) piece_idx + 1)))
         {
-            hashmap_put(rf->p_polled,
+            hashmap_put(me->p_polled,
                     (void *) (long) piece_idx + 1, (void *) (long) piece_idx + 1);
             return piece_idx;
         }

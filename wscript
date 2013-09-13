@@ -30,8 +30,9 @@ def configure(conf):
         conf.check_cc(lib='ws2_32')
         conf.check_cc(lib='psapi')
 
-    conf.check_cc(lib='pthread')
-#    conf.check_cc(lib='uv',libpath="./libuv/")
+    #conf.env.STDLIBPATH = ['/home/WThiart/projects/YABTorrent/libuv']
+    conf.check_cc(lib='uv')
+#        stdlibpath='/home/WThiart/projects/YABTorrent/libuv')
 
     # Get the required contributions via GIT
     for c in contribs:
@@ -271,7 +272,7 @@ def build(bld):
             '-Werror=return-type',
             '-pthread',
             ],
-        stlibpath = ['libuv','.'],
+        stlibpath = ['./libuv','.'],
         lib = libs,
         includes=[
             './libuv/include',

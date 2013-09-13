@@ -62,7 +62,6 @@ typedef struct
     unsigned char *data;
 } diskmem_t;
 
-/*----------------------------------------------------------------------------*/
 int bt_diskmem_write_block(
     void *udata,
     void *caller __attribute__((__unused__)),
@@ -76,34 +75,34 @@ int bt_diskmem_write_block(
 #if 0 /* debugging */
     int ii;
 
-    printf("diskmem %d:", blk->block_byte_offset);
-    for (ii = 0; ii < blk->block_len; ii++)
+    printf("diskmem %d:", blk->offset);
+    for (ii = 0; ii < blk->len; ii++)
         printf("%02x,", ((const unsigned char*)blkdata)[ii]);
     printf("\n");
-//    for (ii = 0; ii < blk->block_len; ii++)
+//    for (ii = 0; ii < blk->len; ii++)
 //        printf("%c,", ((const unsigned char*)blkdata)[ii]);
 //    printf("\n");
 #endif
 
     assert(me->data);
 
-    offset = blk->piece_idx * me->piece_size + blk->block_byte_offset;
+    offset = blk->piece_idx * me->piece_size + blk->offset;
 
     /* if required, enlarge capacity */
-    if (me->data_size < offset + blk->block_len)
+    if (me->data_size < offset + blk->len)
     {
-        me->data_size = offset + blk->block_len;
+        me->data_size = offset + blk->len;
         me->data = realloc(me->data, me->data_size);
     }
 
-    memcpy(me->data + offset, blkdata, blk->block_len);
+    memcpy(me->data + offset, blkdata, blk->len);
 
 #if 0 /* debugging */
     {
     int ii;
 
-    printf("diskmem %d:", blk->block_byte_offset);
-    for (ii = 0; ii < blk->block_len; ii++)
+    printf("diskmem %d:", blk->offset);
+    for (ii = 0; ii < blk->len; ii++)
         printf("%02x,", ((const unsigned char*)me->data)[ii]);
     printf("\n");
     }
@@ -125,18 +124,26 @@ static void *__read_block(
     diskmem_t *me = udata;
     unsigned int offset;
 
-    offset = blk->piece_idx * me->piece_size + blk->block_byte_offset;
+    offset = blk->piece_idx * me->piece_size + blk->offset;
 
-    if (me->data_size < offset + blk->block_len)
+    if (me->data_size < offset + blk->len)
     {
-//        printf("too big %d %d\n", me->data_size, offset + blk->block_len);
+//        printf("too big %d %d\n", me->data_size, offset + blk->len);
         return NULL;
     }
 
     return me->data + offset;
 }
 
-/*----------------------------------------------------------------------------*/
+static int __flush_block(
+    void *udata,
+    void *caller __attribute__((__unused__)),
+    const bt_block_t * blk
+)
+{
+    return 0;
+}
+
 void *bt_diskmem_new(
 )
 {
@@ -145,6 +152,7 @@ void *bt_diskmem_new(
     me = calloc(1, sizeof(diskmem_t));
     me->irw.write_block = bt_diskmem_write_block;
     me->irw.read_block = __read_block;
+    me->irw.flush_block = __flush_block;
     me->data = NULL;
 //    me->irw.giveup_block = NULL;
 
@@ -162,7 +170,6 @@ void bt_diskmem_free(
     free(me);
 }
 
-/*----------------------------------------------------------------------------*/
 void bt_diskmem_set_size(
     void *meo,
     const int piece_bytes_size
@@ -176,7 +183,6 @@ void bt_diskmem_set_size(
     memset(me->data, 0, me->data_size);
 }
 
-/*----------------------------------------------------------------------------*/
 bt_blockrw_i *bt_diskmem_get_blockrw(
     void *meo
 )
