@@ -157,11 +157,14 @@ void __FUNC_peer_periodic(void* caller, void* peer, void* udata)
 {
     bt_peer_t* p = peer;
 
+    if (pwp_conn_flag_is_set(p->pc, PC_FAILED_CONNECTION)) return;
     if (!pwp_conn_flag_is_set(p->pc, PC_HANDSHAKE_RECEIVED)) return;
     pwp_conn_periodic(p->pc);
 }
 
 typedef struct {
+    int failed_connection
+    int connected;
     int peers;
     int choking;
     int choked;
@@ -174,7 +177,10 @@ void __FUNC_peer_stats(void* caller, void* peer, void* udata)
 
     if (pwp_conn_im_choked(p->pc))
         stats->choked++;
-
+    if (pwp_conn_flag_is_set(p->pc, PC_HANDSHAKE_RECEIVED))
+        stats->connected++;
+    if (pwp_conn_flag_is_set(p->pc, PC_FAILED_CONNECTION))
+        stats->failed_connection++;
     stats->peers++;
 }
 
@@ -225,8 +231,16 @@ int bt_client_dispatch_from_buffer(
 void bt_client_peer_connect_fail(void *bto, void* nethandle)
 {
     bt_client_t *me = bto;
+    bt_peer_t *peer;
 
-    printf("failed connection\n");
+    peer = bt_peermanager_nethandle_to_peer(me->pm, nethandle);
+
+    if (!peer)
+    {
+        return;
+    }
+
+    pwp_conn_set_state(pc, PC_FAILED_CONNECTION);
 }
 
 void bt_client_peer_connect(void *bto, void* nethandle, char *ip, const int port)
@@ -737,8 +751,10 @@ cleanup:
 //    bt_piecedb_print_pieces_downloaded(bt_client_get_piecedb(me));
     memset(&stat,0,sizeof(peer_stats_t));
     bt_peermanager_forall(me->pm,me,&stat,__FUNC_peer_stats);
-    printf("peers: %d choked: %d downloaded:%d completed:%d\n",
+    printf("peers: %d (active:%d failed:%d) choked: %d downloaded:%d completed:%d\n",
             stat.peers,
+            stat.connected,
+            stat.failed_connection,
             stat.choked,
             bt_piecedb_get_num_downloaded(bt_client_get_piecedb(me)),
             bt_piecedb_get_num_completed(bt_client_get_piecedb(me))
