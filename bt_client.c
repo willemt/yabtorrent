@@ -167,7 +167,6 @@ typedef struct {
     int connected;
     int peers;
     int choking;
-    int choked;
     int download_rate;
     int upload_rate;
 } peer_stats_t;
@@ -178,7 +177,7 @@ void __FUNC_peer_stats(void* caller, void* peer, void* udata)
     bt_peer_t* p = peer;
 
     if (pwp_conn_im_choked(p->pc))
-        stats->choked++;
+        stats->choking++;
     if (pwp_conn_flag_is_set(p->pc, PC_HANDSHAKE_RECEIVED))
         stats->connected++;
     if (pwp_conn_flag_is_set(p->pc, PC_FAILED_CONNECTION))
@@ -757,11 +756,12 @@ cleanup:
 //    bt_piecedb_print_pieces_downloaded(bt_client_get_piecedb(me));
     memset(&stat,0,sizeof(peer_stats_t));
     bt_peermanager_forall(me->pm,me,&stat,__FUNC_peer_stats);
-    printf("peers: %d (active:%d failed:%d choked:%d) downloaded:%d completed:%d/%d rate:%dKB/s\n",
+    printf("peers: %d (active:%d choking:%d failed:%d) "
+            "downloaded:%d completed:%d/%d dl:%dKB/s ul:%dKB/s\n",
             stat.peers,
             stat.connected,
+            stat.choking,
             stat.failed_connection,
-            stat.choked,
             bt_piecedb_get_num_downloaded(bt_client_get_piecedb(me)),
             bt_piecedb_get_num_completed(bt_client_get_piecedb(me)),
             bt_piecedb_get_length(bt_client_get_piecedb(me)),
