@@ -1,6 +1,1 @@
-before_install:
- - sudo add-apt-repository -y ppa:staticfloat/julia-deps
- - sudo apt-get update -qq
- - sudo apt-get install -qq libuv
-
 script: "git clone http://github.com/joyent/libuv && cd libuv && sh autogen.sh && ./configure && make && cp libuv.a .. && cd .. && python waf configure && python waf"
