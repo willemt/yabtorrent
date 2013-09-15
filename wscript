@@ -198,6 +198,7 @@ def build(bld):
             cp+"CBTPWPConnection/pwp_msghandler.c",
             cp+"CBTPWPConnection/pwp_handshaker.c",
             cp+"CLinkedListQueue/linked_list_queue.c",
+            cp+"CTorrentFileReader/torrentfile_reader.c",
             cp+"CHashMapViaLinkedList/linked_list_hashmap.c",
             cp+"CSparseFileAllocator/sparsefile_allocator.c",
             ],
