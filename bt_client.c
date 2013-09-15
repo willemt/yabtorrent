@@ -163,11 +163,12 @@ void __FUNC_peer_periodic(void* caller, void* peer, void* udata)
 }
 
 typedef struct {
-    int failed_connection
+    int failed_connection;
     int connected;
     int peers;
     int choking;
     int choked;
+    int download_rate;
 } peer_stats_t;
 
 void __FUNC_peer_stats(void* caller, void* peer, void* udata)
@@ -181,6 +182,9 @@ void __FUNC_peer_stats(void* caller, void* peer, void* udata)
         stats->connected++;
     if (pwp_conn_flag_is_set(p->pc, PC_FAILED_CONNECTION))
         stats->failed_connection++;
+
+    stats->download_rate += pwp_conn_get_download_rate(p->pc);
+
     stats->peers++;
 }
 
@@ -240,7 +244,7 @@ void bt_client_peer_connect_fail(void *bto, void* nethandle)
         return;
     }
 
-    pwp_conn_set_state(pc, PC_FAILED_CONNECTION);
+    pwp_conn_set_state(peer->pc, PC_FAILED_CONNECTION);
 }
 
 void bt_client_peer_connect(void *bto, void* nethandle, char *ip, const int port)
@@ -751,13 +755,15 @@ cleanup:
 //    bt_piecedb_print_pieces_downloaded(bt_client_get_piecedb(me));
     memset(&stat,0,sizeof(peer_stats_t));
     bt_peermanager_forall(me->pm,me,&stat,__FUNC_peer_stats);
-    printf("peers: %d (active:%d failed:%d) choked: %d downloaded:%d completed:%d\n",
+    printf("peers: %d (active:%d failed:%d choked:%d) downloaded:%d completed:%d/%d rate:%dKB/s\n",
             stat.peers,
             stat.connected,
             stat.failed_connection,
             stat.choked,
             bt_piecedb_get_num_downloaded(bt_client_get_piecedb(me)),
-            bt_piecedb_get_num_completed(bt_client_get_piecedb(me))
+            bt_piecedb_get_num_completed(bt_client_get_piecedb(me)),
+            bt_piece_get_size(bt_client_get_piecedb(me)),
+            stat.download_rate / 1000
             );
 
     return;
@@ -828,7 +834,6 @@ void *bt_client_new()
     config_set_if_not_set(me->cfg,"my_ip", "127.0.0.1");
     config_set_if_not_set(me->cfg,"pwp_listen_port", "6881");
     config_set_if_not_set(me->cfg,"max_peer_connections", "10");
-    config_set_if_not_set(me->cfg,"select_timeout_msec", "1000");
     config_set_if_not_set(me->cfg,"max_active_peers", "4");
     config_set_if_not_set(me->cfg,"tracker_scrape_interval", "10");
     config_set_if_not_set(me->cfg,"max_pending_requests", "10");
