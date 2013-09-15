@@ -169,6 +169,7 @@ typedef struct {
     int choking;
     int choked;
     int download_rate;
+    int upload_rate;
 } peer_stats_t;
 
 void __FUNC_peer_stats(void* caller, void* peer, void* udata)
@@ -184,6 +185,7 @@ void __FUNC_peer_stats(void* caller, void* peer, void* udata)
         stats->failed_connection++;
 
     stats->download_rate += pwp_conn_get_download_rate(p->pc);
+    stats->upload_rate += pwp_conn_get_upload_rate(p->pc);
 
     stats->peers++;
 }
@@ -763,7 +765,8 @@ cleanup:
             bt_piecedb_get_num_downloaded(bt_client_get_piecedb(me)),
             bt_piecedb_get_num_completed(bt_client_get_piecedb(me)),
             bt_piecedb_get_length(bt_client_get_piecedb(me)),
-            stat.download_rate / 1000
+            stat.download_rate / 1000,
+            stat.upload_rate / 1000
             );
 
     return;

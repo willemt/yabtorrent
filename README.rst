@@ -22,3 +22,7 @@ $waf configure
 
 $waf build
 
+Usage
+-----
+
+$./yabtorrent torrentfile.torrent
