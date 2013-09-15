@@ -762,7 +762,7 @@ cleanup:
             stat.choked,
             bt_piecedb_get_num_downloaded(bt_client_get_piecedb(me)),
             bt_piecedb_get_num_completed(bt_client_get_piecedb(me)),
-            bt_piecedb_get_size(bt_client_get_piecedb(me)),
+            bt_piecedb_get_length(bt_client_get_piecedb(me)),
             stat.download_rate / 1000
             );
 
