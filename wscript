@@ -185,9 +185,12 @@ def build(bld):
             "sha1.c",
             cp+"CBag/bag.c",
             cp+"CHeap/heap.c",
+            cp+"CConfig-re/list.c",
+            cp+"CConfig-re/config.c",
+            cp+"CBitfield/bitfield.c",
+            cp+"CMeanQueue/meanqueue.c",
             cp+"CPSeudoLRU/pseudolru.c",
             cp+"CEventTimer/event_timer.c",
-            cp+"CBitfield/bitfield.c",
             cp+"CSimpleBitstream/bitstream.c",
             cp+"CSparseCounter/sparse_counter.c",
             cp+"CHeaplessBencodeReader/bencode.c",
@@ -197,9 +200,6 @@ def build(bld):
             cp+"CLinkedListQueue/linked_list_queue.c",
             cp+"CHashMapViaLinkedList/linked_list_hashmap.c",
             cp+"CSparseFileAllocator/sparsefile_allocator.c",
-            cp+"CConfig-re/list.c",
-            cp+"CConfig-re/config.c",
-            cp+"CTorrentFileReader/torrentfile_reader.c",
             ],
         #bt_diskmem.c
         #CCircularBuffer/cbuffer.c
@@ -222,6 +222,7 @@ def build(bld):
             cp+"CConfig-re",
             cp+"CBTTrackerClient",
             cp+"CBag",
+            cp+"CMeanQueue",
            ], 
         cflags=[
             '-Werror',
