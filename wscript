@@ -30,9 +30,8 @@ def configure(conf):
         conf.check_cc(lib='ws2_32')
         conf.check_cc(lib='psapi')
 
-    #conf.env.STDLIBPATH = ['/home/WThiart/projects/YABTorrent/libuv']
-    conf.check_cc(lib='uv')
-#        stdlibpath='/home/WThiart/projects/YABTorrent/libuv')
+    conf.env.STDLIBPATH = ['.']
+#    conf.check_cc(lib='uv')
 
     # Get the required contributions via GIT
     for c in contribs:
