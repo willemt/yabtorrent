@@ -85,7 +85,7 @@ static void __log(void *udata, void *src, char *buf)
     int fd = (unsigned long) udata;
     struct timeval tv;
 
-#if 1 /* debugging */
+#if 0 /* debugging */
     printf(buf);
     printf("\n");
 
