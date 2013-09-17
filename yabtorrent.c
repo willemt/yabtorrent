@@ -244,8 +244,9 @@ static void __on_tc_add_peer(void* callee,
     void* peer_nethandle;
     char ip_string[32];
 
-
     sprintf(ip_string,"%.*s", ip_len, ip);
+
+    printf("adding peer: %s %d\n", ip_string, port);
     
     peer_nethandle = NULL;
 

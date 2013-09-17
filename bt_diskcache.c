@@ -91,7 +91,7 @@ static int __lru_piece_compare(
 }
 
 static void __log(
-    bt_diskcache_t * dc,
+    bt_diskcache_t * me,
     const char *format,
     ...
 )
@@ -100,12 +100,12 @@ static void __log(
 
     va_list args;
 
-    if (!priv(dc)->func_log)
+    if (!priv(me)->func_log)
         return;
 
     va_start(args, format);
     vsprintf(buf, format, args);
-    priv(dc)->func_log(priv(dc)->logger_data, dc, buf);
+    priv(me)->func_log(priv(me)->logger_data, me, buf);
 }
 
 /**
@@ -114,50 +114,50 @@ static void __log(
  * @return always return a mpiece for us to read/write memory from/to
  */
 static mpiece_t *__get_piece(
-    bt_diskcache_t * dc,
+    bt_diskcache_t * me,
     const int idx
 )
 {
     /*  allocate list space if we don't have enough slots */
-    if (priv(dc)->npieces <= idx)
+    if (priv(me)->npieces <= idx)
     {
         int ii;
 
-        ii = priv(dc)->npieces;
-        priv(dc)->npieces = idx + 1;
-        priv(dc)->pieces =
-            realloc(priv(dc)->pieces, sizeof(mpiece_t **) * priv(dc)->npieces);
+        ii = priv(me)->npieces;
+        priv(me)->npieces = idx + 1;
+        priv(me)->pieces =
+            realloc(priv(me)->pieces, sizeof(mpiece_t **) * priv(me)->npieces);
 
-        for (; ii < priv(dc)->npieces; ii++)
+        for (; ii < priv(me)->npieces; ii++)
         {
-            priv(dc)->pieces[ii] = NULL;
+            priv(me)->pieces[ii] = NULL;
         }
     }
 
     /*  if memory isn't allocated yet... */
-    if (!priv(dc)->pieces[idx])
+    if (!priv(me)->pieces[idx])
     {
-        priv(dc)->pieces[idx] = calloc(1, sizeof(mpiece_t));
-        priv(dc)->pieces[idx]->idx = idx;
+        priv(me)->pieces[idx] = calloc(1, sizeof(mpiece_t));
+        priv(me)->pieces[idx]->idx = idx;
     }
 
-    return priv(dc)->pieces[idx];
+    return priv(me)->pieces[idx];
 }
 
 void bt_diskcache_set_func_log(
-    bt_diskcache_t * dc,
+    bt_diskcache_t * me,
     func_log_f log,
     void *udata
 )
 {
-    priv(dc)->func_log = log;
-    priv(dc)->logger_data = udata;
+    priv(me)->func_log = log;
+    priv(me)->logger_data = udata;
 }
 
 /**
  * Dump this piece_idx to the disk */
 static void __diskdump_piece(
-    bt_diskcache_t * dc,
+    bt_diskcache_t * me,
     const int piece_idx
 )
 {
@@ -166,18 +166,16 @@ static void __diskdump_piece(
 
 //    printf("dumping to disk: %d\n", piece_idx);
 
-    mpce = __get_piece(dc, piece_idx);
+    mpce = __get_piece(me, piece_idx);
 
     blk.piece_idx = piece_idx;
     blk.offset = 0;
-    blk.len = priv(dc)->piece_length;
-    priv(dc)->disk->write_block(priv(dc)->disk_udata, dc, &blk, mpce->data);
+    blk.len = priv(me)->piece_length;
+    priv(me)->disk->write_block(priv(me)->disk_udata, me, &blk, mpce->data);
 
-    pseudolru_remove(priv(dc)->lru_piece, (void *) mpce);
+    pseudolru_remove(priv(me)->lru_piece, (void *) mpce);
     free(mpce->data);
     mpce->data = NULL;
-//    priv(dc)->npieces_in_mem -= 1;
-//            __write_block(dc, NULL, &blk, mpce->data);
 }
 
 static int __write_block(
@@ -187,36 +185,35 @@ static int __write_block(
     const void *blkdata
 )
 {
-    bt_diskcache_t *dc = udata;
+    bt_diskcache_t *me = udata;
     mpiece_t *mpce;
 
-    mpce = __get_piece(dc, blk->piece_idx);
+    mpce = __get_piece(me, blk->piece_idx);
 
     /*  malloc memory if we haven't */
     if (!mpce->data)
     {
-//        priv(dc)->npieces_in_mem += 1;
-        mpce->data = calloc(1, priv(dc)->piece_length);
+        mpce->data = calloc(1, priv(me)->piece_length);
         assert(mpce->idx == blk->piece_idx);
     }
 
 #if 0 /* debugging */
-    printf("dc-writeblock: %d %d %d %d\n",
+    printf("me-writeblock: %d %d %d %d\n",
            blk->piece_idx, blk->offset, blk->len,
-           pseudolru_count(priv(dc)->lru_piece));
+           pseudolru_count(priv(me)->lru_piece));
 #endif
 
-    assert(0 < priv(dc)->piece_length);
+    assert(0 < priv(me)->piece_length);
     assert(mpce->data);
 
     memcpy(mpce->data + blk->offset, blkdata, blk->len);
 
     /*  touch piece to show how recent it is */
-    pseudolru_put(priv(dc)->lru_piece, (void *) mpce, (void *) mpce);
+    pseudolru_put(priv(me)->lru_piece, (void *) mpce, (void *) mpce);
 
 #if 0
     /* check if we have enough pieces to write out to disk */
-    if (20 < pseudolru_count(priv(dc)->lru_piece))
+    if (20 < pseudolru_count(priv(me)->lru_piece))
     {
         int ii;
 
@@ -224,8 +221,8 @@ static int __write_block(
 
         for (ii=0; ii < 1; ii++)
         {
-            mpce = pseudolru_pop_lru(priv(dc)->lru_piece);
-            __diskdump_piece(dc, mpce->idx);
+            mpce = pseudolru_pop_lru(priv(me)->lru_piece);
+            __diskdump_piece(me, mpce->idx);
         }
     }
 #endif
@@ -239,24 +236,24 @@ static int __flush_block(
     const bt_block_t * blk
 )
 {
-    bt_diskcache_t *dc = udata;
+    bt_diskcache_t *me = udata;
     mpiece_t *mpce;
 
-    mpce = __get_piece(dc, blk->piece_idx);
+    mpce = __get_piece(me, blk->piece_idx);
 
     if (!mpce->data)
     {
         return 0;
     }
 
-    __diskdump_piece(dc,blk->piece_idx);
+    __diskdump_piece(me,blk->piece_idx);
     //__write_block(udata,caller,blk,blkdata);
 
     return 1;
 }
 
 static void *__get_piece_data_from_disk(
-    bt_diskcache_t * dc,
+    bt_diskcache_t * me,
     const int piece_idx
 )
 {
@@ -264,15 +261,16 @@ static void *__get_piece_data_from_disk(
 
     blk.piece_idx = piece_idx;
     blk.offset = 0;
-    blk.len = priv(dc)->piece_length;
-    return priv(dc)->disk->read_block(priv(dc)->disk_udata, dc, &blk);
+    blk.len = priv(me)->piece_length;
+    return priv(me)->disk->read_block(priv(me)->disk_udata, me, &blk);
 }
 
 /**
- * read data.
+ * Read data
  * Check if we have the data in the cache;
  * Otherwise retrieve the memory from the disk
  * @todo we should let the caller know if pagefaults occur
+ * @return pointer to data; otherwise NULL
  * */
 static void *__read_block(
     void *udata,
@@ -280,35 +278,36 @@ static void *__read_block(
     const bt_block_t * blk
 )
 {
-    bt_diskcache_t *dc = udata;
+    bt_diskcache_t *me = udata;
 
     mpiece_t *mpce;
 
 #if 0 /*  debugging */
-    printf("dc-readblock: %d %d %d\n",
+    printf("me-readblock: %d %d %d\n",
             blk->piece_idx, blk->offset, blk->len);
 #endif
 
-    mpce = __get_piece(dc, blk->piece_idx);
+    mpce = __get_piece(me, blk->piece_idx);
 
-    /*  bring in data from the hard drive */
+    /* do we have the data in memory? */
     if (!mpce->data)
     {
-//        priv(dc)->npieces_in_mem += 1;
-        mpce->data = __get_piece_data_from_disk(dc, blk->piece_idx);
-
-        if (!mpce->data)
+        if (!(mpce->data = __get_piece_data_from_disk(me, blk->piece_idx)))
         {
-            mpce->data = malloc(priv(dc)->piece_length);
+            mpce->data = malloc(priv(me)->piece_length);
             mpce->idx = blk->piece_idx;
-            memset(mpce->data, 0, priv(dc)->piece_length);
+            memset(mpce->data, 0, priv(me)->piece_length);
+        }
+        else
+        {
+            return NULL;
         }
     }
 
     assert(mpce->data);
 
     /*  touch piece to show how recent it is */
-    pseudolru_put(priv(dc)->lru_piece, (void *) mpce, (void *) mpce);
+    pseudolru_put(priv(me)->lru_piece, (void *) mpce, (void *) mpce);
 
     return mpce->data + blk->offset;
 }
@@ -316,17 +315,15 @@ static void *__read_block(
 void *bt_diskcache_new(
 )
 {
-    bt_diskcache_t *dc;
+    bt_diskcache_t *me;
 
-    dc = calloc(1, sizeof(diskcache_private_t));
-    priv(dc)->irw.write_block = __write_block;
-    priv(dc)->irw.read_block = __read_block;
-    priv(dc)->irw.flush_block = __flush_block;
-    priv(dc)->piece_length = 0;
-//    priv(dc)->npieces_in_mem = 0;
-//    priv(dc)->irw.giveup_block = NULL;
-    priv(dc)->lru_piece = pseudolru_initalloc(__lru_piece_compare);
-    return dc;
+    me = calloc(1, sizeof(diskcache_private_t));
+    priv(me)->irw.write_block = __write_block;
+    priv(me)->irw.read_block = __read_block;
+    priv(me)->irw.flush_block = __flush_block;
+    priv(me)->piece_length = 0;
+    priv(me)->lru_piece = pseudolru_initalloc(__lru_piece_compare);
+    return me;
 }
 
 void bt_diskcache_set_size(
@@ -334,10 +331,10 @@ void bt_diskcache_set_size(
     const int piece_bytes_size
 )
 {
-    bt_diskcache_t *dc = dco;
+    bt_diskcache_t *me = dco;
 
     assert(0 < piece_bytes_size);
-    priv(dc)->piece_length = piece_bytes_size;
+    priv(me)->piece_length = piece_bytes_size;
 }
 
 /**
@@ -348,28 +345,28 @@ void bt_diskcache_set_disk_blockrw(
     void *irw_data
 )
 {
-    bt_diskcache_t *dc = dco;
+    bt_diskcache_t *me = dco;
 
     assert(irw->write_block);
     assert(irw->read_block);
-    priv(dc)->disk = irw;
-    priv(dc)->disk_udata = irw_data;
+    priv(me)->disk = irw;
+    priv(me)->disk_udata = irw_data;
 }
 
 bt_blockrw_i *bt_diskcache_get_blockrw(
     void *dco
 )
 {
-    bt_diskcache_t *dc = dco;
+    bt_diskcache_t *me = dco;
 
-    return &priv(dc)->irw;
+    return &priv(me)->irw;
 }
 
 void bt_diskcache_set_piece_length(void* dco, int piece_length)
 {
-    bt_diskcache_t *dc = dco;
+    bt_diskcache_t *me = dco;
 
-    priv(dc)->piece_length = piece_length;
+    priv(me)->piece_length = piece_length;
 }
 
 /**
@@ -378,19 +375,19 @@ void bt_diskcache_disk_dump(
     void *dco
 )
 {
-    bt_diskcache_t *dc = dco;
+    bt_diskcache_t *me = dco;
 
     int ii;
 
-    for (ii = 0; ii < priv(dc)->npieces; ii++)
+    for (ii = 0; ii < priv(me)->npieces; ii++)
     {
         mpiece_t *pce;
 
-        pce = __get_piece(dc, ii);
+        pce = __get_piece(me, ii);
 
         if (pce->data)
         {
-            __diskdump_piece(dc, ii);
+            __diskdump_piece(me, ii);
         }
     }
 }

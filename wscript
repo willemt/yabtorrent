@@ -6,6 +6,7 @@ def options(opt):
 contribs = [
 ('CBag', 'http://github.com/willemt/CBag'),
 ('CHeap','http://github.com/willemt/CHeap'),
+('libuv','http://github.com/joyent/libuv'),
 ('CBitfield', 'http://github.com/willemt/CBitfield'),
 ('CPSeudoLRU','http://github.com/willemt/CPseudoLRU'),
 ('CMeanQueue','http://github.com/willemt/CMeanQueue'),
@@ -16,9 +17,8 @@ contribs = [
 ('CLinkedListQueue', 'http://github.com/willemt/CLinkedListQueue'),
 ('CBTTrackerClient', 'http://github.com/willemt/CBTTrackerClient'),
 ('CSimpleBitstream', 'http://github.com/willemt/CSimpleBitstream'),
-('CTorrentFileReader', 'http://github.com/willemt/CTorrentFileReader'),
-('CSimpleBitstream', 'http://github.com/willemt/CSimpleBitstream'),
 ('CBTPWPConnection', 'http://github.com/willemt/CBTPWPConnection'),
+('CTorrentFileReader', 'http://github.com/willemt/CTorrentFileReader'),
 ('CSparseFileAllocator', 'http://github.com/willemt/CSparseFileAllocator'),
 ('CHashMapViaLinkedList','http://github.com/willemt/CHashMapViaLinkedList'),
 ('CHeaplessBencodeReader', 'http://github.com/willemt/CHeaplessBencodeReader'),
@@ -64,7 +64,6 @@ def unittest(bld, src, ccflag=None):
         bld(rule='sh ../make-tests.sh ../'+src+' > ${TGT}', target="t_"+src)
 
         libs = []
-        libs += ['pthread']
 
         # build the test program
         bld.program(
@@ -102,7 +101,6 @@ def end2end(bld, src, ccflag=None):
     bld(rule='sh make-tests.sh '+src+' > ${TGT}', target="t_"+src)
 
     libs = []
-    libs += ['pthread']
     bld.program(
         source=[
             src,
@@ -140,14 +138,6 @@ def end2end(bld, src, ccflag=None):
         bld(rule='export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:. && ./${SRC}',source=src[:-2])
         #bld(rule='pwd && export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:. && ./'+src[:-2])
 
-
-#def shutdown(bld):
-#    pass
-#    from waflib.UnitTest import UnitTest
-#    unittest = UnitTest.unit_test()
-#    unittest.run ()
-#    unittest.print_results()
-
 def build(bld):
 
     cp = bld.env.CONTRIB_PATH
@@ -160,8 +150,6 @@ def build(bld):
         platform = ''
 
     libs = []
-    if sys.platform == 'win32':
-        libs += ['pthread']
 
     bld.shlib(
         source= [
@@ -252,7 +240,6 @@ def build(bld):
         libs += ['psapi']
         libs += ['Iphlpapi']
 
-
     bld.program(
         source=[
             "mt19937ar.c",
@@ -270,8 +257,7 @@ def build(bld):
             '-g',
             '-Werror',
             '-Werror=uninitialized',
-            '-Werror=return-type',
-            '-pthread',
+            '-Werror=return-type'
             ],
         stlibpath = ['./libuv','.'],
         lib = libs,

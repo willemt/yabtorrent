@@ -54,25 +54,26 @@ typedef struct {
     //uv_tcp_t* socket;
 } connection_attempt_t;
 
-static uv_buf_t __alloc_cb(uv_handle_t* handle, size_t size)
+static void __alloc_cb(uv_handle_t* handle, size_t size, uv_buf_t* buf)
 {
-  return uv_buf_init(malloc(size), size);
+    buf->len = size;
+    buf->base = malloc(size);
 }
 
-static void __read_cb(uv_stream_t* tcp, ssize_t nread, uv_buf_t buf)
+static void __read_cb(uv_stream_t* tcp, ssize_t nread, const uv_buf_t* buf)
 {
     connection_attempt_t *ca = tcp->data;
 
     if (nread >= 0)
     {
-        ca->func_process_data(ca->callee, ca, buf.base, nread);
+        ca->func_process_data(ca->callee, ca, buf->base, nread);
     }
     else
     {
 
     }
 
-    free(buf.base);
+    free(buf->base);
 }
 
 static void __write_cb(uv_write_t *req, int status)
@@ -92,8 +93,8 @@ static void __on_connect(uv_connect_t *req, int status)
 
     if (status == -1)
     {
-        fprintf(stderr, "connect callback error %s\n",
-                uv_err_name(uv_last_error(uv_default_loop())));
+//        fprintf(stderr, "connect callback error %s\n",
+//                uv_err_name(uv_last_error(uv_default_loop())));
         ca->func_process_connection_fail(ca->callee,ca);
         return;
     }
@@ -116,9 +117,9 @@ int peer_connect(void* caller,
         void (*func_process_connection) (void *, void* nethandle, char *ip, int iplen),
         void (*func_connection_failed) (void *, void* nethandle))
 {
-    uv_connect_t *connect_req;
-    uv_tcp_t *socket;
-    struct sockaddr_in addr;
+    uv_connect_t *c;
+    uv_tcp_t *t;
+    struct sockaddr addr;
     connection_attempt_t *ca;
 
     *nethandle = ca = calloc(1,sizeof(connection_attempt_t));
@@ -131,18 +132,18 @@ int peer_connect(void* caller,
     printf("connecting to: %lx %s:%d\n", ca, host, port);
 #endif
     
-    addr = uv_ip4_addr(host, port);
-    connect_req = malloc(sizeof(uv_connect_t));
-    connect_req->data = ca;
-    socket = malloc(sizeof(uv_tcp_t));
-
-    if (0 != uv_tcp_init(uv_default_loop(), socket))
+    t = malloc(sizeof(uv_tcp_t));
+    if (0 != uv_tcp_init(uv_default_loop(), t))
     {
         printf("FAILED TCP socket creation\n");
         return 0;
     }
 
-    if (0 != uv_tcp_connect(connect_req, socket, addr, __on_connect))
+    uv_ip4_addr(host, port, (struct sockaddr_in*)&addr);
+
+    c = malloc(sizeof(uv_connect_t));
+    c->data = ca;
+    if (0 != uv_tcp_connect(c, t, &addr, __on_connect))
     {
         printf("FAILED connection creation\n");
         return 0;
