@@ -217,6 +217,7 @@ def build(bld):
             '-g',
             platform,
             '-Werror=uninitialized',
+            '-Werror=pointer-to-int-cast',
             '-Werror=return-type',
             '-Wcast-align'],
         )
@@ -257,6 +258,7 @@ def build(bld):
             '-g',
             '-Werror',
             '-Werror=uninitialized',
+            '-Werror=pointer-to-int-cast',
             '-Werror=return-type'
             ],
         stlibpath = ['./libuv','.'],

@@ -262,7 +262,8 @@ void bt_client_peer_connect(void *bto, void* nethandle, char *ip, const int port
 
         if (!peer)
         {
-            fprintf(stderr, "cant add peer %s:%d %lx\n", ip, port, nethandle);
+            fprintf(stderr, "cant add peer %s:%d %lx\n",
+                    ip, port, (unsigned long int)nethandle);
             return;
         }
     }
@@ -433,7 +434,7 @@ static int __FUNC_peerconn_pollblock(
 
     while (1)
     {
-        idx = ((int)bag_take(me->p_candidates)) - 1;
+        idx = ((unsigned long int)bag_take(me->p_candidates)) - 1;
         if (-1 == idx)
         {
             return -1;

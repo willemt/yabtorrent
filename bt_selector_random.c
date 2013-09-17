@@ -251,7 +251,7 @@ int bt_random_selector_poll_best_piece(
 
     while (0 < bag_count(pr->p_candidates))
     {
-        piece_idx = ((int)bag_take(pr->p_candidates)) - 1;
+        piece_idx = ((unsigned long int)bag_take(pr->p_candidates)) - 1;
 
         if (!(hashmap_get(rf->p_polled, (void *) (long) piece_idx + 1)))
         {
