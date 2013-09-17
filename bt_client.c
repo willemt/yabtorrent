@@ -766,8 +766,8 @@ cleanup:
             bt_piecedb_get_num_downloaded(bt_client_get_piecedb(me)),
             bt_piecedb_get_num_completed(bt_client_get_piecedb(me)),
             bt_piecedb_get_length(bt_client_get_piecedb(me)),
-            stat.download_rate / 1000,
-            stat.upload_rate / 1000
+            stat.download_rate == 0 ? 0 : stat.download_rate / 1000,
+            stat.upload_rate == 0 ? 0 : stat.upload_rate / 1000
             );
 
     return;
