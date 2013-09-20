@@ -750,11 +750,12 @@ void bt_client_periodic(void* bto)
     bt_peermanager_forall(me->pm,me,NULL,__FUNC_peer_periodic);
 
     /* TODO: dispatch eventtimer events */
-    peer_stats_t stat;
 
 cleanup:
 
 //    bt_piecedb_print_pieces_downloaded(bt_client_get_piecedb(me));
+#if 0
+    peer_stats_t stat;
     memset(&stat,0,sizeof(peer_stats_t));
     bt_peermanager_forall(me->pm,me,&stat,__FUNC_peer_stats);
     printf("peers: %d (active:%d choking:%d failed:%d) "
@@ -769,6 +770,7 @@ cleanup:
             stat.download_rate == 0 ? 0 : stat.download_rate / 1000,
             stat.upload_rate == 0 ? 0 : stat.upload_rate / 1000
             );
+#endif
 
     return;
 }
