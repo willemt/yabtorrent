@@ -536,7 +536,7 @@ void TestBT_Peer_three_share_all_pieces_between_each_other(
     CuAssertTrue(tc, 1 == bt_piecedb_all_pieces_are_complete(bt_client_get_piecedb(c->bt)));
 }
 
-void TestBT_Peer_share_50_pieces(
+void TestBT_Peer_share_20_pieces(
     CuTest * tc
 )
 {
