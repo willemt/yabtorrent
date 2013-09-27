@@ -622,7 +622,7 @@ static void __FUNC_peerconn_write_block_to_stream(
     bt_piece_write_block_to_stream(pce, blk, msg);
 }
 
-pwp_connection_functions_t funcs = {
+pwp_conn_functions_t funcs = {
     .log = __FUNC_log,
     .send = __FUNC_peerconn_send_to_peer,
     .getpiece = __FUNC_get_piece,
