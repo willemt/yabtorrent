@@ -1,5 +1,5 @@
 
-//#include "bt_block_readwriter_i.h"
+typedef void* bt_client_t;
 
 typedef int (
     *func_object_get_int_f
@@ -220,35 +220,35 @@ void bt_client_peer_connect_fail(void *bto, void* nethandle);
 
 void bt_client_peer_connect(void *bto, void* nethandle, char *ip, const int port);
 
-void bt_client_set_piece_db(void* bto, bt_piecedb_i* ipdb, void* piecedb);
+void bt_client_set_piece_db(bt_client_t* me_, bt_piecedb_i* ipdb, void* piecedb);
 
-void bt_client_set_piece_db(void* bto, bt_piecedb_i* ipdb, void* piecedb);
+void bt_client_set_piece_db(bt_client_t* me_, bt_piecedb_i* ipdb, void* piecedb);
 
 char *bt_generate_peer_id();
 
 void *bt_client_new();
 
-int bt_client_get_num_peers(void *bto);
+int bt_client_get_num_peers(bt_client_t* me_);
 
-int bt_client_get_num_pieces(void *bto);
+int bt_client_get_num_pieces(bt_client_t* me_);
 
-int bt_client_get_total_file_size(void *bto);
+int bt_client_get_total_file_size(bt_client_t* me_);
 
-char *bt_client_get_fail_reason(void *bto);
+char *bt_client_get_fail_reason(bt_client_t* me_);
 
-int bt_client_get_nbytes_downloaded(void *bto);
+int bt_client_get_nbytes_downloaded(bt_client_t* me_);
 
-int bt_client_is_failed(void *bto);
+int bt_client_is_failed(bt_client_t* me_);
 
-void *bt_client_get_piecedb(void *bto);
+void *bt_client_get_piecedb(bt_client_t* me_);
 
-void *bt_client_add_peer(void *bto,
+void *bt_client_add_peer(bt_client_t* me_,
                               const char *peer_id,
                               const int peer_id_len,
                               const char *ip, const int ip_len, const int port,
                               void* nethandle);
 
-void* bt_client_get_config(void *bto);
+void* bt_client_get_config(bt_client_t* me_);
 
 char *str2sha1hash(const char *str, int len);
 

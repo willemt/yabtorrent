@@ -132,7 +132,7 @@ typedef struct
     /*  pieces */
     bag_t *p_candidates;
 
-} bt_client_t;
+} bt_client_private_t;
 
 static int __FUNC_peerconn_send_to_peer(void *bto,
                                         const void* pc_peer,
@@ -141,7 +141,7 @@ static int __FUNC_peerconn_send_to_peer(void *bto,
 
 static void __log(void *bto, void *src, const char *fmt, ...)
 {
-    bt_client_t *me = bto;
+    bt_client_private_t *me = bto;
     char buf[1024];
     va_list args;
 
@@ -199,7 +199,7 @@ int bt_client_dispatch_from_buffer(
         const unsigned char* buf,
         unsigned int len)
 {
-    bt_client_t *me = bto;
+    bt_client_private_t *me = bto;
     bt_peer_t* peer;
 
     /* get the peer that this message is for via nethandle */
@@ -235,7 +235,7 @@ int bt_client_dispatch_from_buffer(
 
 void bt_client_peer_connect_fail(void *bto, void* nethandle)
 {
-    bt_client_t *me = bto;
+    bt_client_private_t *me = bto;
     bt_peer_t *peer;
 
     peer = bt_peermanager_nethandle_to_peer(me->pm, nethandle);
@@ -250,7 +250,7 @@ void bt_client_peer_connect_fail(void *bto, void* nethandle)
 
 void bt_client_peer_connect(void *bto, void* nethandle, char *ip, const int port)
 {
-    bt_client_t *me = bto;
+    bt_client_private_t *me = bto;
     bt_peer_t *peer;
 
     peer = bt_peermanager_nethandle_to_peer(me->pm, nethandle);
@@ -258,7 +258,7 @@ void bt_client_peer_connect(void *bto, void* nethandle, char *ip, const int port
     /* this is the first time we have come across this peer */
     if (!peer)
     {
-        peer = bt_client_add_peer(me, "", 0, ip, strlen(ip), port, nethandle);
+        peer = bt_client_add_peer((bt_client_t*)me, "", 0, ip, strlen(ip), port, nethandle);
 
         if (!peer)
         {
@@ -277,7 +277,7 @@ void bt_client_peer_connect(void *bto, void* nethandle, char *ip, const int port
 //    __log(bto,NULL,"CONNECTED: peerid:%d ip:%s", netpeerid, ip);
 }
 
-static void __log_process_info(bt_client_t * me)
+static void __log_process_info(bt_client_private_t * me)
 {
     static long int last_run = 0;
     struct timeval tv;
@@ -337,7 +337,7 @@ static bt_choker_peer_i iface_choker_peer = {
 
 static void __leecher_peer_reciprocation(void *bto)
 {
-    bt_client_t *me = bto;
+    bt_client_private_t *me = bto;
 
     bt_leeching_choker_decide_best_npeers(me->lchoke);
     eventtimer_push_event(me->ticker, 10, me, __leecher_peer_reciprocation);
@@ -345,7 +345,7 @@ static void __leecher_peer_reciprocation(void *bto)
 
 static void __leecher_peer_optimistic_unchoke(void *bto)
 {
-    bt_client_t *me = bto;
+    bt_client_private_t *me = bto;
 
     bt_leeching_choker_optimistically_unchoke(me->lchoke);
     eventtimer_push_event(me->ticker, 30, me, __leecher_peer_optimistic_unchoke);
@@ -353,7 +353,7 @@ static void __leecher_peer_optimistic_unchoke(void *bto)
 
 static void __FUNC_log(void *bto, void *src, const char *fmt, ...)
 {
-    bt_client_t *me = bto;
+    bt_client_private_t *me = bto;
     char buf[1024], *p;
     va_list args;
 
@@ -379,14 +379,14 @@ static int __FUNC_peerconn_send_to_peer(void *bto,
                                         const int len)
 {
     const bt_peer_t * peer = pc_peer;
-    bt_client_t *me = bto;
+    bt_client_private_t *me = bto;
 
     assert(peer);
     assert(me->func.peer_send);
     return me->func.peer_send(me, &me->net_udata, peer->nethandle, data, len);
 }
 
-int __fill_bag(bt_client_t *me, void* peer)
+int __fill_bag(bt_client_private_t *me, void* peer)
 {
     int idx;
     bt_piece_t* pce;
@@ -414,7 +414,7 @@ static int __FUNC_peerconn_pollblock(
         void *bto, void* peer, void* bitfield, bt_block_t * blk)
 {
     bitfield_t * peer_bitfield = bitfield;
-    bt_client_t *me = bto;
+    bt_client_private_t *me = bto;
     int idx;
     bt_piece_t* pce;
 
@@ -487,7 +487,7 @@ static void __FUNC_peerconn_send_have(void* caller, void* peer, void* udata)
 
 static void* __FUNC_get_piece(void* caller, unsigned int idx)
 {
-    bt_client_t *me = caller;
+    bt_client_private_t *me = caller;
     void* pce;
 
     pce = me->ipdb->get_piece(me->pdb, idx);
@@ -505,7 +505,7 @@ int __FUNC_peerconn_pushblock(void *bto,
                                     const void *data)
 {
     bt_peer_t * peer = pr;
-    bt_client_t *me = bto;
+    bt_client_private_t *me = bto;
     bt_piece_t *pce;
 
     assert(me->ipdb->get_piece);
@@ -554,7 +554,7 @@ int __FUNC_peerconn_pushblock(void *bto,
 
 void __FUNC_peerconn_log(void *bto, void *src_peer, const char *buf, ...)
 {
-    bt_client_t *me = bto;
+    bt_client_private_t *me = bto;
     bt_peer_t *peer = src_peer;
     char buffer[256];
 
@@ -565,7 +565,7 @@ void __FUNC_peerconn_log(void *bto, void *src_peer, const char *buf, ...)
 int __FUNC_peerconn_disconnect(void *bto,
         void* pr, char *reason)
 {
-    bt_client_t *me = bto;
+    bt_client_private_t *me = bto;
     bt_peer_t * peer = pr;
 
     __log(bto,NULL,"disconnecting,%s", reason);
@@ -576,7 +576,7 @@ int __FUNC_peerconn_disconnect(void *bto,
 
 static int __FUNC_peerconn_pieceiscomplete(void *bto, void *piece)
 {
-    bt_client_t *me = bto;
+    bt_client_private_t *me = bto;
     bt_piece_t *pce = piece;
     int r, status;
 
@@ -590,7 +590,7 @@ static void __FUNC_peerconn_peer_have_piece(
         int idx
         )
 {
-    bt_client_t *me = bt;
+    bt_client_private_t *me = bt;
 
     me->ips.peer_have_piece(me->pselector, peer, idx);
 }
@@ -601,7 +601,7 @@ static void __FUNC_peerconn_giveback_block(
         bt_block_t* b
         )
 {
-    bt_client_t *me = bt;
+    bt_client_private_t *me = bt;
     void* pce;
 
     if (b->len < 0)
@@ -640,13 +640,13 @@ pwp_conn_functions_t funcs = {
  * Initiate connection with 
  * @return freshly created bt_peer
  */
-void *bt_client_add_peer(void *bto,
+void *bt_client_add_peer(bt_client_t* me_,
                               const char *peer_id,
                               const int peer_id_len,
                               const char *ip, const int ip_len, const int port,
                               void* nethandle)
 {
-    bt_client_t *me = bto;
+    bt_client_private_t *me = (void*)me_;
     bt_peer_t* peer;
 
     /*  ensure we aren't adding ourselves as a peer */
@@ -722,9 +722,9 @@ void *bt_client_add_peer(void *bto,
  * @todo add disconnection functionality
  * @return 1 on sucess; otherwise 0
  */
-int bt_client_remove_peer(void *bto, void* pr)
+int bt_client_remove_peer(bt_client_t* me_, void* pr)
 {
-    bt_client_t* me = bto;
+    bt_client_private_t* me = (void*)me_;
     bt_peer_t* peer = pr;
 
     bt_peermanager_remove_peer(me->pm,peer);
@@ -733,9 +733,9 @@ int bt_client_remove_peer(void *bto, void* pr)
     return 1;
 }
 
-void bt_client_periodic(void* bto)
+void bt_client_periodic(bt_client_t* me_)
 {
-    bt_client_t *me = bto;
+    bt_client_private_t *me = (void*)me_;
     int ii;
 
     __log_process_info(me);
@@ -775,9 +775,9 @@ cleanup:
     return;
 }
 
-void* bt_client_get_config(void *bto)
+void* bt_client_get_config(bt_client_t* me_)
 {
-    bt_client_t *me = bto;
+    bt_client_private_t *me = (void*)me_;
 
     return me->cfg;
 }
@@ -785,9 +785,9 @@ void* bt_client_get_config(void *bto)
 /**
  * Set the logging function
  */
-void bt_client_set_logging(void *bto, void *udata, func_log_f func)
+void bt_client_set_logging(bt_client_t* me_, void *udata, func_log_f func)
 {
-    bt_client_t *me = bto;
+    bt_client_private_t *me = (void*)me_;
 
     me->func_log = func;
     me->log_udata = udata;
@@ -796,9 +796,9 @@ void bt_client_set_logging(void *bto, void *udata, func_log_f func)
 /**
  * Set callback functions
  */
-void bt_client_set_funcs(void *bto, bt_client_funcs_t * func, void* caller)
+void bt_client_set_funcs(bt_client_t* me_, bt_client_funcs_t * func, void* caller)
 {
-    bt_client_t *me = bto;
+    bt_client_private_t *me = (void*)me_;
 
     memcpy(&me->func, func, sizeof(bt_client_funcs_t));
     me->net_udata = caller;
@@ -807,16 +807,16 @@ void bt_client_set_funcs(void *bto, bt_client_funcs_t * func, void* caller)
 /**
  * @return number of peers this client is involved with
  */
-int bt_client_get_num_peers(void *bto)
+int bt_client_get_num_peers(bt_client_t* me_)
 {
-    bt_client_t *me = bto;
+    bt_client_private_t *me = (void*)me_;
 
     return bt_peermanager_count(me->pm);
 }
 
-void *bt_client_get_piecedb(void *bto)
+void *bt_client_get_piecedb(bt_client_t* me_)
 {
-    bt_client_t *me = bto;
+    bt_client_private_t *me = (void*)me_;
 
     return me->pdb;
 }
@@ -829,9 +829,9 @@ void *bt_client_get_piecedb(void *bto)
  */
 void *bt_client_new()
 {
-    bt_client_t *me;
+    bt_client_private_t *me;
 
-    me = calloc(1, sizeof(bt_client_t));
+    me = calloc(1, sizeof(bt_client_private_t));
 
     /* default configuration */
     me->cfg = config_new();
@@ -914,17 +914,17 @@ void *bt_client_new()
     return me;
 }
 
-void bt_client_set_piece_selector(void* bto, bt_pieceselector_i* ips, void* piece_selector)
+void bt_client_set_piece_selector(bt_client_t* me_, bt_pieceselector_i* ips, void* piece_selector)
 {
-    bt_client_t* me = bto;
+    bt_client_private_t* me = (void*)me_;
 
     memcpy(&me->ips, ips, sizeof(bt_pieceselector_i));
     me->pselector = piece_selector;
 }
 
-void bt_client_set_piece_db(void* bto, bt_piecedb_i* ipdb, void* piece_db)
+void bt_client_set_piece_db(bt_client_t* me_, bt_piecedb_i* ipdb, void* piece_db)
 {
-    bt_client_t* me = bto;
+    bt_client_private_t* me = (void*)me_;
 
     me->ipdb = ipdb;
     me->pdb = piece_db;
@@ -942,9 +942,8 @@ void *bt_peer_get_nethandle(void* pr)
  * Close all peer connections
  * @todo add destructors
  */
-int bt_client_release(void *bto)
+int bt_client_release(bt_client_t* me_)
 {
     return 1;
 }
-
 
