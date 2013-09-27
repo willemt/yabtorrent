@@ -240,6 +240,10 @@ def build(bld):
         libs += ['ws2_32']
         libs += ['psapi']
         libs += ['Iphlpapi']
+    else:
+        libs += ['dl']
+        libs += ['rt']
+        libs += ['pthread']
 
     bld.program(
         source=[
