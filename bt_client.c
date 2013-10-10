@@ -134,6 +134,19 @@ typedef struct
 
 } bt_client_private_t;
 
+/**
+ * Peer stats
+ * Used for collecting statistics on peers.
+ * This is populated by __FUNC_peer_stats_visitor */
+typedef struct {
+    int failed_connection;
+    int connected;
+    int peers;
+    int choking;
+    int download_rate;
+    int upload_rate;
+} peer_stats_t;
+
 static int __FUNC_peerconn_send_to_peer(void *bto,
                                         const void* pc_peer,
                                         const void *data,
@@ -162,16 +175,10 @@ void __FUNC_peer_periodic(void* caller, void* peer, void* udata)
     pwp_conn_periodic(p->pc);
 }
 
-typedef struct {
-    int failed_connection;
-    int connected;
-    int peers;
-    int choking;
-    int download_rate;
-    int upload_rate;
-} peer_stats_t;
-
-void __FUNC_peer_stats(void* caller, void* peer, void* udata)
+/**
+ * Peer stats visitor
+ * Processes each peer connection retrieving stats */
+void __FUNC_peer_stats_visitor(void* caller, void* peer, void* udata)
 {
     peer_stats_t *stats = udata;
     bt_peer_t* p = peer;
@@ -182,10 +189,8 @@ void __FUNC_peer_stats(void* caller, void* peer, void* udata)
         stats->connected++;
     if (pwp_conn_flag_is_set(p->pc, PC_FAILED_CONNECTION))
         stats->failed_connection++;
-
     stats->download_rate += pwp_conn_get_download_rate(p->pc);
     stats->upload_rate += pwp_conn_get_upload_rate(p->pc);
-
     stats->peers++;
 }
 
@@ -757,7 +762,7 @@ cleanup:
 #if 0
     peer_stats_t stat;
     memset(&stat,0,sizeof(peer_stats_t));
-    bt_peermanager_forall(me->pm,me,&stat,__FUNC_peer_stats);
+    bt_peermanager_forall(me->pm,me,&stat,__FUNC_peer_stats_visitor);
     printf("peers: %d (active:%d choking:%d failed:%d) "
             "downloaded:%d completed:%d/%d dl:%dKB/s ul:%dKB/s\n",
             stat.peers,
@@ -821,6 +826,18 @@ void *bt_client_get_piecedb(bt_client_t* me_)
     return me->pdb;
 }
 
+void bt_client_set_piece_selector(bt_client_t* me_, bt_pieceselector_i* ips, void* piece_selector)
+{
+    bt_client_private_t* me = (void*)me_;
+
+    memcpy(&me->ips, ips, sizeof(bt_pieceselector_i));
+
+    if (!piece_selector)
+        me->pselector = me->ips.new(0);
+    else
+        me->pselector = piece_selector;
+}
+
 /**
  * Initiliase the bittorrent client
  *
@@ -875,52 +892,23 @@ void *bt_client_new()
     eventtimer_push_event(me->ticker, 30, me, __leecher_peer_optimistic_unchoke);
 
     /* Selector */
-#if 0
-    me->ips.new = bt_rarestfirst_selector_new,
-    me->ips.offer_piece = bt_rarestfirst_selector_offer_piece,
-    me->ips.have_piece = bt_rarestfirst_selector_have_piece,
-    me->ips.remove_peer = bt_rarestfirst_selector_remove_peer,
-    me->ips.add_peer = bt_rarestfirst_selector_add_peer,
-    me->ips.peer_have_piece = bt_rarestfirst_selector_peer_have_piece,
-    me->ips.get_npeers = bt_rarestfirst_selector_get_npeers,
-    me->ips.get_npieces = bt_rarestfirst_selector_get_npieces,
-    me->ips.poll_piece = bt_rarestfirst_selector_poll_best_piece
-#endif
-#if 1
-    me->ips.new = bt_random_selector_new;
-    me->ips.peer_giveback_piece = bt_random_selector_giveback_piece;
-    me->ips.have_piece = bt_random_selector_have_piece;
-    me->ips.remove_peer = bt_random_selector_remove_peer;
-    me->ips.add_peer = bt_random_selector_add_peer;
-    me->ips.peer_have_piece = bt_random_selector_peer_have_piece;
-    me->ips.get_npeers = bt_random_selector_get_npeers;
-    me->ips.get_npieces = bt_random_selector_get_npieces;
-    me->ips.poll_piece = bt_random_selector_poll_best_piece;
-#endif
-#if 0
-    me->ips.new = bt_sequential_selector_new;
-    me->ips.peer_giveback_piece = bt_sequential_selector_giveback_piece;
-    me->ips.have_piece = bt_sequential_selector_have_piece;
-    me->ips.remove_peer = bt_sequential_selector_remove_peer;
-    me->ips.add_peer = bt_sequential_selector_add_peer;
-    me->ips.peer_have_piece = bt_sequential_selector_peer_have_piece;
-    me->ips.get_npeers = bt_sequential_selector_get_npeers;
-    me->ips.get_npieces = bt_sequential_selector_get_npieces;
-    me->ips.poll_piece = bt_sequential_selector_poll_best_piece;
-#endif
+    bt_pieceselector_i ips = {
+        .new = bt_random_selector_new,
+        .peer_giveback_piece = bt_random_selector_giveback_piece,
+        .have_piece = bt_random_selector_have_piece,
+        .remove_peer = bt_random_selector_remove_peer,
+        .add_peer = bt_random_selector_add_peer,
+        .peer_have_piece = bt_random_selector_peer_have_piece,
+        .get_npeers = bt_random_selector_get_npeers,
+        .get_npieces = bt_random_selector_get_npieces,
+        .poll_piece = bt_random_selector_poll_best_piece
+    };
 
-    me->pselector = me->ips.new(0);
+    bt_client_set_piece_selector((void*)me, &ips, NULL);
 
     return me;
 }
 
-void bt_client_set_piece_selector(bt_client_t* me_, bt_pieceselector_i* ips, void* piece_selector)
-{
-    bt_client_private_t* me = (void*)me_;
-
-    memcpy(&me->ips, ips, sizeof(bt_pieceselector_i));
-    me->pselector = piece_selector;
-}
 
 void bt_client_set_piece_db(bt_client_t* me_, bt_piecedb_i* ipdb, void* piece_db)
 {
