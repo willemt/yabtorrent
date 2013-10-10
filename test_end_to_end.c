@@ -197,7 +197,9 @@ void TestBT_Peer_shares_all_pieces(
     void* clients;
     char *addr;
 
+	printf("test\n");
     network_setup();
+	printf("test\n");
 
 //    log = open("dump_log", O_CREAT | O_TRUNC | O_RDWR, 0666);
 
