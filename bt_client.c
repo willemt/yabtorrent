@@ -1,6 +1,7 @@
 /**
  * @file
  * @brief Major class tasked with managing downloads
+ *        bt_client works similar to the mediator pattern
  * @author  Willem Thiart himself@willemthiart.com
  * @version 0.1
  *
@@ -826,6 +827,12 @@ void *bt_client_get_piecedb(bt_client_t* me_)
     return me->pdb;
 }
 
+/**
+ * Set the current piece selector
+ * This allows us to use dependency injection to de-couple the
+ * implementation of the piece selector from bt_client
+ * @param ips Struct of function pointers for piece selector operation
+ * @param piece_selector Selector instance. If NULL we call the constructor. */
 void bt_client_set_piece_selector(bt_client_t* me_, bt_pieceselector_i* ips, void* piece_selector)
 {
     bt_client_private_t* me = (void*)me_;
@@ -833,9 +840,13 @@ void bt_client_set_piece_selector(bt_client_t* me_, bt_pieceselector_i* ips, voi
     memcpy(&me->ips, ips, sizeof(bt_pieceselector_i));
 
     if (!piece_selector)
+    {
         me->pselector = me->ips.new(0);
+    }
     else
+    {
         me->pselector = piece_selector;
+    }
 }
 
 /**
