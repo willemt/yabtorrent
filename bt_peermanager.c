@@ -19,9 +19,9 @@
 
 //#include <sys/time.h>
 //#include <stdarg.h>
-//#include "bitfield.h"
 //#include "event_timer.h"
 
+#include "bitfield.h"
 #include "pwp_connection.h"
 
 #include "config.h"
