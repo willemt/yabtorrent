@@ -10,7 +10,6 @@ contribs = [
 ('CBitfield', 'http://github.com/willemt/CBitfield'),
 ('CPSeudoLRU','http://github.com/willemt/CPseudoLRU'),
 ('CMeanQueue','http://github.com/willemt/CMeanQueue'),
-('CBipBuffer', 'http://github.com/willemt/CBipBuffer'),
 ('CConfig-re', 'http://github.com/willemt/CConfig-re'),
 ('CEventTimer', 'http://github.com/willemt/CEventTimer'),
 ('CSparseCounter', 'http://github.com/willemt/CSparseCounter'),
