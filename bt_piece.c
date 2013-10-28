@@ -41,10 +41,10 @@ typedef struct
     int piece_length;
 
     /*  downloaded: we have this block downloaded */
-    void *progress_downloaded;
+    sparsecounter_t *progress_downloaded;
 
     /*  we have requested this block */
-    void *progress_requested;
+    sparsecounter_t *progress_requested;
 
     char *sha1;
 
@@ -301,8 +301,6 @@ int bt_piece_is_downloaded(bt_piece_t * me)
  * @return 1 if complete; 0 otherwise */
 int bt_piece_is_complete(bt_piece_t * me)
 {
-
-    /*  cached the fact it's completed */
     if (priv(me)->is_completed)
     {
         return TRUE;
@@ -318,7 +316,7 @@ int bt_piece_is_complete(bt_piece_t * me)
         }
         else
         {
-//            printf("invalid piece data\n");
+            // printf("invalid piece data\n");
             // TODO: set this to false
             printf("invalid piece: %d\n", me->idx);
             return FALSE;
