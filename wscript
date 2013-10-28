@@ -33,6 +33,8 @@ def configure(conf):
     conf.env.STDLIBPATH = ['.']
 #    conf.check_cc(lib='uv')
 
+    conf.find_program("git")
+
     # Get the required contributions via GIT
     for c in contribs:
         print "Pulling via git %s..." % c[1]
@@ -42,9 +44,18 @@ def configure(conf):
         if not os.path.exists("../"+c[0]):
             conf.env.CONTRIB_PATH = './'
             conf.exec_command("git clone %s %s" % (c[1],c[0],))
+            conf.exec_command("git pull %s" % c[1], cwd=c[0])
         else:
             conf.env.CONTRIB_PATH = '../'
             
+    print "Configuring libuv (autogen.sh)"
+    conf.exec_command("sh autogen.sh", cwd="libuv")
+    print "Configuring libuv (configure)"
+    conf.exec_command("sh configure", cwd="libuv")
+    print "Building libuv.a"
+    conf.exec_command("make", cwd="libuv")
+    conf.exec_command("mkdir build")
+    conf.exec_command("cp libuv/.libs/libuv.a build/")
 
 
 from waflib.Task import Task
@@ -139,8 +150,10 @@ def end2end(bld, src, ccflag=None):
         #bld(rule='pwd && export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:. && ./'+src[:-2])
 
 def build(bld):
-
     cp = bld.env.CONTRIB_PATH
+
+    # Copy libuv.a to build/
+    bld(rule='cp ../libuv/.libs/libuv.a .', always=True)#, target="libuv.a")
 
     if sys.platform == 'win32':
         platform = '-DWIN32'
@@ -222,20 +235,19 @@ def build(bld):
             '-Wcast-align'],
         )
 
-    unittest(bld,"test_bt.c")
-    unittest(bld,"test_peermanager.c")
-    unittest(bld,'test_choker_leecher.c')
-    unittest(bld,'test_choker_seeder.c')
-    unittest(bld,'test_rarestfirst.c')
-    unittest(bld,'test_selector_random.c')
-    unittest(bld,'test_selector_sequential.c')
-    unittest(bld,'test_piece.c',ccflag='-I../'+cp+"CBitfield")
-    unittest(bld,'test_piece_db.c')
-    end2end(bld,'test_end_to_end.c')
+    #unittest(bld,"test_bt.c")
+    #unittest(bld,"test_peermanager.c")
+    #unittest(bld,'test_choker_leecher.c')
+    #unittest(bld,'test_choker_seeder.c')
+    #unittest(bld,'test_rarestfirst.c')
+    #unittest(bld,'test_selector_random.c')
+    #unittest(bld,'test_selector_sequential.c')
+    #unittest(bld,'test_piece.c',ccflag='-I../'+cp+"CBitfield")
+    #unittest(bld,'test_piece_db.c')
+    ##end2end(bld,'test_end_to_end.c')
 
-    libs = []
-    libs += ['yabbt']
-    libs += ['uv']
+
+    libs = ['yabbt','uv']
     if sys.platform == 'win32':
         libs += ['ws2_32']
         libs += ['psapi']

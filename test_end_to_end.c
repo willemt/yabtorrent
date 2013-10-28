@@ -197,9 +197,7 @@ void TestBT_Peer_shares_all_pieces(
     void* clients;
     char *addr;
 
-	printf("test\n");
     network_setup();
-	printf("test\n");
 
 //    log = open("dump_log", O_CREAT | O_TRUNC | O_RDWR, 0666);
 
@@ -251,8 +249,8 @@ void TestBT_Peer_shares_all_pieces(
     __client_add_peer(b,NULL,0,addr,strlen(addr),0);
     //bt_client_add_peer(b->bt,NULL,0,addr,strlen(addr),0, a);
 
-    bt_piecedb_print_pieces_downloaded(bt_client_get_piecedb(a->bt));
-    bt_piecedb_print_pieces_downloaded(bt_client_get_piecedb(b->bt));
+//    bt_piecedb_print_pieces_downloaded(bt_client_get_piecedb(a->bt));
+//    bt_piecedb_print_pieces_downloaded(bt_client_get_piecedb(b->bt));
 
     for (ii=0; ii<10; ii++)
     {
@@ -272,8 +270,8 @@ void TestBT_Peer_shares_all_pieces(
 //        __print_client_contents();
     }
 
-    bt_piecedb_print_pieces_downloaded(bt_client_get_piecedb(a->bt));
-    bt_piecedb_print_pieces_downloaded(bt_client_get_piecedb(b->bt));
+//    bt_piecedb_print_pieces_downloaded(bt_client_get_piecedb(a->bt));
+//    bt_piecedb_print_pieces_downloaded(bt_client_get_piecedb(b->bt));
 
     CuAssertTrue(tc, 1 == bt_piecedb_all_pieces_are_complete(bt_client_get_piecedb(b->bt)));
 }
@@ -502,9 +500,9 @@ void TestBT_Peer_three_share_all_pieces_between_each_other(
 
     bt_client_set_logging(a->bt, 0, __log);
 
-    bt_piecedb_print_pieces_downloaded(bt_client_get_piecedb(a->bt));
-    bt_piecedb_print_pieces_downloaded(bt_client_get_piecedb(b->bt));
-    bt_piecedb_print_pieces_downloaded(bt_client_get_piecedb(c->bt));
+//    bt_piecedb_print_pieces_downloaded(bt_client_get_piecedb(a->bt));
+//    bt_piecedb_print_pieces_downloaded(bt_client_get_piecedb(b->bt));
+//    bt_piecedb_print_pieces_downloaded(bt_client_get_piecedb(c->bt));
 
     for (ii=0; ii<10; ii++)
     {
@@ -529,9 +527,9 @@ void TestBT_Peer_three_share_all_pieces_between_each_other(
 //        __print_client_contents();
     }
 
-    bt_piecedb_print_pieces_downloaded(bt_client_get_piecedb(a->bt));
-    bt_piecedb_print_pieces_downloaded(bt_client_get_piecedb(b->bt));
-    bt_piecedb_print_pieces_downloaded(bt_client_get_piecedb(c->bt));
+//    bt_piecedb_print_pieces_downloaded(bt_client_get_piecedb(a->bt));
+//    bt_piecedb_print_pieces_downloaded(bt_client_get_piecedb(b->bt));
+//    bt_piecedb_print_pieces_downloaded(bt_client_get_piecedb(c->bt));
 
     CuAssertTrue(tc, 1 == bt_piecedb_all_pieces_are_complete(bt_client_get_piecedb(a->bt)));
     CuAssertTrue(tc, 1 == bt_piecedb_all_pieces_are_complete(bt_client_get_piecedb(b->bt)));
@@ -603,8 +601,8 @@ void TestBT_Peer_share_20_pieces(
             bt_client_get_piecedb(a->bt),
             mt, num_pieces);
 
-    bt_piecedb_print_pieces_downloaded(bt_client_get_piecedb(a->bt));
-    bt_piecedb_print_pieces_downloaded(bt_client_get_piecedb(b->bt));
+//    bt_piecedb_print_pieces_downloaded(bt_client_get_piecedb(a->bt));
+//    bt_piecedb_print_pieces_downloaded(bt_client_get_piecedb(b->bt));
 
     for (ii=0; ii<80; ii++)
     {
@@ -625,8 +623,8 @@ void TestBT_Peer_share_20_pieces(
 //        bt_piecedb_print_pieces_downloaded(bt_client_get_piecedb(b->bt));
     }
 
-    bt_piecedb_print_pieces_downloaded(bt_client_get_piecedb(a->bt));
-    bt_piecedb_print_pieces_downloaded(bt_client_get_piecedb(b->bt));
+//    bt_piecedb_print_pieces_downloaded(bt_client_get_piecedb(a->bt));
+//    bt_piecedb_print_pieces_downloaded(bt_client_get_piecedb(b->bt));
 
     CuAssertTrue(tc, 1 == bt_piecedb_all_pieces_are_complete(bt_client_get_piecedb(a->bt)));
     CuAssertTrue(tc, 1 == bt_piecedb_all_pieces_are_complete(bt_client_get_piecedb(b->bt)));

@@ -12,12 +12,9 @@ char *read_file(
 )
 {
     FILE *file;
-
     char *buffer;
-
     unsigned long fileLen;
 
-    //Open file
     file = fopen(name, "rb");
     if (!file)
     {
@@ -25,12 +22,10 @@ char *read_file(
         return NULL;
     }
 
-    //Get file length
     fseek(file, 0, SEEK_END);
     fileLen = ftell(file);
     fseek(file, 0, SEEK_SET);
 
-    //Allocate memory
     if (!(buffer = (char *) malloc(fileLen + 1)))
     {
         fprintf(stderr, "Memory error!\n");
@@ -38,13 +33,10 @@ char *read_file(
         return NULL;
     }
 
-    //Read file contents into buffer
     fread(buffer, fileLen, 1, file);
     fclose(file);
 
     *len = fileLen + 1;
 
     return buffer;
-    //Do what ever with buffer
-//      free(buffer);
 }
