@@ -33,6 +33,8 @@ def configure(conf):
     conf.env.STDLIBPATH = ['.']
 #    conf.check_cc(lib='uv')
 
+    conf.find_program("git")
+
     # Get the required contributions via GIT
     for c in contribs:
         print "Pulling via git %s..." % c[1]
