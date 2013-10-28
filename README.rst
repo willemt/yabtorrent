@@ -19,9 +19,13 @@ Building
 --------
 
 $git clone https://www.github.com/willemt/YABTorrent
+
 $cd YABTorrent
+
 $python waf configure
+
 $python waf build
+
 
 Usage
 -----
