@@ -18,7 +18,7 @@ YABTorrent was spawned by:
 Building
 --------
 
-$git clone https://www.github.com/willemt/YABTorrent
+$git clone https://github.com/willemt/YABTorrent
 
 $cd YABTorrent
 
