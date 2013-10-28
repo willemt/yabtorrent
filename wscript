@@ -235,16 +235,16 @@ def build(bld):
             '-Wcast-align'],
         )
 
-    #unittest(bld,"test_bt.c")
-    #unittest(bld,"test_peermanager.c")
-    #unittest(bld,'test_choker_leecher.c')
-    #unittest(bld,'test_choker_seeder.c')
-    #unittest(bld,'test_rarestfirst.c')
-    #unittest(bld,'test_selector_random.c')
-    #unittest(bld,'test_selector_sequential.c')
-    #unittest(bld,'test_piece.c',ccflag='-I../'+cp+"CBitfield")
-    #unittest(bld,'test_piece_db.c')
-    ##end2end(bld,'test_end_to_end.c')
+    unittest(bld,"test_bt.c")
+    unittest(bld,"test_peermanager.c")
+    unittest(bld,'test_choker_leecher.c')
+    unittest(bld,'test_choker_seeder.c')
+    unittest(bld,'test_rarestfirst.c')
+    unittest(bld,'test_selector_random.c')
+    unittest(bld,'test_selector_sequential.c')
+    unittest(bld,'test_piece.c',ccflag='-I../'+cp+"CBitfield")
+    unittest(bld,'test_piece_db.c')
+    end2end(bld,'test_end_to_end.c')
 
 
     libs = ['yabbt','uv']
