@@ -46,7 +46,7 @@ typedef struct {
                         void* nethandle,
                         const unsigned char* buf,
                         unsigned int len);
-    void (*func_process_connection) (void *, void* nethandle, char *ip, int iplen);
+    int (*func_process_connection) (void *, void* nethandle, char *ip, int iplen);
     void (*func_process_connection_fail) (void *, void* nethandle);
     void* callee;
     /*  socket for sending on */

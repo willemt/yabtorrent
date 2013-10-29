@@ -173,7 +173,7 @@ static int __dispatch_from_buffer(
     return 1;
 }
 
-static void __on_peer_connect(
+static int __on_peer_connect(
         void *callee,
         void* peer_nethandle,
         char *ip,
@@ -184,6 +184,8 @@ static void __on_peer_connect(
     uv_mutex_lock(&bt->mutex);
     bt_dm_peer_connect(bt->bc,peer_nethandle,ip,port);
     uv_mutex_unlock(&bt->mutex);
+
+    return 1;
 }
 
 static void __on_peer_connect_fail(

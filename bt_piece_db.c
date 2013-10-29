@@ -342,12 +342,12 @@ void bt_piecedb_validate_downloaded_pieces(void* bto)
  * print a string of all the downloaded pieces */
 void bt_piecedb_print_pieces_downloaded(bt_piecedb_t * db)
 {
-    int ii, counter, is_complete = 1;
+    int ii, depth, is_complete = 1;
 
-    printf("pieces (%d) downloaded: ", bt_piecedb_get_length(db));
+    printf("pieces (%d) downloaded: \n  ", bt_piecedb_get_length(db));
 
-    for (ii = 0, counter = 20;
-         ii < bt_piecedb_get_length(db); ii++, counter += 1)
+    for (ii = 0, depth = 3;
+         ii < bt_piecedb_get_length(db); ii++, depth += 1)
     {
         bt_piece_t *pce;
 
@@ -363,9 +363,9 @@ void bt_piecedb_print_pieces_downloaded(bt_piecedb_t * db)
             is_complete = 0;
         }
 
-        if (counter == 80)
+        if (depth == 80)
         {
-            counter = 2;
+            depth = 2;
             printf("\n  ");
         }
     }
