@@ -18,8 +18,6 @@
 /* for uint32_t */
 #include <stdint.h>
 
-#include <sys/time.h>
-
 #include <stdarg.h>
 
 #include "bitfield.h"
@@ -221,7 +219,9 @@ void bt_dm_peer_connect_fail(void *bto, void* nethandle)
     pwp_conn_set_state(peer->pc, PC_FAILED_CONNECTION);
 }
 
-void bt_dm_peer_connect(void *bto, void* nethandle, char *ip, const int port)
+/**
+ * @return 0 on error */
+int bt_dm_peer_connect(void *bto, void* nethandle, char *ip, const int port)
 {
     bt_dm_private_t *me = bto;
     bt_peer_t *peer;
@@ -231,13 +231,12 @@ void bt_dm_peer_connect(void *bto, void* nethandle, char *ip, const int port)
     /* this is the first time we have come across this peer */
     if (!peer)
     {
-        peer = bt_dm_add_peer((bt_dm_t*)me, "", 0, ip, strlen(ip), port, nethandle);
-
-        if (!peer)
+        if (!(peer = bt_dm_add_peer((bt_dm_t*)me, "", 0,
+                        ip, strlen(ip), port, nethandle)))
         {
-            fprintf(stderr, "cant add peer %s:%d %lx\n",
-                    ip, port, (unsigned long int)nethandle);
-            return;
+            //fprintf(stderr, "cant add peer %s:%d %lx\n",
+            //        ip, port, (unsigned long int)nethandle);
+            return 0;
         }
     }
 
@@ -248,29 +247,8 @@ void bt_dm_peer_connect(void *bto, void* nethandle, char *ip, const int port)
 
 //    pwp_conn_send_handshake(peer->pc);
 //    __log(bto,NULL,"CONNECTED: peerid:%d ip:%s", netpeerid, ip);
-}
 
-static void __log_process_info(bt_dm_private_t * me)
-{
-    static long int last_run = 0;
-    struct timeval tv;
-
-#define SECONDS_SINCE_LAST_LOG 1
-    gettimeofday(&tv, NULL);
-
-    /*  run every n seconds */
-    if (0 == last_run)
-    {
-        last_run = tv.tv_usec;
-    }
-    else
-    {
-        unsigned int diff = abs(last_run - tv.tv_usec);
-
-        if (diff >= SECONDS_SINCE_LAST_LOG)
-            return;
-        last_run = tv.tv_usec;
-    }
+    return 1;
 }
 
 static int __get_drate(const void *bto, const void *pc)
@@ -658,7 +636,7 @@ void *bt_dm_add_peer(bt_dm_t* me_,
     /* the remote peer will have always send a handshake */
     if (NULL == me->func.peer_connect)
     {
-        fprintf(stderr, "cant add peer, peer_connect function not available\n");
+        //fprintf(stderr, "cant add peer, peer_connect function not available\n");
         return NULL;
     }
 
@@ -713,7 +691,6 @@ void bt_dm_periodic(bt_dm_t* me_, bt_dm_stats_t *stats)
     bt_dm_private_t *me = (void*)me_;
     int ii;
 
-    __log_process_info(me);
 
     /*  shutdown if we are setup to not seed */
     if (1 == me->am_seeding && 1 == config_get_int(me->cfg,"shutdown_when_complete"))
@@ -894,10 +871,10 @@ void *bt_peer_get_nethandle(void* pr)
 /**
  * Release all memory used by the client
  * Close all peer connections
- * @todo add destructors
  */
 int bt_dm_release(bt_dm_t* me_)
 {
+    //TODO add destructors
     return 1;
 }
 

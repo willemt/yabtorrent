@@ -256,7 +256,7 @@ static int __add_new_peer_with_sock(net_t * net, const int fd)
 }
 
 int peer_connect(void **udata, const char *host, const char *port, int *peerid
-        void (*func_process_connection) (void *, void* nethandle, char *ip, int iplen))
+        int (*func_process_connection) (void *, void* nethandle, char *ip, int iplen))
 {
     net_t *net = *udata;
     sock_t *sock;

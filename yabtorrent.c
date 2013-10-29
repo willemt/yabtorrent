@@ -352,6 +352,29 @@ static int __read_torrent_file(bt_t* bt, const char* torrent_file)
     return 1;
 }
 
+static void __log_process_info()
+{
+    static long int last_run = 0;
+    struct timeval tv;
+
+#define SECONDS_SINCE_LAST_LOG 1
+    gettimeofday(&tv, NULL);
+
+    /*  run every n seconds */
+    if (0 == last_run)
+    {
+        last_run = tv.tv_usec;
+    }
+    else
+    {
+        unsigned int diff = abs(last_run - tv.tv_usec);
+
+        if (diff >= SECONDS_SINCE_LAST_LOG)
+            return;
+        last_run = tv.tv_usec;
+    }
+}
+
 static void __bt_periodic(uv_timer_t* handle, int status)
 {
     bt_t* bt = handle->data;
@@ -363,6 +386,8 @@ static void __bt_periodic(uv_timer_t* handle, int status)
         bt_dm_periodic(bt->bc, &stat);
         uv_mutex_unlock(&bt->mutex);
     }
+
+    __log_process_info();
 
 //  bt_piecedb_print_pieces_downloaded(bt_dm_get_piecedb(me));
     printf("peers: %d (active:%d choking:%d failed:%d) "
@@ -468,7 +493,6 @@ int main(int argc, char **argv)
     if (o_torrent_file_report_only)
     {
         __read_torrent_file(&bt, config_get(cfg,"torrent_file"));
-        printf("\n");
     }
 
     if (argc == optind)

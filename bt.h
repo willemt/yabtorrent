@@ -183,8 +183,9 @@ typedef struct
         * @param caller The caller
         * @param nethandle Peer ID 
         * @param ip The IP that connected to us
+        * @return 0 on failure
         */
-        void (*func_process_connection) (
+        int (*func_process_connection) (
             void *caller,
             void *nethandle,
             char *ip,
@@ -228,7 +229,7 @@ void *bt_peer_get_nethandle(void* pr);
 
 void bt_dm_peer_connect_fail(void *bto, void* nethandle);
 
-void bt_dm_peer_connect(void *bto, void* nethandle, char *ip, const int port);
+int bt_dm_peer_connect(void *bto, void* nethandle, char *ip, const int port);
 
 void bt_dm_set_piece_db(bt_dm_t* me_, bt_piecedb_i* ipdb, void* piecedb);
 

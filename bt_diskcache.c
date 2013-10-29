@@ -142,10 +142,7 @@ static void __diskdump_piece(
     bt_block_t blk;
     mpiece_t *mpce;
 
-//    printf("dumping to disk: %d\n", piece_idx);
-
     mpce = __get_piece(me, piece_idx);
-
     blk.piece_idx = piece_idx;
     blk.offset = 0;
     blk.len = priv(me)->piece_length;

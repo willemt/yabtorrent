@@ -176,7 +176,7 @@ int peer_connect(
                         void* nethandle,
                         const unsigned char* buf,
                         unsigned int len),
-        void (*func_process_connection) (void *, void* nethandle, char *ip, int iplen),
+        int (*func_process_connection) (void *, void* nethandle, char *ip, int iplen),
         void (*func_connection_failed) (void *, void* nethandle)
         )
 {

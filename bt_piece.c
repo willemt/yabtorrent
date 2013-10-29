@@ -197,7 +197,9 @@ static void *__get_data(
     /*  fail without disk reading functions */
     if (!priv(me)->disk || !priv(me)->disk->read_block)
     {
+#if 0 /* debugging */
         printf("ERROR: no disk reading functions available\n");
+#endif
         return NULL;
     }
 
@@ -317,7 +319,7 @@ int bt_piece_is_complete(bt_piece_t * me)
         else
         {
             // TODO: set this to false
-            printf("invalid piece: %d\n", me->idx);
+            //printf("invalid piece: %d\n", me->idx);
             return FALSE;
         }
     }
