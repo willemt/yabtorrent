@@ -1,5 +1,5 @@
 
-typedef void* bt_client_t;
+typedef void* bt_dm_t;
 
 typedef int (
     *func_object_get_int_f
@@ -65,6 +65,16 @@ typedef void *(
     const char *fname,
     const int size
 );
+
+typedef struct {
+    /* Peer stats */
+    int failed_connection;
+    int connected;
+    int peers;
+    int choking;
+    int download_rate;
+    int upload_rate;
+} bt_dm_stats_t;
 
 #ifndef HAVE_FUNC_LOG
 #define HAVE_FUNC_LOG
@@ -206,9 +216,9 @@ typedef struct
      */
     int (*peer_disconnect) (void* caller,void **udata, void* nethandle);
 
-} bt_client_funcs_t;
+} bt_dm_funcs_t;
 
-int bt_client_dispatch_from_buffer(
+int bt_dm_dispatch_from_buffer(
         void *bto,
         void *peer_nethandle,
         const unsigned char* buf,
@@ -216,39 +226,40 @@ int bt_client_dispatch_from_buffer(
 
 void *bt_peer_get_nethandle(void* pr);
 
-void bt_client_peer_connect_fail(void *bto, void* nethandle);
+void bt_dm_peer_connect_fail(void *bto, void* nethandle);
 
-void bt_client_peer_connect(void *bto, void* nethandle, char *ip, const int port);
+void bt_dm_peer_connect(void *bto, void* nethandle, char *ip, const int port);
 
-void bt_client_set_piece_db(bt_client_t* me_, bt_piecedb_i* ipdb, void* piecedb);
+void bt_dm_set_piece_db(bt_dm_t* me_, bt_piecedb_i* ipdb, void* piecedb);
 
-void bt_client_set_piece_db(bt_client_t* me_, bt_piecedb_i* ipdb, void* piecedb);
+void bt_dm_set_piece_db(bt_dm_t* me_, bt_piecedb_i* ipdb, void* piecedb);
 
-char *bt_generate_peer_id();
+void *bt_dm_new();
 
-void *bt_client_new();
+int bt_dm_get_num_peers(bt_dm_t* me_);
 
-int bt_client_get_num_peers(bt_client_t* me_);
+int bt_dm_get_num_pieces(bt_dm_t* me_);
 
-int bt_client_get_num_pieces(bt_client_t* me_);
+int bt_dm_get_total_file_size(bt_dm_t* me_);
 
-int bt_client_get_total_file_size(bt_client_t* me_);
+char *bt_dm_get_fail_reason(bt_dm_t* me_);
 
-char *bt_client_get_fail_reason(bt_client_t* me_);
+int bt_dm_get_nbytes_downloaded(bt_dm_t* me_);
 
-int bt_client_get_nbytes_downloaded(bt_client_t* me_);
+int bt_dm_is_failed(bt_dm_t* me_);
 
-int bt_client_is_failed(bt_client_t* me_);
+void bt_dm_periodic(bt_dm_t* me_, bt_dm_stats_t *stats);
 
-void *bt_client_get_piecedb(bt_client_t* me_);
-
-void *bt_client_add_peer(bt_client_t* me_,
+void *bt_dm_add_peer(bt_dm_t* me_,
                               const char *peer_id,
                               const int peer_id_len,
                               const char *ip, const int ip_len, const int port,
                               void* nethandle);
 
-void* bt_client_get_config(bt_client_t* me_);
+void* bt_dm_get_config(bt_dm_t* me_);
 
 char *str2sha1hash(const char *str, int len);
 
+char *bt_generate_peer_id();
+
+void *bt_dm_get_piecedb(bt_dm_t* me_);

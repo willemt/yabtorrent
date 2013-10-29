@@ -1,34 +1,11 @@
 
 /**
+ * Copyright (c) 2011, Willem-Hendrik Thiart
+ * Use of this source code is governed by a BSD-style license that can be
+ * found in the LICENSE file. 
+ *
  * @file
  * @author  Willem Thiart himself@willemthiart.com
- * @version 0.1
- *
- * @section LICENSE
- * Copyright (c) 2011, Willem-Hendrik Thiart
-All rights reserved.
-
-Redistribution and use in source and binary forms, with or without
-modification, are permitted provided that the following conditions are met:
-    * Redistributions of source code must retain the above copyright
-      notice, this list of conditions and the following disclaimer.
-    * Redistributions in binary form must reproduce the above copyright
-      notice, this list of conditions and the following disclaimer in the
-      documentation and/or other materials provided with the distribution.
-    * The names of its contributors may not be used to endorse or promote
-      products derived from this software without specific prior written
-      permission.
-
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
-ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-DISCLAIMED. IN NO EVENT SHALL WILLEM-HENDRIK THIART BE LIABLE FOR ANY
-DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
-(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
-LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
-ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 #include <stdio.h>
@@ -101,7 +78,6 @@ static void __on_tc_add_peer(void* callee,
 static struct option const long_opts[] = {
     { "archive", no_argument, NULL, 'a'},
     /* The bounded network interface for net communications */
-    { "using-interface", required_argument, NULL, 'i'},
     { "verify-download", no_argument, NULL, 'e'},
     { "shutdown-when-complete", no_argument, NULL, 's'},
     { "pwp_listen_port", required_argument, NULL, 'p'},
@@ -116,7 +92,6 @@ static void __log(void *udata, void *src, char *buf)
     struct timeval tv;
 
     gettimeofday(&tv, NULL);
-//    printf("LOG: %s\n", buf);
     sprintf(stamp, "%d,%0.2f,", (int) tv.tv_sec, (float) tv.tv_usec / 100000);
     write(fd, stamp, strlen(stamp));
     write(fd, buf, strlen(buf));
@@ -177,13 +152,6 @@ static void __on_tc_done(void* data, int status)
 {
     bt_t* bt = data;
 
-    printf("tracker done\n");
-
-    if (0 == status)
-    {
-
-    }
-
     if (0 == __trackerclient_try_announces(bt))
     {
         printf("No connections made, quitting\n");
@@ -200,7 +168,7 @@ static int __dispatch_from_buffer(
     bt_t* bt = callee;
 
     uv_mutex_lock(&bt->mutex);
-    bt_client_dispatch_from_buffer(bt->bc,peer_nethandle,buf,len);
+    bt_dm_dispatch_from_buffer(bt->bc,peer_nethandle,buf,len);
     uv_mutex_unlock(&bt->mutex);
     return 1;
 }
@@ -214,7 +182,7 @@ static void __on_peer_connect(
     bt_t* bt = callee;
 
     uv_mutex_lock(&bt->mutex);
-    bt_client_peer_connect(bt->bc,peer_nethandle,ip,port);
+    bt_dm_peer_connect(bt->bc,peer_nethandle,ip,port);
     uv_mutex_unlock(&bt->mutex);
 }
 
@@ -225,7 +193,7 @@ static void __on_peer_connect_fail(
     bt_t* bt = callee;
 
     uv_mutex_lock(&bt->mutex);
-    bt_client_peer_connect_fail(bt->bc,peer_nethandle);
+    bt_dm_peer_connect_fail(bt->bc,peer_nethandle);
     uv_mutex_unlock(&bt->mutex);
 }
 
@@ -244,15 +212,15 @@ static void __on_tc_add_peer(void* callee,
     void* peer_nethandle;
     char ip_string[32];
 
+    peer_nethandle = NULL;
     sprintf(ip_string,"%.*s", ip_len, ip);
 
+#if 0 /* debug */
     printf("adding peer: %s %d\n", ip_string, port);
-    
-    peer_nethandle = NULL;
+#endif
 
     uv_mutex_lock(&bt->mutex);
 
-    /* connect to the peer */
     if (0 == peer_connect(bt,
                 &netdata,
                 &peer_nethandle,
@@ -261,10 +229,10 @@ static void __on_tc_add_peer(void* callee,
                 __on_peer_connect,
                 __on_peer_connect_fail))
     {
-        printf("failed connection to peer");
+
     }
 
-    peer = bt_client_add_peer(bt->bc, peer_id, peer_id_len, ip, ip_len, port, peer_nethandle);
+    peer = bt_dm_add_peer(bt->bc, peer_id, peer_id_len, ip, ip_len, port, peer_nethandle);
 
     uv_mutex_unlock(&bt->mutex);
 }
@@ -283,7 +251,6 @@ Usage: %s [OPTION]... TORRENT_FILE\n", PROGRAM_NAME);
         fputs(("\
 Download torrent indicated by TORRENT_FILE. \n\n\
 Mandatory arguments to long options are mandatory for short options too. \n\
-  -i, --using-interface        network interface to use \n\
   -e, --verify-download        check downloaded files and quit \n\
   -t, --torrent_file_report_only    only report the contents of the torrent file \n\
   -b                                                    \n "), stdout);
@@ -291,12 +258,12 @@ Mandatory arguments to long options are mandatory for short options too. \n\
     }
 }
 
-static int __event(void* udata, const char* key)
+static int __tfr_event(void* udata, const char* key)
 {
     return 1;
 }
 
-static int __event_str(void* udata, const char* key, const char* val, int len)
+static int __tfr_event_str(void* udata, const char* key, const char* val, int len)
 {
     torrent_reader_t* me = udata;
 
@@ -306,10 +273,8 @@ static int __event_str(void* udata, const char* key, const char* val, int len)
 
     if (!strcmp(key,"announce"))
     {
+        /* add to queue. We'll try them out by polling the queue elsewhere */
         llqueue_offer(me->bt->announces, strndup(val,len));
-#if 0 /* debugging */
-        printf("adding: %.*s\n", len, val);
-#endif
     }
     else if (!strcmp(key,"infohash"))
     {
@@ -317,9 +282,6 @@ static int __event_str(void* udata, const char* key, const char* val, int len)
 
         ihash = str2sha1hash(val, len);
         config_set_va(me->bt->cfg,"infohash","%.*s", 20, ihash);
-#if 0 /* debugging */
-        printf("hash: %.*s\n", 20, config_get(me->bt->cfg,"infohash"));
-#endif
     }
     else if (!strcmp(key,"pieces"))
     {
@@ -329,17 +291,14 @@ static int __event_str(void* udata, const char* key, const char* val, int len)
         {
             bt_piecedb_add(me->bt->db,val + i);
         }
-#if 1
         config_set_va(me->bt->cfg, "npieces", "%d",
                 bt_piecedb_get_length(me->bt->db));
-#endif
     }
     else if (!strcmp(key,"file path"))
     {
         assert(len < 256);
         strncpy(me->fname,val,len);
         me->fname_len = len;
-
         bt_piecedb_increase_piece_space(me->bt->db, me->flen);
         bt_filedumper_add_file(me->bt->fd, me->fname, me->fname_len, me->flen);
     }
@@ -347,7 +306,7 @@ static int __event_str(void* udata, const char* key, const char* val, int len)
     return 1;
 }
 
-static int __event_int(void* udata, const char* key, int val)
+static int __tfr_event_int(void* udata, const char* key, int val)
 {
     torrent_reader_t* me = udata;
 
@@ -385,25 +344,39 @@ static int __read_torrent_file(bt_t* bt, const char* torrent_file)
     char* metainfo;
     torrent_reader_t r;
 
-    printf("\nReading file torrent file\n");
     memset(&r, 0, sizeof(torrent_reader_t));
     r.bt = bt;
-    tf = tfr_new(__event, __event_str, __event_int, &r);
+    tf = tfr_new(__tfr_event, __tfr_event_str, __tfr_event_int, &r);
     metainfo = read_file(torrent_file,&len);
     tfr_read_metainfo(tf, metainfo, len);
     return 1;
 }
 
-static void __periodic(uv_timer_t* handle, int status)
+static void __bt_periodic(uv_timer_t* handle, int status)
 {
     bt_t* bt = handle->data;
+    bt_dm_stats_t stat;
 
     if (bt->bc)
     {
         uv_mutex_lock(&bt->mutex);
-        bt_client_periodic(bt->bc);
+        bt_dm_periodic(bt->bc, &stat);
         uv_mutex_unlock(&bt->mutex);
     }
+
+//  bt_piecedb_print_pieces_downloaded(bt_dm_get_piecedb(me));
+    printf("peers: %d (active:%d choking:%d failed:%d) "
+            "downloaded:%d completed:%d/%d dl:%04dKB/s ul:%04dKB/s\r",
+            stat.peers,
+            stat.connected,
+            stat.choking,
+            stat.failed_connection,
+            bt_piecedb_get_num_downloaded(bt->db),
+            bt_piecedb_get_num_completed(bt->db),
+            bt_piecedb_get_length(bt->db),
+            stat.download_rate == 0 ? 0 : stat.download_rate / 1000,
+            stat.upload_rate == 0 ? 0 : stat.upload_rate / 1000
+            );
 }
 
 int main(int argc, char **argv)
@@ -418,9 +391,8 @@ int main(int argc, char **argv)
     o_verify_download = 0;
     o_shutdown_when_complete = 0;
     o_torrent_file_report_only = 0;
-
-    bt.bc = bc = bt_client_new();
-    bt.cfg = cfg = bt_client_get_config(bc);
+    bt.bc = bc = bt_dm_new();
+    bt.cfg = cfg = bt_dm_get_config(bc);
     bt.announces = llqueue_new();
 
 #if 0
@@ -456,47 +428,42 @@ int main(int argc, char **argv)
     }
 
     /* do configuration */
-    config_set_va(cfg,"shutdown_when_complete","%d",o_shutdown_when_complete);
-    config_set(cfg,"my_peerid",bt_generate_peer_id());
-    assert(config_get(cfg,"my_peerid"));
+    config_set_va(cfg, "shutdown_when_complete", "%d", o_shutdown_when_complete);
+    config_set(cfg, "my_peerid", bt_generate_peer_id());
+    assert(config_get(cfg, "my_peerid"));
 
     /*  logging */
-    bt_client_set_logging(
+    bt_dm_set_logging(
             bc, open("dump_log", O_CREAT | O_TRUNC | O_RDWR, 0666), __log);
 
     /* set network functions */
-    bt_client_funcs_t func = {
+    bt_dm_funcs_t func = {
         .peer_connect = peer_connect,
         .peer_send = peer_send,
         .peer_disconnect = peer_disconnect, 
     };
-
-    bt_client_set_funcs(bc, &func, NULL);
-
-    /* set file system backend functions */
-    void* fd, *dc, *db;
-
-    bt_piecedb_i pdb_funcs = {
-//        .poll_best_from_bitfield = bt_piecedb_poll_best_from_bitfield,
-        .get_piece = bt_piecedb_get
-    };
+    bt_dm_set_funcs(bc, &func, NULL);
 
     /* database for dumping pieces to disk */
-    bt.fd = fd = bt_filedumper_new();
+    bt_piecedb_i pdb_funcs = {
+        .get_piece = bt_piecedb_get
+    };
+    bt.fd = bt_filedumper_new();
 
     /* Disk Cache */
-    bt.dc = dc = bt_diskcache_new();
+    bt.dc = bt_diskcache_new();
     /* point diskcache to filedumper */
-    bt_diskcache_set_disk_blockrw(dc, bt_filedumper_get_blockrw(fd), fd);
+    bt_diskcache_set_disk_blockrw(bt.dc,
+            bt_filedumper_get_blockrw(bt.fd), bt.fd);
     //bt_diskcache_set_func_log(bc->dc, __log, bc);
 
     /* Piece DB */
-    bt.db = db = bt_piecedb_new();
-    bt_piecedb_set_diskstorage(db,
-            bt_diskcache_get_blockrw(dc),
+    bt.db = bt_piecedb_new();
+    bt_piecedb_set_diskstorage(bt.db,
+            bt_diskcache_get_blockrw(bt.dc),
             NULL,//(void*)bt_filedumper_add_file,
-            dc);
-    bt_client_set_piece_db(bc,&pdb_funcs,db);
+            bt.dc);
+    bt_dm_set_piece_db(bt.bc,&pdb_funcs,bt.db);
 
     if (o_torrent_file_report_only)
     {
@@ -528,7 +495,7 @@ int main(int argc, char **argv)
     periodic_req = malloc(sizeof(uv_timer_t));
     periodic_req->data = &bt;
     uv_timer_init(loop, periodic_req);
-    uv_timer_start(periodic_req, __periodic, 0, 1000);
+    uv_timer_start(periodic_req, __bt_periodic, 0, 1000);
 
     /* try to connect to tracker */
     if (0 == __trackerclient_try_announces(&bt))
@@ -539,7 +506,7 @@ int main(int argc, char **argv)
 
     uv_run(loop, UV_RUN_DEFAULT);
 
-    bt_client_release(bc);
+    bt_dm_release(bc);
 
     return 1;
 }

@@ -236,10 +236,6 @@ void *bt_piece_get_data(
  * @return 1 if valid; 0 otherwise */
 int bt_piece_is_valid(bt_piece_t * me)
 {
-    char *hash;
-    int ret;
-    unsigned char *sha1;
-    void *data;
 
     if (priv(me)->validity == VALIDITY_VALID)
     {
@@ -249,11 +245,17 @@ int bt_piece_is_valid(bt_piece_t * me)
     {
         return 0;
     }
+     /* else VALIDITY_NOTCHECKED... */
+
+    void *data;
 
     if (!(data = __get_data(me)))
     {
         return 0;
     }
+
+    char *hash;
+    int ret;
 
     hash = str2sha1hash(data, priv(me)->piece_length);
     ret = bt_sha1_equal(hash, priv(me)->sha1);
@@ -271,18 +273,16 @@ int bt_piece_is_valid(bt_piece_t * me)
     {
         int ii;
 
-        printf("Expected: ");
+        printf("(idx:%d) Expected: ", me->idx);
         for (ii=0; ii<20; ii++)
             printf("%02x ", ((unsigned char*)priv(me)->sha1)[ii]);
         printf("\n");
 
-        printf("File calc: ");
+        printf("         File calc: ");
         for (ii=0; ii<20; ii++)
             printf("%02x ", ((unsigned char*)hash)[ii]);
         printf("\n");
     }
-
-    printf("valid: %d\n", ret);
 #endif
 
     free(hash);
@@ -308,7 +308,7 @@ int bt_piece_is_complete(bt_piece_t * me)
     /*  check the counter if it is fully downloaded */
     else if (sc_is_complete(priv(me)->progress_downloaded))
     {
-        //printf("fully complete\n");
+        //printf("fully complete %d\n", me->idx);
         if (1 == bt_piece_is_valid(me))
         {
             priv(me)->is_completed = TRUE;
@@ -316,7 +316,6 @@ int bt_piece_is_complete(bt_piece_t * me)
         }
         else
         {
-            // printf("invalid piece data\n");
             // TODO: set this to false
             printf("invalid piece: %d\n", me->idx);
             return FALSE;

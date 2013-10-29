@@ -1,21 +1,11 @@
-/*
- * =====================================================================================
+/**
+ * Copyright (c) 2011, Willem-Hendrik Thiart
+ * Use of this source code is governed by a BSD-style license that can be
+ * found in the LICENSE file. 
  *
- *       Filename:  test_choker.c
- *
- *    Description:  
- *
- *        Version:  1.0
- *        Created:  09/29/11 23:13:16
- *       Revision:  none
- *       Compiler:  gcc
- *
- *         Author:  YOUR NAME (), 
- *        Company:  
- *
- * =====================================================================================
+ * @file
+ * @author  Willem Thiart himself@willemthiart.com
  */
-
 
 #include <stdbool.h>
 #include <assert.h>

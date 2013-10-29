@@ -166,8 +166,8 @@ def build(bld):
 
     bld.shlib(
         source= [
-            "bt_client.c",
-            "bt_peermanager.c",
+            "bt_download_manager.c",
+            "bt_peer_manager.c",
             "bt_piece.c",
             "bt_piece_db.c",
             "bt_diskmem.c",
@@ -236,7 +236,8 @@ def build(bld):
         )
 
     unittest(bld,"test_bt.c")
-    unittest(bld,"test_peermanager.c")
+    unittest(bld,"test_download_manager.c")
+    unittest(bld,"test_peer_manager.c")
     unittest(bld,'test_choker_leecher.c')
     unittest(bld,'test_choker_seeder.c')
     unittest(bld,'test_rarestfirst.c')

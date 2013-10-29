@@ -114,7 +114,7 @@ static void __client_setup_disk_backend(void* bt, unsigned int piece_len)
     db = bt_piecedb_new();
     bt_piecedb_set_diskstorage(db, bt_diskmem_get_blockrw(dc), NULL, dc);
     bt_piecedb_set_piece_length(db,piece_len);
-    bt_client_set_piece_db(bt,&pdb_funcs,db);
+    bt_dm_set_piece_db(bt,&pdb_funcs,db);
 }
 
 static void __client_add_peer(
@@ -140,15 +140,15 @@ static void __client_add_peer(
                 (void**)&me,
                 &peer_nethandle,
                 ip_string, port,
-                bt_client_dispatch_from_buffer,
-                bt_client_peer_connect,
-                bt_client_peer_connect_fail))
+                bt_dm_dispatch_from_buffer,
+                bt_dm_peer_connect,
+                bt_dm_peer_connect_fail))
     {
         printf("failed connection to peer");
     }
 #endif
 
-    peer = bt_client_add_peer(me->bt, peer_id, peer_id_len, ip, ip_len, port, peer_nethandle);
+    peer = bt_dm_add_peer(me->bt, peer_id, peer_id_len, ip, ip_len, port, peer_nethandle);
 }
 
 client_t* client_setup(int log, void* id, int piecelen)
@@ -160,22 +160,22 @@ client_t* client_setup(int log, void* id, int piecelen)
     cli = networkfuns_mock_client_new(id);
 
     /* bittorrent client */
-    cli->bt = bt = bt_client_new();
-    cfg = bt_client_get_config(bt);
+    cli->bt = bt = bt_dm_new();
+    cfg = bt_dm_get_config(bt);
     config_set(cfg, "my_peerid", bt_generate_peer_id());
-    //bt_client_set_peer_id(bt, bt_generate_peer_id());
+    //bt_dm_set_peer_id(bt, bt_generate_peer_id());
     //bt_peerconn_set_my_peer_id
 
     /* set network functions */
     {
-        bt_client_funcs_t func = {
+        bt_dm_funcs_t func = {
             .peer_connect = peer_connect,
             .peer_send =  peer_send,
             .peer_disconnect =peer_disconnect
         };
 
-        bt_client_set_funcs(bt, &func, cli);
-//        bt_client_set_logging(bt,log , __log);
+        bt_dm_set_funcs(bt, &func, cli);
+//        bt_dm_set_logging(bt,log , __log);
     }
 
     hashmap_put(__clients, cli, cli);
@@ -216,15 +216,15 @@ void TestBT_Peer_shares_all_pieces(
 
         cli = hashmap_iterator_next_value(__clients, &iter);
         bt = cli->bt;
-        cfg = bt_client_get_config(bt);
+        cfg = bt_dm_get_config(bt);
         /* default configuration for clients */
         config_set(cfg, "npieces", "1");
         config_set_va(cfg, "piece_length", "%d", 5);
         config_set(cfg, "infohash", "00000000000000000000");
         /* add files/pieces */
-        //bt_piecedb_add_file(bt_client_get_piecedb(bt),"test.txt",8,5);
-        bt_piecedb_increase_piece_space(bt_client_get_piecedb(bt),5);
-        bt_piecedb_add(bt_client_get_piecedb(bt),mocktorrent_get_piece_sha1(mt,0));
+        //bt_piecedb_add_file(bt_dm_get_piecedb(bt),"test.txt",8,5);
+        bt_piecedb_increase_piece_space(bt_dm_get_piecedb(bt),5);
+        bt_piecedb_add(bt_dm_get_piecedb(bt),mocktorrent_get_piece_sha1(mt,0));
     }
 
     /* write blocks to client A */
@@ -237,20 +237,20 @@ void TestBT_Peer_shares_all_pieces(
         blk.offset = 0;
         blk.len = 5;
         bt_diskmem_write_block(
-                bt_piecedb_get_diskstorage(bt_client_get_piecedb(a->bt)),
+                bt_piecedb_get_diskstorage(bt_dm_get_piecedb(a->bt)),
                 NULL, &blk, data);
 
-        //bt_piecedb_print_pieces_downloaded(bt_client_get_piecedb(a->bt));
-        CuAssertTrue(tc, 1 == bt_piecedb_all_pieces_are_complete(bt_client_get_piecedb(a->bt)));
+        //bt_piecedb_print_pieces_downloaded(bt_dm_get_piecedb(a->bt));
+        CuAssertTrue(tc, 1 == bt_piecedb_all_pieces_are_complete(bt_dm_get_piecedb(a->bt)));
     }
     
     /* B will initiate the connection */
     asprintf(&addr,"%p", a);
     __client_add_peer(b,NULL,0,addr,strlen(addr),0);
-    //bt_client_add_peer(b->bt,NULL,0,addr,strlen(addr),0, a);
+    //bt_dm_add_peer(b->bt,NULL,0,addr,strlen(addr),0, a);
 
-//    bt_piecedb_print_pieces_downloaded(bt_client_get_piecedb(a->bt));
-//    bt_piecedb_print_pieces_downloaded(bt_client_get_piecedb(b->bt));
+//    bt_piecedb_print_pieces_downloaded(bt_dm_get_piecedb(a->bt));
+//    bt_piecedb_print_pieces_downloaded(bt_dm_get_piecedb(b->bt));
 
     for (ii=0; ii<10; ii++)
     {
@@ -258,22 +258,22 @@ void TestBT_Peer_shares_all_pieces(
         printf("\nStep %d:\n", ii+1);
 #endif
         network_poll(a->bt, &a, 0,
-                bt_client_dispatch_from_buffer,
-                bt_client_peer_connect);
+                bt_dm_dispatch_from_buffer,
+                bt_dm_peer_connect);
 
         network_poll(b->bt, &b, 0,
-                bt_client_dispatch_from_buffer,
-                bt_client_peer_connect);
+                bt_dm_dispatch_from_buffer,
+                bt_dm_peer_connect);
 
-        bt_client_periodic(a->bt);
-        bt_client_periodic(b->bt);
+        bt_dm_periodic(a->bt, NULL);
+        bt_dm_periodic(b->bt, NULL);
 //        __print_client_contents();
     }
 
-//    bt_piecedb_print_pieces_downloaded(bt_client_get_piecedb(a->bt));
-//    bt_piecedb_print_pieces_downloaded(bt_client_get_piecedb(b->bt));
+//    bt_piecedb_print_pieces_downloaded(bt_dm_get_piecedb(a->bt));
+//    bt_piecedb_print_pieces_downloaded(bt_dm_get_piecedb(b->bt));
 
-    CuAssertTrue(tc, 1 == bt_piecedb_all_pieces_are_complete(bt_client_get_piecedb(b->bt)));
+    CuAssertTrue(tc, 1 == bt_piecedb_all_pieces_are_complete(bt_dm_get_piecedb(b->bt)));
 }
 
 void TestBT_Peer_shares_all_pieces_between_each_other(
@@ -307,18 +307,18 @@ void TestBT_Peer_shares_all_pieces_between_each_other(
 
         cli = hashmap_iterator_next_value(__clients, &iter);
         bt = cli->bt;
-        cfg = bt_client_get_config(bt);
+        cfg = bt_dm_get_config(bt);
         /* default configuration for clients */
         config_set(cfg, "npieces", "2");
         config_set(cfg, "piece_length", "5");
         config_set(cfg, "infohash", "00000000000000000000");
         /* add files/pieces */
-        //bt_piecedb_add_file(bt_client_get_piecedb(bt),"test.txt",8,5);
-        bt_piecedb_increase_piece_space(bt_client_get_piecedb(bt),5);
-        //bt_piecedb_add_file(bt_client_get_piecedb(bt),"test2.txt",8,12);
-        bt_piecedb_increase_piece_space(bt_client_get_piecedb(bt),12);
-        bt_piecedb_add(bt_client_get_piecedb(bt),mocktorrent_get_piece_sha1(mt,0));
-        bt_piecedb_add(bt_client_get_piecedb(bt),mocktorrent_get_piece_sha1(mt,1));
+        //bt_piecedb_add_file(bt_dm_get_piecedb(bt),"test.txt",8,5);
+        bt_piecedb_increase_piece_space(bt_dm_get_piecedb(bt),5);
+        //bt_piecedb_add_file(bt_dm_get_piecedb(bt),"test2.txt",8,12);
+        bt_piecedb_increase_piece_space(bt_dm_get_piecedb(bt),12);
+        bt_piecedb_add(bt_dm_get_piecedb(bt),mocktorrent_get_piece_sha1(mt,0));
+        bt_piecedb_add(bt_dm_get_piecedb(bt),mocktorrent_get_piece_sha1(mt,1));
     }
 
     /* write blocks to client A & B */
@@ -332,20 +332,20 @@ void TestBT_Peer_shares_all_pieces_between_each_other(
 
         data = mocktorrent_get_data(mt,0);
         bt_diskmem_write_block(
-                bt_piecedb_get_diskstorage(bt_client_get_piecedb(b->bt)),
+                bt_piecedb_get_diskstorage(bt_dm_get_piecedb(b->bt)),
                 NULL, &blk, data);
 
         blk.piece_idx = 1;
         data = mocktorrent_get_data(mt,1);
         bt_diskmem_write_block(
-                bt_piecedb_get_diskstorage(bt_client_get_piecedb(a->bt)),
+                bt_piecedb_get_diskstorage(bt_dm_get_piecedb(a->bt)),
                 NULL, &blk, data);
     }
 
     /* B will initiate the connection */
     asprintf(&addr,"%p", a);
     __client_add_peer(b,NULL,0,addr,strlen(addr),0);
-    //bt_client_add_peer(b->bt,NULL,0,addr,strlen(addr),0, a);
+    //bt_dm_add_peer(b->bt,NULL,0,addr,strlen(addr),0, a);
 
 
     for (ii=0; ii<20; ii++)
@@ -354,20 +354,20 @@ void TestBT_Peer_shares_all_pieces_between_each_other(
         printf("\nStep %d:\n", ii+1);
 #endif
         network_poll(a->bt, &a, 0,
-                bt_client_dispatch_from_buffer,
-                bt_client_peer_connect);
+                bt_dm_dispatch_from_buffer,
+                bt_dm_peer_connect);
 
         network_poll(b->bt, &b, 0,
-                bt_client_dispatch_from_buffer,
-                bt_client_peer_connect);
+                bt_dm_dispatch_from_buffer,
+                bt_dm_peer_connect);
 
-        bt_client_periodic(a->bt);
-        bt_client_periodic(b->bt);
+        bt_dm_periodic(a->bt, NULL);
+        bt_dm_periodic(b->bt, NULL);
 //        __print_client_contents();
     }
 
-    CuAssertTrue(tc, 1 == bt_piecedb_all_pieces_are_complete(bt_client_get_piecedb(a->bt)));
-    CuAssertTrue(tc, 1 == bt_piecedb_all_pieces_are_complete(bt_client_get_piecedb(b->bt)));
+    CuAssertTrue(tc, 1 == bt_piecedb_all_pieces_are_complete(bt_dm_get_piecedb(a->bt)));
+    CuAssertTrue(tc, 1 == bt_piecedb_all_pieces_are_complete(bt_dm_get_piecedb(b->bt)));
 }
 
 /**
@@ -451,18 +451,18 @@ void TestBT_Peer_three_share_all_pieces_between_each_other(
 
         cli = hashmap_iterator_next_value(__clients, &iter);
         bt = cli->bt;
-        cfg = bt_client_get_config(bt);
+        cfg = bt_dm_get_config(bt);
         /* default configuration for clients */
         config_set(cfg, "npieces", "3");
         config_set(cfg, "piece_length", "5");
         config_set(cfg, "infohash", "00000000000000000000");
         /* add files/pieces */
-        //bt_piecedb_add_file(bt_client_get_piecedb(bt),"test.txt",8,20);
-        bt_piecedb_increase_piece_space(bt_client_get_piecedb(bt),20);
-//        bt_piecedb_add_file(bt_client_get_piecedb(bt),"test2.txt",8,12);
-        bt_piecedb_add(bt_client_get_piecedb(bt),mocktorrent_get_piece_sha1(mt,0));
-        bt_piecedb_add(bt_client_get_piecedb(bt),mocktorrent_get_piece_sha1(mt,1));
-        bt_piecedb_add(bt_client_get_piecedb(bt),mocktorrent_get_piece_sha1(mt,2));
+        //bt_piecedb_add_file(bt_dm_get_piecedb(bt),"test.txt",8,20);
+        bt_piecedb_increase_piece_space(bt_dm_get_piecedb(bt),20);
+//        bt_piecedb_add_file(bt_dm_get_piecedb(bt),"test2.txt",8,12);
+        bt_piecedb_add(bt_dm_get_piecedb(bt),mocktorrent_get_piece_sha1(mt,0));
+        bt_piecedb_add(bt_dm_get_piecedb(bt),mocktorrent_get_piece_sha1(mt,1));
+        bt_piecedb_add(bt_dm_get_piecedb(bt),mocktorrent_get_piece_sha1(mt,2));
     }
 
     /* write blocks to client A & B */
@@ -476,19 +476,19 @@ void TestBT_Peer_three_share_all_pieces_between_each_other(
 
         data = mocktorrent_get_data(mt,0);
         bt_diskmem_write_block(
-                bt_piecedb_get_diskstorage(bt_client_get_piecedb(a->bt)),
+                bt_piecedb_get_diskstorage(bt_dm_get_piecedb(a->bt)),
                 NULL, &blk, data);
 
         blk.piece_idx = 1;
         data = mocktorrent_get_data(mt,1);
         bt_diskmem_write_block(
-                bt_piecedb_get_diskstorage(bt_client_get_piecedb(b->bt)),
+                bt_piecedb_get_diskstorage(bt_dm_get_piecedb(b->bt)),
                 NULL, &blk, data);
 
         blk.piece_idx = 2;
         data = mocktorrent_get_data(mt,2);
         bt_diskmem_write_block(
-                bt_piecedb_get_diskstorage(bt_client_get_piecedb(c->bt)),
+                bt_piecedb_get_diskstorage(bt_dm_get_piecedb(c->bt)),
                 NULL, &blk, data);
     }
 
@@ -498,11 +498,11 @@ void TestBT_Peer_three_share_all_pieces_between_each_other(
     asprintf(&addr,"%p", c);
     __client_add_peer(b,NULL,0,addr,strlen(addr),0);
 
-    bt_client_set_logging(a->bt, 0, __log);
+    bt_dm_set_logging(a->bt, 0, __log);
 
-//    bt_piecedb_print_pieces_downloaded(bt_client_get_piecedb(a->bt));
-//    bt_piecedb_print_pieces_downloaded(bt_client_get_piecedb(b->bt));
-//    bt_piecedb_print_pieces_downloaded(bt_client_get_piecedb(c->bt));
+//    bt_piecedb_print_pieces_downloaded(bt_dm_get_piecedb(a->bt));
+//    bt_piecedb_print_pieces_downloaded(bt_dm_get_piecedb(b->bt));
+//    bt_piecedb_print_pieces_downloaded(bt_dm_get_piecedb(c->bt));
 
     for (ii=0; ii<10; ii++)
     {
@@ -510,30 +510,30 @@ void TestBT_Peer_three_share_all_pieces_between_each_other(
         printf("\nStep %d:\n", ii+1);
 #endif
         network_poll(a->bt, &a, 0,
-                bt_client_dispatch_from_buffer,
-                bt_client_peer_connect);
+                bt_dm_dispatch_from_buffer,
+                bt_dm_peer_connect);
 
         network_poll(b->bt, &b, 0,
-                bt_client_dispatch_from_buffer,
-                bt_client_peer_connect);
+                bt_dm_dispatch_from_buffer,
+                bt_dm_peer_connect);
 
         network_poll(c->bt, &c, 0,
-                bt_client_dispatch_from_buffer,
-                bt_client_peer_connect);
+                bt_dm_dispatch_from_buffer,
+                bt_dm_peer_connect);
 
-        bt_client_periodic(a->bt);
-        bt_client_periodic(b->bt);
-        bt_client_periodic(c->bt);
+        bt_dm_periodic(a->bt, NULL);
+        bt_dm_periodic(b->bt, NULL);
+        bt_dm_periodic(c->bt, NULL);
 //        __print_client_contents();
     }
 
-//    bt_piecedb_print_pieces_downloaded(bt_client_get_piecedb(a->bt));
-//    bt_piecedb_print_pieces_downloaded(bt_client_get_piecedb(b->bt));
-//    bt_piecedb_print_pieces_downloaded(bt_client_get_piecedb(c->bt));
+//    bt_piecedb_print_pieces_downloaded(bt_dm_get_piecedb(a->bt));
+//    bt_piecedb_print_pieces_downloaded(bt_dm_get_piecedb(b->bt));
+//    bt_piecedb_print_pieces_downloaded(bt_dm_get_piecedb(c->bt));
 
-    CuAssertTrue(tc, 1 == bt_piecedb_all_pieces_are_complete(bt_client_get_piecedb(a->bt)));
-    CuAssertTrue(tc, 1 == bt_piecedb_all_pieces_are_complete(bt_client_get_piecedb(b->bt)));
-    CuAssertTrue(tc, 1 == bt_piecedb_all_pieces_are_complete(bt_client_get_piecedb(c->bt)));
+    CuAssertTrue(tc, 1 == bt_piecedb_all_pieces_are_complete(bt_dm_get_piecedb(a->bt)));
+    CuAssertTrue(tc, 1 == bt_piecedb_all_pieces_are_complete(bt_dm_get_piecedb(b->bt)));
+    CuAssertTrue(tc, 1 == bt_piecedb_all_pieces_are_complete(bt_dm_get_piecedb(c->bt)));
 }
 
 void TestBT_Peer_share_20_pieces(
@@ -572,16 +572,16 @@ void TestBT_Peer_share_20_pieces(
         bt = cli->bt;
 
         /* default configuration for clients */
-        cfg = bt_client_get_config(bt);
+        cfg = bt_dm_get_config(bt);
         config_set_va(cfg, "npieces", "%d", num_pieces);
         config_set(cfg, "piece_length", "5");
         config_set(cfg, "infohash", "00000000000000000000");
 
         /* add files/pieces */
-        bt_piecedb_increase_piece_space(bt_client_get_piecedb(bt),num_pieces * 5);
+        bt_piecedb_increase_piece_space(bt_dm_get_piecedb(bt),num_pieces * 5);
         for (ii=0; ii<num_pieces; ii++)
         {
-            void* pd=bt_client_get_piecedb(bt);
+            void* pd=bt_dm_get_piecedb(bt);
             void* sha1=mocktorrent_get_piece_sha1(mt,ii);
             bt_piecedb_add(pd,sha1);
         }
@@ -589,20 +589,20 @@ void TestBT_Peer_share_20_pieces(
   
     /* B will initiate the connection */
     asprintf(&addr,"%p", b);
-    //bt_client_add_peer(a->bt,NULL,0,addr,strlen(addr),0,b);
+    //bt_dm_add_peer(a->bt,NULL,0,addr,strlen(addr),0,b);
     __client_add_peer(a,NULL,0,addr,strlen(addr),0);
 
     __add_random_piece_subset_of_mocktorrent(
-            bt_client_get_piecedb(a->bt),
+            bt_dm_get_piecedb(a->bt),
             mt, num_pieces);
 
     __add_piece_intersection_of_mocktorrent(
-            bt_client_get_piecedb(b->bt),
-            bt_client_get_piecedb(a->bt),
+            bt_dm_get_piecedb(b->bt),
+            bt_dm_get_piecedb(a->bt),
             mt, num_pieces);
 
-//    bt_piecedb_print_pieces_downloaded(bt_client_get_piecedb(a->bt));
-//    bt_piecedb_print_pieces_downloaded(bt_client_get_piecedb(b->bt));
+//    bt_piecedb_print_pieces_downloaded(bt_dm_get_piecedb(a->bt));
+//    bt_piecedb_print_pieces_downloaded(bt_dm_get_piecedb(b->bt));
 
     for (ii=0; ii<80; ii++)
     {
@@ -610,22 +610,22 @@ void TestBT_Peer_share_20_pieces(
         printf("\nStep %d:\n", ii+1);
 #endif
         network_poll(a->bt, &a, 0,
-                bt_client_dispatch_from_buffer,
-                bt_client_peer_connect);
+                bt_dm_dispatch_from_buffer,
+                bt_dm_peer_connect);
 
         network_poll(b->bt, &b, 0,
-                bt_client_dispatch_from_buffer,
-                bt_client_peer_connect);
+                bt_dm_dispatch_from_buffer,
+                bt_dm_peer_connect);
 
-        bt_client_periodic(a->bt);
-        bt_client_periodic(b->bt);
+        bt_dm_periodic(a->bt, NULL);
+        bt_dm_periodic(b->bt, NULL);
 //        __print_client_contents();
-//        bt_piecedb_print_pieces_downloaded(bt_client_get_piecedb(b->bt));
+//        bt_piecedb_print_pieces_downloaded(bt_dm_get_piecedb(b->bt));
     }
 
-//    bt_piecedb_print_pieces_downloaded(bt_client_get_piecedb(a->bt));
-//    bt_piecedb_print_pieces_downloaded(bt_client_get_piecedb(b->bt));
+//    bt_piecedb_print_pieces_downloaded(bt_dm_get_piecedb(a->bt));
+//    bt_piecedb_print_pieces_downloaded(bt_dm_get_piecedb(b->bt));
 
-    CuAssertTrue(tc, 1 == bt_piecedb_all_pieces_are_complete(bt_client_get_piecedb(a->bt)));
-    CuAssertTrue(tc, 1 == bt_piecedb_all_pieces_are_complete(bt_client_get_piecedb(b->bt)));
+    CuAssertTrue(tc, 1 == bt_piecedb_all_pieces_are_complete(bt_dm_get_piecedb(a->bt)));
+    CuAssertTrue(tc, 1 == bt_piecedb_all_pieces_are_complete(bt_dm_get_piecedb(b->bt)));
 }
