@@ -247,7 +247,6 @@ def build(bld):
     unittest(bld,'test_piece_db.c')
     end2end(bld,'test_end_to_end.c')
 
-
     libs = ['yabbt','uv']
     if sys.platform == 'win32':
         libs += ['ws2_32']
