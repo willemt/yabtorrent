@@ -80,6 +80,7 @@ static struct option const long_opts[] = {
     /* The bounded network interface for net communications */
     { "verify-download", no_argument, NULL, 'e'},
     { "shutdown-when-complete", no_argument, NULL, 's'},
+    { "show-config", no_argument, NULL, 'c'},
     { "pwp_listen_port", required_argument, NULL, 'p'},
     { "torrent_file_report_only", required_argument, NULL, 't'},
     { NULL, 0, NULL, 0}
@@ -391,9 +392,11 @@ static void __bt_periodic(uv_timer_t* handle, int status)
 
     __log_process_info();
 
-//  bt_piecedb_print_pieces_downloaded(bt_dm_get_piecedb(me));
+    // bt_piecedb_print_pieces_downloaded(bt_dm_get_piecedb(me));
+    // TODO: show inactive peers
+    // TODO: show number of invalid pieces
     printf("peers: %d (active:%d choking:%d failed:%d) "
-            "downloaded:%d completed:%d/%d dl:%04dKB/s ul:%04dKB/s\r",
+            "pieces: (downloaded:%d completed:%d/%d) dl:%04dKB/s ul:%04dKB/s\r",
             stat.peers,
             stat.connected,
             stat.choking,
@@ -409,12 +412,16 @@ static void __bt_periodic(uv_timer_t* handle, int status)
 int main(int argc, char **argv)
 {
     char c;
-    int o_verify_download, o_shutdown_when_complete, o_torrent_file_report_only;
+    int o_verify_download,
+        o_shutdown_when_complete,
+        o_torrent_file_report_only,
+        o_show_config;
     void *bc;
     char *str;
     config_t* cfg;
     bt_t bt;
 
+    o_show_config = 0;
     o_verify_download = 0;
     o_shutdown_when_complete = 0;
     o_torrent_file_report_only = 0;
@@ -428,7 +435,7 @@ int main(int argc, char **argv)
     atexit (close_stdin);
 #endif
 
-    while ((c = getopt_long(argc, argv, "esi:p:", long_opts, NULL)) != -1)
+    while ((c = getopt_long(argc, argv, "cesi:p:", long_opts, NULL)) != -1)
     {
         switch (c)
         {
@@ -444,6 +451,9 @@ int main(int argc, char **argv)
             break;
         case 'i':
             config_set_va(cfg,"bounded_iface","%.*s",strlen(optarg), optarg);
+            break;
+        case 'c':
+            o_show_config = 1;
             break;
         case 'e':
             o_verify_download = 1;
@@ -507,13 +517,15 @@ int main(int argc, char **argv)
         exit(EXIT_FAILURE);
     }
 
-    config_print(cfg);
+    if (o_show_config)
+    {
+        config_print(cfg);
+    }
 
     bt_piecedb_print_pieces_downloaded(bt.db);
 
     /* start uv */
     loop = uv_default_loop();
-
     uv_mutex_init(&bt.mutex);
 
     /* create periodic timer */
