@@ -124,7 +124,7 @@ void TestBTPiece_write_block_needs_disk_blockrw(
     blk.piece_idx = 0;
     blk.offset = 0;
     blk.len = 10;
-    CuAssertTrue(tc, 0 == bt_piece_write_block(pce, NULL, &blk, msg));
+    CuAssertTrue(tc, 0 == bt_piece_write_block(pce, NULL, &blk, msg, NULL));
 }
 
 /**  The below tests will be using the blockrw disk backend to store data.
@@ -146,6 +146,8 @@ static int __mock_disk_write_block(
     mockdisk_t *md = udata;
 
     memcpy(md->data, blkdata + blk->offset, blk->len);
+
+    return 1;
 }
 
 static void *__mock_disk_read_block(
@@ -179,6 +181,7 @@ void TestBTPiece_cannot_read_block_we_dont_have(
     blk.piece_idx = 0;
     blk.offset = 0;
     blk.len = 10;
+    memset(&__mockdisk, 0, sizeof(mockdisk_t));
     bt_piece_set_disk_blockrw(pce, &__mock_disk_rw, &__mockdisk);
     CuAssertTrue(tc, NULL == bt_piece_read_block(pce, NULL, &blk));
 }
@@ -198,7 +201,7 @@ void TestBTPiece_write_block_means_block_can_be_read(
     blk.offset = 0;
     blk.len = 10;
     bt_piece_set_disk_blockrw(pce, &__mock_disk_rw, &__mockdisk);
-    bt_piece_write_block(pce, NULL, &blk, msg);
+    bt_piece_write_block(pce, NULL, &blk, msg, NULL);
     CuAssertTrue(tc,
                  0 == strncmp(bt_piece_read_block(pce, NULL, &blk), msg, 10));
 }
@@ -223,12 +226,14 @@ void TestBTPiece_doneness_is_valid(
     };
 
     pce = bt_piece_new(sha1, 40);
+    memset(&__mockdisk, 0, sizeof(mockdisk_t));
     bt_piece_set_disk_blockrw(pce, &__mock_disk_rw, &__mockdisk);
+
     CuAssertTrue(tc, 0 == bt_piece_is_complete(pce));
     blk.piece_idx = 0;
     blk.offset = 0;
     blk.len = 40;
-    bt_piece_write_block(pce, NULL, &blk, msg);
+    bt_piece_write_block(pce, NULL, &blk, msg, NULL);
     CuAssertTrue(tc, 1 == bt_piece_is_complete(pce));
     CuAssertTrue(tc, 1 == bt_piece_is_valid(pce));
 }
@@ -247,13 +252,14 @@ void TestBTPiece_Write_Block_To_Stream(
     pce = bt_piece_new("00000000000000000000", 40);
     dc = bt_diskmem_new();
     bt_diskmem_set_size(dc, 40);
+    memset(&__mockdisk, 0, sizeof(mockdisk_t));
     bt_piece_set_disk_blockrw(pce, bt_diskmem_get_blockrw(dc), dc);
 
     /*  write the whole message out */
     blk.piece_idx = 0;
     blk.offset = 0;
     blk.len = 40;
-    bt_piece_write_block(pce, NULL, &blk, msg);
+    bt_piece_write_block(pce, NULL, &blk, msg, NULL);
 
     /*  read offset of 10 and length of 20 */
     blk.piece_idx = 0;
@@ -287,19 +293,125 @@ void TestBTPiece_Write_Block_To_Str(
     CuAssertTrue(tc, 0 == strncmp(out, msg + 10, 10));
 #endif
 }
-
-#if 0
-void TxestBTPiece_BlockIsCompleted(
+void TestBTPiece_write_valid_block_results_in_valid_piece(
     CuTest * tc
 )
 {
-    bt_piece_t pce;
+    void* peer;
+    bt_piece_t *pce;
+    bt_block_t blk;
+    char *msg = "this great message is 40 bytes in length", out[40];
+    char *hash;
 
-    char *msg = "this great message is 40 bytes in length";
+    peer = malloc(1);
+    hash = str2sha1hash(msg, 40);
+    pce = bt_piece_new(hash, 40);
+    memset(&__mockdisk, 0, sizeof(mockdisk_t));
+    bt_piece_set_disk_blockrw(pce, &__mock_disk_rw, &__mockdisk);
 
-    pce = bt_piece_new("00000000000000000000", 40);
-    CuAssertTrue(tc, 0 == bt_piece_block_is_completed(&pce, 5, 20));
-    bt_piece_add_block(&pce, 5, 20, msg + 5);
-    CuAssertTrue(tc, 1 == bt_piece_block_is_completed(&pce, 5, 20));
+    CuAssertTrue(tc, 0 == bt_piece_is_complete(pce));
+
+    /* write valid block */
+    blk.offset = 0;
+    blk.len = 40;
+    CuAssertTrue(tc, 1 == bt_piece_write_block(pce, NULL, &blk, msg, peer));
+    CuAssertTrue(tc, 1 == bt_piece_is_complete(pce));
+    CuAssertTrue(tc, 1 == bt_piece_is_valid(pce));
+}
+
+#if 0
+void TxestBTPiece_solo_peer_recognised_as_definitely_invalidating_piece(
+    CuTest * tc
+)
+{
+    void *peer;
+    bt_piece_t *pce;
+    bt_block_t blk;
+    char *msg, out[40];
+    char *hash;
+
+    peer = malloc(1);
+    msg = strdup("this great message is 40 bytes in length");
+    hash = str2sha1hash(msg, 40);
+    pce = bt_piece_new(hash, 40);
+
+    CuAssertTrue(tc, 0 == bt_piece_is_complete(pce));
+    blk.offset = 0;
+    blk.len = 40;
+    *msg = 'a';
+    bt_piece_write_block(pce, NULL, &blk, msg, NULL);
+    CuAssertTrue(tc, 0 == bt_piece_is_valid(pce));
+    CuAssertTrue(tc, 1 == bt_piece_peer_is_blacklisted(pce, peer));
+}
+
+void TxestBTPiece_multi_peer_recognised_as_pontentially_invalidating_piece(
+    CuTest * tc
+)
+{
+    void *p1, *p2;
+    bt_piece_t *pce;
+    bt_block_t blk;
+    char *msg, out[40];
+    char *hash;
+
+    p1 = malloc(1);
+    p2 = malloc(1);
+    msg = strdup("this great message is 40 bytes in length");
+    hash = str2sha1hash(msg, 40);
+    pce = bt_piece_new(hash, 40);
+
+    CuAssertTrue(tc, 0 == bt_piece_is_complete(pce));
+
+    /* write invalid block */
+    blk.offset = 0;
+    blk.len = 20;
+    *msg = 'a';
+    bt_piece_write_block(pce, NULL, &blk, msg, p1);
+
+    /* write valid block
+     * Even though this is a valid block the peer will still be in the running
+     * for being treated as potentially blacklisted */
+    blk.offset = 20;
+    //*(msg + 20) = 'a';
+    bt_piece_write_block(pce, NULL, &blk, msg + 20, p2);
+
+    CuAssertTrue(tc, 0 == bt_piece_is_valid(pce));
+    CuAssertTrue(tc, 0 == bt_piece_peer_is_blacklisted(pce, p1));
+    CuAssertTrue(tc, 0 == bt_piece_peer_is_blacklisted(pce, p2));
+    CuAssertTrue(tc, 1 == bt_piece_peer_is_potentially_blacklisted(pce,p1));
+    CuAssertTrue(tc, 1 == bt_piece_peer_is_potentially_blacklisted(pce,p2));
 }
 #endif
+
+void TestBTPiece_get_peers(
+    CuTest * tc
+)
+{
+    void *p1, *p2;
+    bt_piece_t *pce;
+    bt_block_t blk;
+    char *msg, out[40];
+    char *hash;
+
+    p1 = malloc(1);
+    p2 = malloc(1);
+    msg = strdup("this great message is 40 bytes in length");
+    hash = str2sha1hash(msg, 40);
+    pce = bt_piece_new(hash, 40);
+
+    blk.len = 20;
+    blk.offset = 0;
+    bt_piece_write_block(pce, NULL, &blk, msg, p1);
+
+    /* write valid block */
+    blk.offset = 20;
+    bt_piece_write_block(pce, NULL, &blk, msg + 20, p2);
+
+    int i = 0;
+    void* p1_, *p2_;
+
+    p1_ = bt_piece_get_peers(pce,&i);
+    p2_ = bt_piece_get_peers(pce,&i);
+    CuAssertTrue(tc, (p1_ == p1 && p2_ == p2) || (p2_ == p1 && p1_ == p2));
+    CuAssertTrue(tc, !bt_piece_get_peers(pce,&i));
+}

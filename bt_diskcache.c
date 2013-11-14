@@ -146,13 +146,18 @@ static void __diskdump_piece(
     blk.piece_idx = piece_idx;
     blk.offset = 0;
     blk.len = priv(me)->piece_length;
-    priv(me)->disk->write_block(priv(me)->disk_udata, me, &blk, mpce->data);
+    if (0 == priv(me)->disk->write_block(priv(me)->disk_udata, me, &blk, mpce->data))
+    {
+
+    }
 
     pseudolru_remove(priv(me)->lru_piece, (void *) mpce);
     free(mpce->data);
     mpce->data = NULL;
 }
 
+/**
+ * @return 0 on error */
 static int __write_block(
     void *udata,
     void *caller,
@@ -181,6 +186,7 @@ static int __write_block(
     assert(0 < priv(me)->piece_length);
     assert(mpce->data);
 
+    /* TODO: remove memcpy for zero-copy */
     memcpy(mpce->data + blk->offset, blkdata, blk->len);
 
     /*  touch piece to show how recent it is */

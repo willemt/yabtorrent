@@ -7,7 +7,7 @@ bt_piece_t *bt_piece_new(
 char *bt_piece_get_hash(bt_piece_t * me);
 
 void *bt_piece_read_block(
-    void *pceo,
+    bt_piece_t *pceo,
     void *caller,
     const bt_block_t * blk
 );
@@ -22,3 +22,5 @@ int bt_piecedb_add_file(
 int bt_piece_is_complete(bt_piece_t * me);
 
 int bt_piece_is_downloaded(bt_piece_t * me);
+
+void* bt_piece_get_peers(bt_piece_t *pceo, int *iter);

@@ -23,6 +23,7 @@
 #include "bt_local.h"
 #include "bt_block_readwriter_i.h"
 #include "sparse_counter.h"
+#include "avl_tree.h"
 
 enum {
     VALIDITY_NOTCHECKED,
@@ -55,25 +56,42 @@ typedef struct
     bt_blockrw_i *disk;
     void *disk_udata;
 
-    bt_blockrw_i irw;
+    avltree_t* peers;
 } __piece_private_t;
 
 #define priv(x) ((__piece_private_t*)(x))
 
-bt_blockrw_i *bt_piece_get_blockrw(
-    bt_piece_t * me
+
+/**
+ * Get peers based off iter
+ * @param iter Iterator that we use to obtain the next peer. Starts at 0
+ * @return next peer */
+void* bt_piece_get_peers(
+    bt_piece_t *pceo,
+    int *iter
 )
 {
-    return &priv(me)->irw;
+    bt_piece_t *me = pceo;
+
+    for (;*iter < avltree_size(priv(me)->peers); (*iter)++)
+    {
+        void* k;
+        if ((k = avltree_get_from_idx(priv(me)->peers,*iter)))
+            return k;
+    }
+
+    return NULL;
 }
 
 /**
- ** Add this data to the piece */
+ * Add this data to the piece
+ * @return 1 on success, -1 if the piece is invalid, otherwise 0 */
 int bt_piece_write_block(
-    void *pceo,
+    bt_piece_t *pceo,
     void *caller,
     const bt_block_t * blk,
-    const void *blkdata
+    const void *blkdata,
+    void* peer
 )
 {
     bt_piece_t *me = pceo;
@@ -89,40 +107,81 @@ int bt_piece_write_block(
         return 0;
     }
 
-    assert(priv(me)->disk);
+#if 0
+    if (avltree_get(priv(me)->peers_blacklisted,peer))
+    {
+        return 0;
+    }
+#endif
+
+    avltree_insert(priv(me)->peers,peer,peer);
+
     assert(priv(me)->disk->write_block);
     assert(priv(me)->disk_udata);
 
-    priv(me)->disk->write_block(priv(me)->disk_udata, me, blk, blkdata);
 
-    priv(me)->validity = VALIDITY_NOTCHECKED;
-
-    /* mark progress */
+    if (0 == priv(me)->disk->write_block(priv(me)->disk_udata, me, blk, blkdata))
     {
-        int offset, len;
-
-        offset = blk->offset;
-        len = blk->len;
-        sc_mark_complete(priv(me)->progress_requested, offset, len);
-        sc_mark_complete(priv(me)->progress_downloaded, offset, len);
-//        sc_get_incomplete(priv(me)->progress_requested, &off, &ln,
-//                                  priv(me)->piece_length);
-
-        if (sc_get_nbytes_completed(priv(me)->progress_downloaded) ==
-                priv(me)->piece_length)
-        {
-            if (bt_piece_is_complete(me))
-            {
-                bt_block_t p;
-                p.piece_idx = blk->piece_idx;
-                p.len = priv(me)->piece_length;
-                p.offset = 0;
-                if (priv(me)->disk->flush_block)
-                    priv(me)->disk->flush_block(priv(me)->disk_udata, me, &p);
-            }
-        }
+        return 0;
+    }
+    else
+    {
+        priv(me)->validity = VALIDITY_NOTCHECKED;
     }
 
+    /* mark progress */
+    sc_mark_complete(priv(me)->progress_requested, blk->offset, blk->len);
+    sc_mark_complete(priv(me)->progress_downloaded, blk->offset, blk->len);
+
+    /*  check the counter if it is fully downloaded */
+    if (sc_is_complete(priv(me)->progress_downloaded))
+    {
+        if (bt_piece_is_valid(me))
+        {
+            bt_block_t p = {
+                .piece_idx = blk->piece_idx,
+                .len = priv(me)->piece_length,
+                .offset = 0
+            };
+
+            if (priv(me)->disk->flush_block)
+                priv(me)->disk->flush_block(priv(me)->disk_udata, me, &p);
+
+            priv(me)->is_completed = TRUE;
+
+            return  TRUE;
+        }
+        else
+        {
+            return -1;
+#if 0
+            /* only peer involved in piece download, therefore treat as
+             * untrusted and blacklist */
+            if (1 == avltree_count(priv(me)->peers_blacklisted))
+            {
+                avltree_insert(priv(me)->peers_blacklisted,peer,peer);
+            }
+            else 
+            {
+                avltree_iterator_t iter;
+
+                for (avl_iterator(priv(me)->peers,&iter);
+                     avl_iterator_has_next(priv(me)->peers,&iter);)
+                {
+                    llqueue_offer(priv(me)->peers_potential_invalid,
+                        avl_iterator_next(priv(me)->peers,&iter));
+                }
+
+                avltree_empty(priv(me)->peers);
+            }
+#endif
+
+            // TODO: set this to false
+            //printf("invalid piece: %d\n", me->idx);
+            return FALSE;
+        }
+    }
+ 
 #if 0 /*  debugging */
     printf("%d left to go: %d/%d\n",
            me->idx,
@@ -134,7 +193,7 @@ int bt_piece_write_block(
 }
 
 void *bt_piece_read_block(
-    void *pceo,
+    bt_piece_t *pceo,
     void *caller,
     const bt_block_t * blk
 )
@@ -154,6 +213,15 @@ void *bt_piece_read_block(
     return priv(me)->disk->read_block(priv(me)->disk_udata, me, blk);
 }
 
+static int __cmp_address(
+    const void *e1,
+    const void *e2,
+    const void *udata __attribute__((__unused__))
+)
+{
+    return e2 - e1;
+}
+
 bt_piece_t *bt_piece_new(
     const unsigned char *sha1sum,
     const int piece_bytes_size
@@ -167,9 +235,9 @@ bt_piece_t *bt_piece_new(
     priv(me)->progress_downloaded = sc_init(piece_bytes_size);
     priv(me)->progress_requested = sc_init(piece_bytes_size);
     priv(me)->piece_length = piece_bytes_size;
-    priv(me)->irw.read_block = bt_piece_read_block;
-    priv(me)->irw.write_block = bt_piece_write_block;
     priv(me)->is_completed = FALSE;
+    priv(me)->peers = avltree_new(__cmp_address);
+
 //    priv(me)->data = malloc(priv(me)->piece_length);
 //    memset(priv(me)->data, 0, piece_bytes_size);
 
@@ -238,7 +306,6 @@ void *bt_piece_get_data(
  * @return 1 if valid; 0 otherwise */
 int bt_piece_is_valid(bt_piece_t * me)
 {
-
     if (priv(me)->validity == VALIDITY_VALID)
     {
         return 1;
@@ -307,22 +374,6 @@ int bt_piece_is_complete(bt_piece_t * me)
     {
         return TRUE;
     }
-    /*  check the counter if it is fully downloaded */
-    else if (sc_is_complete(priv(me)->progress_downloaded))
-    {
-        //printf("fully complete %d\n", me->idx);
-        if (1 == bt_piece_is_valid(me))
-        {
-            priv(me)->is_completed = TRUE;
-            return  TRUE;
-        }
-        else
-        {
-            // TODO: set this to false
-            //printf("invalid piece: %d\n", me->idx);
-            return FALSE;
-        }
-    }
     else
     {
         int off, ln;
@@ -334,7 +385,7 @@ int bt_piece_is_complete(bt_piece_t * me)
         if (0 == off && ln == priv(me)->piece_length)
         {
             /* if sha1 matches properly - then we are done */
-            if (1 == bt_piece_is_valid(me))
+            if (bt_piece_is_valid(me))
             {
                 priv(me)->is_completed = TRUE;
                 return TRUE;
@@ -343,8 +394,6 @@ int bt_piece_is_complete(bt_piece_t * me)
 
         return FALSE;
     }
-
-    return FALSE;
 }
 
 int bt_piece_is_fully_requested(bt_piece_t * me)

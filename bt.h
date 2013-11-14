@@ -40,6 +40,8 @@ typedef int (
     const bt_block_t * blk
 );
 
+/**
+ * @return 0 on error */
 typedef int (
     *func_write_block_f
 )   (
@@ -264,3 +266,12 @@ char *str2sha1hash(const char *str, int len);
 char *bt_generate_peer_id();
 
 void *bt_dm_get_piecedb(bt_dm_t* me_);
+
+int bt_piece_write_block(
+    bt_piece_t *pceo,
+    void *caller,
+    const bt_block_t * blk,
+    const void *blkdata,
+    void* peer
+);
+

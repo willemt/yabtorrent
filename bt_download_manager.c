@@ -466,7 +466,17 @@ int __FUNC_peerconn_pushblock(void *bto,
     assert(pce);
 
     /* write block to disk medium */
-    bt_piece_write_block(pce, NULL, block, data);
+    switch (bt_piece_write_block(pce, NULL, block, data, peer))
+    {
+        case 0:
+            printf("error writing block\n");
+            break;
+        case -1:
+            printf("invalid piece detected\n");
+            break;
+        default:
+            break;
+    }
 
     if (bt_piece_is_complete(pce))
     {
