@@ -215,8 +215,7 @@ void *bt_piece_read_block(
 
 static int __cmp_address(
     const void *e1,
-    const void *e2,
-    const void *udata __attribute__((__unused__))
+    const void *e2
 )
 {
     return e2 - e1;

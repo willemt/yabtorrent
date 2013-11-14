@@ -102,7 +102,7 @@ void bt_blacklist_add_peer(
     avltree_insert(p->peers_blacklisted,peer,peer);
 }
 
-void bt_blacklist_add_potential_peer(
+void bt_blacklist_add_peer_as_potentially_blacklisted(
     void* blacklist,
     void* piece,
     void* peer)
@@ -115,7 +115,7 @@ void bt_blacklist_add_potential_peer(
         p = __init_piece();
         avltree_insert(me->pieces,p,p);
     }
-    avltree_insert(p->peers_blacklisted,peer,peer);
+    llqueue_offer(p->peers_potential_invalid, peer);
 }
 
 /**
