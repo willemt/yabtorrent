@@ -67,20 +67,30 @@ typedef struct
  * @param iter Iterator that we use to obtain the next peer. Starts at 0
  * @return next peer */
 void* bt_piece_get_peers(
-    bt_piece_t *pceo,
+    bt_piece_t *me,
     int *iter
 )
 {
-    bt_piece_t *me = pceo;
-
     for (;*iter < avltree_size(priv(me)->peers); (*iter)++)
     {
         void* k;
+
         if ((k = avltree_get_from_idx(priv(me)->peers,*iter)))
+        {
+            (*iter)++;
             return k;
+        }
     }
 
     return NULL;
+}
+
+/**
+ * @return number of peers that were involved in downloading this piece */
+int bt_piece_num_peers(bt_piece_t *pceo)
+{
+    bt_piece_t *me = pceo;
+    return avltree_count(priv(me)->peers);
 }
 
 /**
@@ -89,8 +99,8 @@ void* bt_piece_get_peers(
 int bt_piece_write_block(
     bt_piece_t *pceo,
     void *caller,
-    const bt_block_t * blk,
-    const void *blkdata,
+    const bt_block_t * b,
+    const void *bdata,
     void* peer
 )
 {
@@ -99,7 +109,7 @@ int bt_piece_write_block(
     assert(me);
 
 #if 0 /*  debugging */
-    printf("writing block: %d\n", blk->piece_idx, blk->offset);
+    printf("writing block: %d\n", b->piece_idx, b->offset);
 #endif
 
     if (!priv(me)->disk)
@@ -119,8 +129,7 @@ int bt_piece_write_block(
     assert(priv(me)->disk->write_block);
     assert(priv(me)->disk_udata);
 
-
-    if (0 == priv(me)->disk->write_block(priv(me)->disk_udata, me, blk, blkdata))
+    if (0 == priv(me)->disk->write_block(priv(me)->disk_udata, me, b, bdata))
     {
         return 0;
     }
@@ -130,8 +139,8 @@ int bt_piece_write_block(
     }
 
     /* mark progress */
-    sc_mark_complete(priv(me)->progress_requested, blk->offset, blk->len);
-    sc_mark_complete(priv(me)->progress_downloaded, blk->offset, blk->len);
+    sc_mark_complete(priv(me)->progress_requested, b->offset, b->len);
+    sc_mark_complete(priv(me)->progress_downloaded, b->offset, b->len);
 
     /*  check the counter if it is fully downloaded */
     if (sc_is_complete(priv(me)->progress_downloaded))
@@ -139,7 +148,7 @@ int bt_piece_write_block(
         if (bt_piece_is_valid(me))
         {
             bt_block_t p = {
-                .piece_idx = blk->piece_idx,
+                .piece_idx = b->piece_idx,
                 .len = priv(me)->piece_length,
                 .offset = 0
             };
@@ -154,31 +163,6 @@ int bt_piece_write_block(
         else
         {
             return -1;
-#if 0
-            /* only peer involved in piece download, therefore treat as
-             * untrusted and blacklist */
-            if (1 == avltree_count(priv(me)->peers_blacklisted))
-            {
-                avltree_insert(priv(me)->peers_blacklisted,peer,peer);
-            }
-            else 
-            {
-                avltree_iterator_t iter;
-
-                for (avl_iterator(priv(me)->peers,&iter);
-                     avl_iterator_has_next(priv(me)->peers,&iter);)
-                {
-                    llqueue_offer(priv(me)->peers_potential_invalid,
-                        avl_iterator_next(priv(me)->peers,&iter));
-                }
-
-                avltree_empty(priv(me)->peers);
-            }
-#endif
-
-            // TODO: set this to false
-            //printf("invalid piece: %d\n", me->idx);
-            return FALSE;
         }
     }
  
@@ -535,3 +519,13 @@ int bt_piece_write_block_to_str(
 
     return 1;
 }
+
+void bt_piece_drop_download_progress(bt_piece_t *me)
+{
+    avltree_empty(priv(me)->peers);
+    priv(me)->is_completed = 0;
+    priv(me)->validity = VALIDITY_NOTCHECKED;
+    sc_mark_all_incomplete(priv(me)->progress_downloaded);
+    sc_mark_all_incomplete(priv(me)->progress_requested);
+}
+

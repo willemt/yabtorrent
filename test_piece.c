@@ -383,6 +383,39 @@ void TxestBTPiece_multi_peer_recognised_as_pontentially_invalidating_piece(
 }
 #endif
 
+void TestBTPiece_get_num_peers(
+    CuTest * tc
+)
+{
+    void *p1, *p2;
+    bt_piece_t *pce;
+    bt_block_t blk;
+    char *msg, out[40];
+    char *hash;
+
+    p1 = malloc(1);
+    p2 = malloc(1);
+    msg = strdup("this great message is 40 bytes in length");
+    hash = str2sha1hash(msg, 40);
+    pce = bt_piece_new(hash, 40);
+    CuAssertTrue(tc, 0 == bt_piece_num_peers(pce));
+
+    blk.len = 10;
+    blk.offset = 0;
+    bt_piece_write_block(pce, NULL, &blk, msg, p1);
+    CuAssertTrue(tc, 1 == bt_piece_num_peers(pce));
+
+    /* write piece by same peer again */
+    blk.offset = 10;
+    bt_piece_write_block(pce, NULL, &blk, msg + 10, p1);
+    CuAssertTrue(tc, 1 == bt_piece_num_peers(pce));
+
+    /* write piece from another peer */
+    blk.offset = 20;
+    bt_piece_write_block(pce, NULL, &blk, msg + 20, p2);
+    CuAssertTrue(tc, 2 == bt_piece_num_peers(pce));
+}
+
 void TestBTPiece_get_peers(
     CuTest * tc
 )
@@ -398,6 +431,7 @@ void TestBTPiece_get_peers(
     msg = strdup("this great message is 40 bytes in length");
     hash = str2sha1hash(msg, 40);
     pce = bt_piece_new(hash, 40);
+    bt_piece_set_disk_blockrw(pce, &__mock_disk_rw, &__mockdisk);
 
     blk.len = 20;
     blk.offset = 0;
@@ -411,7 +445,11 @@ void TestBTPiece_get_peers(
     void* p1_, *p2_;
 
     p1_ = bt_piece_get_peers(pce,&i);
+    CuAssertTrue(tc, i != 0);
+    CuAssertTrue(tc, p1 == p1_ || p2 == p1_);
     p2_ = bt_piece_get_peers(pce,&i);
+    CuAssertTrue(tc, p1 == p2_ || p2 == p2_);
+    CuAssertTrue(tc, NULL == bt_piece_get_peers(pce,&i));
     CuAssertTrue(tc, (p1_ == p1 && p2_ == p2) || (p2_ == p1 && p1_ == p2));
     CuAssertTrue(tc, !bt_piece_get_peers(pce,&i));
 }

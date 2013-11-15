@@ -136,13 +136,14 @@ void bt_sequential_selector_giveback_piece(
     peer_t *pr;
     void* p;
 
-    /*  get the peer */
-    pr = hashmap_get(me->peers, peer);
-
-    assert(pr);
-
-    heap_offer(pr->p_candidates, (void *) (long) piece_idx + 1);
     hashmap_remove(me->p_polled, (void *) (long) piece_idx + 1);
+
+    if (peer)
+    {
+        pr = hashmap_get(me->peers, peer);
+        assert(pr);
+        heap_offer(pr->p_candidates, (void *) (long) piece_idx + 1);
+    }
 
 #if 0
     if (!(p = hashmap_get(me->p_polled, (void *) (long) piece_idx + 1)))

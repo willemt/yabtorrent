@@ -22,6 +22,7 @@
 #include "block.h"
 #include "bt.h"
 #include "bt_local.h"
+#include "bt_blacklist.h"
 
 #include "linked_list_queue.h"
 #include "linked_list_hashmap.h"

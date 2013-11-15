@@ -34,7 +34,8 @@
 #include "bt_block_readwriter_i.h"
 #include "bt_string.h"
 #include "bt_piece_db.h"
-
+#include "bt_piece.h"
+#include "bt_blacklist.h"
 #include "bt_download_manager_private.h"
 #include "bt_choker_peer.h"
 #include "bt_choker.h"
@@ -96,6 +97,8 @@ typedef struct
 
     /* peer manager */
     void* pm;
+
+    void* blacklist;
 
     /*  leeching choker */
     void *lchoke;
@@ -351,6 +354,7 @@ int __fill_bag(bt_dm_private_t *me, void* peer)
 
         pce = me->ipdb->get_piece(me->pdb, idx);
         assert(pce);
+
         if (!bt_piece_is_fully_requested(pce) && !bt_piece_is_complete(pce))
         {
             bag_put(me->p_candidates, (void *) (long) idx + 1);
@@ -457,33 +461,57 @@ int __FUNC_peerconn_pushblock(void *bto,
 {
     bt_peer_t * peer = pr;
     bt_dm_private_t *me = bto;
-    bt_piece_t *pce;
+    bt_piece_t *p;
 
     assert(me->ipdb->get_piece);
 
-    pce = me->ipdb->get_piece(me->pdb, block->piece_idx);
+    p = me->ipdb->get_piece(me->pdb, block->piece_idx);
 
-    assert(pce);
+    assert(p);
 
-    /* write block to disk medium */
-    switch (bt_piece_write_block(pce, NULL, block, data, peer))
+    switch (bt_piece_write_block(p, NULL, block, data, peer))
     {
         case 0:
             printf("error writing block\n");
             break;
         case -1:
-            printf("invalid piece detected\n");
+            {
+                printf("invalid piece detected\n");
+
+                /* only peer involved in piece download, therefore treat as
+                 * untrusted and blacklist */
+                if (1 == bt_piece_num_peers(p))
+                {
+                    bt_blacklist_add_peer(me->blacklist,p,peer);
+                }
+                else 
+                {
+                    int i = 0;
+                    void* peer2;
+
+                    for (peer2 = bt_piece_get_peers(p,&i);
+                         peer2;
+                         peer2 = bt_piece_get_peers(p,&i))
+                    {
+                        bt_blacklist_add_peer_as_potentially_blacklisted(
+                                me->blacklist,p,peer2);
+                    }
+
+                    bt_piece_drop_download_progress(p);
+                    me->ips.peer_giveback_piece(me->pselector, NULL, p->idx);
+                }
+            }
             break;
         default:
             break;
     }
 
-    if (bt_piece_is_complete(pce))
+    if (bt_piece_is_complete(p))
     {
 //        bt_piecedb_print_pieces_downloaded(bt_dm_get_piecedb(me));
 
         /*  send have to all peers */
-        if (bt_piece_is_valid(pce))
+        if (bt_piece_is_valid(p))
         {
             int ii;
 
@@ -491,10 +519,10 @@ int __FUNC_peerconn_pushblock(void *bto,
             me->ips.have_piece(me->pselector, block->piece_idx);
 
             __log(me, NULL, "client,piece downloaded,pieceidx=%d",
-                  bt_piece_get_idx(pce));
+                  bt_piece_get_idx(p));
 
             /* send HAVE messages to all peers */
-            bt_peermanager_forall(me->pm,me,pce,__FUNC_peerconn_send_have);
+            bt_peermanager_forall(me->pm,me,p,__FUNC_peerconn_send_have);
         }
 
 
@@ -834,6 +862,8 @@ void *bt_dm_new()
     /* peer manager */
     me->pm = bt_peermanager_new(me);
     bt_peermanager_set_config(me->pm, me->cfg);
+
+    me->blacklist = bt_blacklist_new();
 
     /*  set leeching choker */
     me->lchoke = bt_leeching_choker_new(atoi(config_get(me->cfg,"max_active_peers")));

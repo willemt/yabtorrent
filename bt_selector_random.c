@@ -147,12 +147,12 @@ void bt_random_selector_giveback_piece(
 
     hashmap_remove(rf->p_polled, (void *) (long) piece_idx + 1);
 
-    /*  get the peer */
-    pr = hashmap_get(rf->peers, peer);
-
-    assert(pr);
-
-    bag_put(pr->p_candidates, (void *) (long) piece_idx + 1);
+    if (peer)
+    {
+        pr = hashmap_get(rf->peers, peer);
+        assert(pr);
+        bag_put(pr->p_candidates, (void *) (long) piece_idx + 1);
+    }
 }
 
 /**

@@ -23,4 +23,8 @@ int bt_piece_is_complete(bt_piece_t * me);
 
 int bt_piece_is_downloaded(bt_piece_t * me);
 
-void* bt_piece_get_peers(bt_piece_t *pceo, int *iter);
+void* bt_piece_get_peers(bt_piece_t *me, int *iter);
+
+int bt_piece_num_peers(bt_piece_t *me);
+
+void bt_piece_drop_download_progress(bt_piece_t *me);
