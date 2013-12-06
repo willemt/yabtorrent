@@ -119,7 +119,7 @@ void client_add_peer(
     peer = bt_dm_add_peer(me->bt, peer_id, peer_id_len, ip, ip_len, port, peer_nethandle);
 }
 
-static void __log(void *udata, void *src, char *buf)
+static void __log(void *udata, void *src, const char *buf, ...)
 {
     printf("%s\n", buf);
 }
@@ -137,7 +137,8 @@ client_t* mock_client_setup(int piecelen)
         .peer_connect = peer_connect,
         .peer_send = peer_send,
         .peer_disconnect = peer_disconnect,
-        .call_exclusively = call_exclusively_pass_through
+        .call_exclusively = call_exclusively_pass_through,
+        .log = __log
     };
 
     /* Selector */
@@ -155,7 +156,6 @@ client_t* mock_client_setup(int piecelen)
 
     /* bittorrent client */
     cli->bt = bt_dm_new();
-    bt_dm_set_logging(cli->bt, 0, __log);
     cfg = bt_dm_get_config(cli->bt);
     config_set(cfg, "my_peerid", bt_generate_peer_id());
     bt_dm_set_cbs(cli->bt, &func, cli);

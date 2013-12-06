@@ -223,19 +223,6 @@ typedef struct
      */
     int (*peer_disconnect) (void* me, void **udata, void* nethandle);
 
-#if 0
-    /**
-     * Create mutually exclusive lock. */
-    int (*lock_create)(void *udata, void **lock);
-
-    /**
-     * Obtain mutually exclusive lock. */
-    int (*lock_get)(void *udata, void **lock);
-
-    /**
-     * Release mutually exclusive lock. */
-    int (*lock_release)(void *udata, void **lock);
-#else
     /**
      * Waits until lock is released, and then runs callback.
      * Creates lock when lock is NULL
@@ -246,7 +233,8 @@ typedef struct
      * @return result of callback */
     void* (*call_exclusively)(void* me, void* cb_ctx, void **lock, void* udata,
             void* (*cb)(void* me, void* udata));
-#endif
+
+    func_log_f log;
 
 } bt_dm_cbs_t;
 

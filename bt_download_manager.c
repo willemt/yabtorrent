@@ -69,10 +69,6 @@ typedef struct
 
     void *job_lock;
 
-    /* logging  */
-    func_log_f func_log;
-    void *log_udata;
-
     /* configuration */
     void* cfg;
 
@@ -110,7 +106,7 @@ static void __FUNC_log(void *bto, void *src, const char *fmt, ...)
     char buf[1024], *p;
     va_list args;
 
-    if (!me->func_log)
+    if (!me->cb.log)
         return;
 
     p = buf;
@@ -119,7 +115,7 @@ static void __FUNC_log(void *bto, void *src, const char *fmt, ...)
 
     va_start(args, fmt);
     vsprintf(p, fmt, args);
-    me->func_log(me->log_udata, NULL, buf);
+    me->cb.log(me->cb_ctx, NULL, buf);
 }
 
 static void __log(void *bto, void *src, const char *fmt, ...)
@@ -128,7 +124,7 @@ static void __log(void *bto, void *src, const char *fmt, ...)
     char buf[1024];
     va_list args;
 
-    if (!me->func_log)
+    if (!me->cb.log)
         return;
 
     va_start(args, fmt);
@@ -416,55 +412,8 @@ static void __dispatch_job(bt_dm_private_t* me, bt_job_t* j)
                     pwp_conn_offer_block(j->pollblock.peer->pc, &blk);
                 }
 
-
-                // TODO: should split into only the blocks we need
-                /* offer the whole piece */
-//                blk.piece_idx = p_idx;
-//                blk.offset = 0;
-//                blk.len = config_get_int(me->cfg, "piece_length");
-//                pwp_conn_offer_block(j->pollblock.peer->pc, &blk);
                 break;
             }
-
-#if 0
-            if (bag_count(me->p_candidates) < 3)
-            {
-                int r;
-
-                r = __fill_bag(me, j->poll_block.peer);
-                if (-1 == r)
-                    return r;
-            }
-
-            if (0 == bag_count(me->p_candidates))
-                return -1;
-
-            while (1)
-            {
-                idx = ((unsigned long int)bag_take(me->p_candidates)) - 1;
-
-                if (-1 == idx)
-                {
-                    return -1;
-                }
-
-                pce = me->ipdb->get_piece(me->pdb, idx);
-                assert(pce);
-
-                if (!bt_piece_is_fully_requested(pce))
-                {
-                    bag_put(me->p_candidates, (void *) (long) idx + 1);
-                    bt_piece_poll_block_request(pce, blk);
-                    return 0;
-                }
-
-                if (bag_count(me->p_candidates) == 0)
-                    __fill_bag(me,peer);
-            }
-
-            pwp_conn_request_block_from_peer((pwp_conn_t*)me, &blk);
-#endif
-
         }
             break;
         default:
@@ -485,12 +434,7 @@ static int __FUNC_peerconn_pollblock(void *bto, void* peer)
     j = malloc(sizeof(bt_job_t));
     j->type = BT_JOB_POLLBLOCK;
     j->pollblock.peer = peer;
-    //memcpy(&j->pollblock.blk, b, sizeof(bt_block_t));
     me->cb.call_exclusively(me, me->cb_ctx, &me->job_lock, j, __offer_job);
-
-//    pce = me->ipdb->get_piece(me->pdb, 0);
-//    assert(!bt_piece_is_complete(pce));
-//    assert(!bt_piece_is_fully_requested(pce));
     return 0;
 }
 
@@ -624,7 +568,7 @@ void __FUNC_peerconn_log(void *bto, void *src_peer, const char *buf, ...)
     char buffer[256];
 
     sprintf(buffer, "pwp,%s,%s", peer->peer_id, buf);
-    me->func_log(me->log_udata, NULL, buffer);
+    me->cb.log(me->cb_ctx, NULL, buffer);
 }
 
 int __FUNC_peerconn_disconnect(void *bto,
@@ -864,18 +808,6 @@ void* bt_dm_get_config(bt_dm_t* me_)
 }
 
 /**
- * Set the logging function
- * TODO: merge into bt_dm_set_cbs
- */
-void bt_dm_set_logging(bt_dm_t* me_, void *udata, func_log_f func)
-{
-    bt_dm_private_t *me = (void*)me_;
-
-    me->func_log = func;
-    me->log_udata = udata;
-}
-
-/**
  * Set callback functions
  */
 void bt_dm_set_cbs(bt_dm_t* me_, bt_dm_cbs_t * func, void* cb_ctx)
@@ -1022,10 +954,4 @@ int bt_dm_release(bt_dm_t* me_)
 {
     //TODO add destructors
     return 1;
-}
-
-void bt_dm_scan_currently_held_pieces(bt_dm_t* me_)
-{
-    bt_dm_private_t* me = (void*)me_;
-
 }

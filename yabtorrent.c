@@ -88,17 +88,17 @@ static struct option const long_opts[] = {
     { NULL, 0, NULL, 0}
 };
 
-static void __log(void *udata, void *src, char *buf)
+static void __log(void *udata, void *src, const char *buf, ...)
 {
     char stamp[32];
-    int fd = (unsigned long) udata;
+//    int fd = (unsigned long) udata;
     struct timeval tv;
 
     printf("%s\n", buf);
     gettimeofday(&tv, NULL);
     sprintf(stamp, "%d,%0.2f,", (int) tv.tv_sec, (float) tv.tv_usec / 100000);
-    write(fd, stamp, strlen(stamp));
-    write(fd, buf, strlen(buf));
+//    write(fd, stamp, strlen(stamp));
+//    write(fd, buf, strlen(buf));
 }
 
 /**
@@ -493,16 +493,16 @@ int main(int argc, char **argv)
     config_set(cfg, "my_peerid", bt_generate_peer_id());
     assert(config_get(cfg, "my_peerid"));
 
-    /*  logging */
-    bt_dm_set_logging(
-            bc, open("dump_log", O_CREAT | O_TRUNC | O_RDWR, 0666), __log);
+//    bt_dm_set_logging(
+//            bc, open("dump_log", O_CREAT | O_TRUNC | O_RDWR, 0666), __log);
 
     /* set network functions */
     bt_dm_cbs_t func = {
         .peer_connect = peer_connect,
         .peer_send = peer_send,
         .peer_disconnect = peer_disconnect, 
-        .call_exclusively = on_call_exclusively
+        .call_exclusively = on_call_exclusively,
+        .log = __log
     };
 
     bt_dm_set_cbs(bc, &func, NULL);
@@ -518,7 +518,6 @@ int main(int argc, char **argv)
     /* point diskcache to filedumper */
     bt_diskcache_set_disk_blockrw(bt.dc,
             bt_filedumper_get_blockrw(bt.fd), bt.fd);
-    //bt_diskcache_set_func_log(bc->dc, __log, bc);
 
     /* Piece DB */
     bt.db = bt_piecedb_new();
