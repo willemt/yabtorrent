@@ -230,6 +230,8 @@ def build(bld):
            ], 
         cflags=[
             '-Werror',
+            '-Werror=format',
+            '-Werror=int-to-pointer-cast',
             '-g',
             platform,
             '-Werror=return-type',

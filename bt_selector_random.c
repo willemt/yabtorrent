@@ -186,11 +186,6 @@ void bt_random_selector_peer_have_piece(
     /*  get the peer */
     pr = hashmap_get(rf->peers, peer);
 
-    if (!pr)
-    {
-        int a = 0;
-        printf("%lx\n", 2 / a);
-    }
     assert(pr);
 
     if (!(p = hashmap_get(rf->p_polled, (void *) (long) piece_idx + 1)))

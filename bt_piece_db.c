@@ -138,7 +138,7 @@ void *bt_piecedb_get(void* dbo, const unsigned int idx)
     assert(0 <= idx);
     return priv(db)->pieces[idx];
 #else
-    return hashmap_get(priv(db)->pieces,(void*)idx+1);
+    return hashmap_get(priv(db)->pieces,(void*)((unsigned long)idx+1));
 #endif
 }
 
@@ -208,7 +208,7 @@ int bt_piecedb_add(bt_piecedb_t * db, const char *sha1)
     pce = bt_piece_new((const unsigned char*)sha1, size);
     bt_piece_set_idx(pce, hashmap_count(priv(db)->pieces));
     bt_piece_set_disk_blockrw(pce, priv(db)->blockrw, priv(db)->blockrw_data);
-    hashmap_put(priv(db)->pieces, (void*)pce->idx+1, pce);
+    hashmap_put(priv(db)->pieces, (void*)((unsigned long)pce->idx+1), pce);
     return pce->idx;
 }
 
