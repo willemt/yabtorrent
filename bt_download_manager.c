@@ -389,13 +389,11 @@ static void __dispatch_job(bt_dm_private_t* me, bt_job_t* j)
     {
         case BT_JOB_POLLBLOCK:
         {
-            int p_idx;
-            bt_block_t blk;
-
             assert(me->ips.poll_piece);
 
             while (1)
             {
+                int p_idx;
                 bt_piece_t* pce;
 
                 p_idx = me->ips.poll_piece(me->pselector, j->pollblock.peer);
@@ -410,12 +408,21 @@ static void __dispatch_job(bt_dm_private_t* me, bt_job_t* j)
                     continue;
                 }
 
+                while (!bt_piece_is_fully_requested(pce))
+                {
+                    bt_block_t blk;
+
+                    bt_piece_poll_block_request(pce, &blk);
+                    pwp_conn_offer_block(j->pollblock.peer->pc, &blk);
+                }
+
+
                 // TODO: should split into only the blocks we need
                 /* offer the whole piece */
-                blk.piece_idx = p_idx;
-                blk.offset = 0;
-                blk.len = config_get_int(me->cfg, "piece_length");
-                pwp_conn_offer_block(j->pollblock.peer->pc, &blk);
+//                blk.piece_idx = p_idx;
+//                blk.offset = 0;
+//                blk.len = config_get_int(me->cfg, "piece_length");
+//                pwp_conn_offer_block(j->pollblock.peer->pc, &blk);
                 break;
             }
 

@@ -385,22 +385,21 @@ void bt_piece_poll_block_request(
     bt_block_t * request
 )
 {
-    int offset, len, block_size;
+    int offset, len, blk_size;
 
     /*  very rare that the standard block size is greater than the piece size
      *  this should relate to testing only */
     if (priv(me)->piece_length < BLOCK_SIZE)
     {
-        block_size = priv(me)->piece_length;
+        blk_size = priv(me)->piece_length;
     }
     else
     {
-        block_size = BLOCK_SIZE;
+        blk_size = BLOCK_SIZE;
     }
 
     /* get an incomplete block */
-    sc_get_incomplete(priv(me)->progress_requested, &offset, &len,
-                              block_size);
+    sc_get_incomplete(priv(me)->progress_requested, &offset, &len, blk_size);
 
     /* create the request */
     request->piece_idx = me->idx;
