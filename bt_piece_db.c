@@ -32,9 +32,6 @@
 
 typedef struct
 {
-    /* number of pieces */
-    int npieces;
-
     hashmap_t *pieces;
 
     /* default size of piece */
@@ -289,7 +286,7 @@ int bt_piecedb_get_num_completed(bt_piecedb_t * db)
  * @return 1 if all complete, 0 otherwise */
 int bt_piecedb_get_length(bt_piecedb_t * db)
 {
-    return priv(db)->npieces;
+    return hashmap_count(priv(db)->pieces);
 }
 
 /**

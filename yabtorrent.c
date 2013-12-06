@@ -94,6 +94,7 @@ static void __log(void *udata, void *src, char *buf)
     int fd = (unsigned long) udata;
     struct timeval tv;
 
+    printf("%s\n", buf);
     gettimeofday(&tv, NULL);
     sprintf(stamp, "%d,%0.2f,", (int) tv.tv_sec, (float) tv.tv_usec / 100000);
     write(fd, stamp, strlen(stamp));
@@ -160,6 +161,23 @@ static void __on_tc_done(void* data, int status)
         printf("No connections made, quitting\n");
         exit(0);
     }
+}
+
+static void* on_call_exclusively(void* me, void* cb_ctx, void **lock, void* udata,
+        void* (*cb)(void* me, void* udata))
+{
+    void* result;
+
+    if (NULL == *lock)
+    {
+        *lock = malloc(sizeof(uv_mutex_t));
+        uv_mutex_init(*lock);
+    }
+
+    uv_mutex_lock(*lock);
+    result = cb(me,udata);
+    uv_mutex_unlock(*lock);
+    return result;
 }
 
 static int __dispatch_from_buffer(
@@ -295,7 +313,9 @@ static int __tfr_event_str(void* udata, const char* key, const char* val, int le
         for (i=0; i < len; i += 20)
         {
             bt_piecedb_add(me->bt->db,val + i);
+            printf("pieces: %d\n", bt_piecedb_get_length(me->bt->db));
         }
+
         config_set_va(me->bt->cfg, "npieces", "%d",
                 bt_piecedb_get_length(me->bt->db));
     }
@@ -482,6 +502,7 @@ int main(int argc, char **argv)
         .peer_connect = peer_connect,
         .peer_send = peer_send,
         .peer_disconnect = peer_disconnect, 
+        .call_exclusively = on_call_exclusively
     };
 
     bt_dm_set_cbs(bc, &func, NULL);
