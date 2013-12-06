@@ -127,7 +127,7 @@ void TestBT_Peer_share_20_pieces(
             bt_piecedb_add(pd,hash);
         }
     }
-  
+
     /* B will initiate the connection */
     asprintf(&addr,"%p", b);
     client_add_peer(a,NULL,0,addr,strlen(addr),0);
@@ -140,6 +140,9 @@ void TestBT_Peer_share_20_pieces(
             bt_dm_get_piecedb(b->bt),
             bt_dm_get_piecedb(a->bt),
             mt, num_pieces);
+
+    bt_dm_check_pieces(a->bt);
+    bt_dm_check_pieces(b->bt);
 
 //    bt_piecedb_print_pieces_downloaded(bt_dm_get_piecedb(a->bt));
 //    bt_piecedb_print_pieces_downloaded(bt_dm_get_piecedb(b->bt));

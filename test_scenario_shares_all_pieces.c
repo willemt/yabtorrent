@@ -86,6 +86,9 @@ void TestBT_Peer_shares_all_pieces(
         //bt_piecedb_print_pieces_downloaded(bt_dm_get_piecedb(a->bt));
         CuAssertTrue(tc, 1 == bt_piecedb_all_pieces_are_complete(bt_dm_get_piecedb(a->bt)));
     }
+
+    bt_dm_check_pieces(a->bt);
+    bt_dm_check_pieces(b->bt);
     
     /* B will initiate the connection */
     asprintf(&addr,"%p", a);
@@ -114,8 +117,8 @@ void TestBT_Peer_shares_all_pieces(
 //        __print_client_contents();
     }
 
-//    bt_piecedb_print_pieces_downloaded(bt_dm_get_piecedb(a->bt));
-//    bt_piecedb_print_pieces_downloaded(bt_dm_get_piecedb(b->bt));
+    bt_piecedb_print_pieces_downloaded(bt_dm_get_piecedb(a->bt));
+    bt_piecedb_print_pieces_downloaded(bt_dm_get_piecedb(b->bt));
 
     CuAssertTrue(tc, 1 == bt_piecedb_all_pieces_are_complete(bt_dm_get_piecedb(b->bt)));
 }

@@ -547,8 +547,6 @@ int main(int argc, char **argv)
         config_print(cfg);
     }
 
-    bt_piecedb_print_pieces_downloaded(bt.db);
-
     /* Selector */
     bt_pieceselector_i ips = {
         .new = bt_random_selector_new,
@@ -563,6 +561,8 @@ int main(int argc, char **argv)
     };
 
     bt_dm_set_piece_selector(bt.bc, &ips, NULL);
+    bt_dm_check_pieces(bt.bc);
+    bt_piecedb_print_pieces_downloaded(bt.db);
 
     /* start uv */
     loop = uv_default_loop();

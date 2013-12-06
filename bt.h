@@ -278,6 +278,8 @@ void* bt_dm_get_config(bt_dm_t* me_);
 
 char *bt_generate_peer_id();
 
+void bt_dm_check_pieces(bt_dm_t* me_);
+
 int bt_piece_write_block(
     bt_piece_t *pceo,
     void *caller,

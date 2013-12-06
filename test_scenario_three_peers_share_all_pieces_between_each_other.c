@@ -102,6 +102,10 @@ void TestBT_Peer_three_share_all_pieces_between_each_other(
                 NULL, &blk, data);
     }
 
+    bt_dm_check_pieces(a->bt);
+    bt_dm_check_pieces(b->bt);
+    bt_dm_check_pieces(c->bt);
+
     /* B will initiate the connection */
     asprintf(&addr,"%p", b);
     client_add_peer(a,NULL,0,addr,strlen(addr),0);

@@ -190,20 +190,16 @@ int bt_dm_dispatch_from_buffer(
     /* handle handshake */
     if (!pwp_conn_flag_is_set(peer->pc, PC_HANDSHAKE_RECEIVED))
     {
-        int ret;
-
-        ret = pwp_handshaker_dispatch_from_buffer(peer->mh, &buf, &len);
-
-        if (ret == 1)
+        switch (pwp_handshaker_dispatch_from_buffer(peer->mh, &buf, &len))
         {
+        case 1:
             /* we're done with handshaking */
             pwp_handshaker_release(peer->mh);
             peer->mh = pwp_msghandler_new(peer->pc);
             pwp_conn_set_state(peer->pc, PC_HANDSHAKE_RECEIVED);
             pwp_conn_send_bitfield(peer->pc);
-        }
-        else if (ret == -1)
-        {
+            break;
+        default:
             return 0;
         }
     }
@@ -561,15 +557,15 @@ static void __FUNC_peerconn_giveback_block(
         )
 {
     bt_dm_private_t *me = bt;
-    void* pce;
+    void* p;
 
     if (b->len < 0)
         return;
 
-    pce = me->ipdb->get_piece(me->pdb, b->piece_idx);
-    assert(pce);
+    p = me->ipdb->get_piece(me->pdb, b->piece_idx);
+    assert(p);
 
-    bt_piece_giveback_block(pce, b);
+    bt_piece_giveback_block(p, b);
     me->ips.peer_giveback_piece(me->pselector, peer, b->piece_idx);
 }
 
@@ -579,15 +575,15 @@ static void __FUNC_peerconn_write_block_to_stream(
         unsigned char ** msg)
 {
     bt_dm_private_t *me = cb_ctx;
-    void* pce;
+    void* p;
 
-    if (!(pce = me->ipdb->get_piece(me->pdb, blk->piece_idx)))
+    if (!(p = me->ipdb->get_piece(me->pdb, blk->piece_idx)))
     {
         __log(me,NULL,"ERROR,unable to obtain piece");
         return;
     }
 
-    if (0 == bt_piece_write_block_to_stream(pce, blk, msg))
+    if (0 == bt_piece_write_block_to_stream(p, blk, msg))
     {
         __log(me,NULL,"ERROR,unable to write block to stream");
     }
@@ -808,16 +804,7 @@ void bt_dm_set_piece_selector(bt_dm_t* me_, bt_pieceselector_i* ips, void* piece
         me->pselector = piece_selector;
     }
 
-    int i, end;
-
-    for (i=0, end = config_get_int(me->cfg,"npieces"); i<end; i++)
-    {
-        bt_piece_t* pce;
-        pce = me->ipdb->get_piece(me->pdb, i);
-
-        if (pce && bt_piece_is_complete(pce))
-            me->ips.have_piece(me->pselector, i);
-    }
+    bt_dm_check_pieces(me_);
 }
 
 /**
@@ -898,6 +885,25 @@ void *bt_peer_get_nethandle(void* pr)
     bt_peer_t* peer = pr;
 
     return peer->nethandle;
+}
+
+/**
+ * Scan over currently downloaded pieces */
+void bt_dm_check_pieces(bt_dm_t* me_)
+{
+    bt_dm_private_t* me = (void*)me_;
+    int i, end;
+
+    for (i=0, end = config_get_int(me->cfg,"npieces"); i<end; i++)
+    {
+        bt_piece_t* p = me->ipdb->get_piece(me->pdb, i);
+
+        if (p && bt_piece_is_complete(p))
+        {
+            me->ips.have_piece(me->pselector, i);
+            sc_mark_complete(me->pieces_completed, i, 1);
+        }
+    }
 }
 
 /**
