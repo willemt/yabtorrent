@@ -156,6 +156,8 @@ void __FUNC_peer_stats_visitor(void* cb_ctx, void* peer, void* udata)
     bt_peer_t* p = peer;
 
     if (pwp_conn_im_choked(p->pc))
+        stats->choked++;
+    if (pwp_conn_im_choking(p->pc))
         stats->choking++;
     if (pwp_conn_flag_is_set(p->pc, PC_HANDSHAKE_RECEIVED))
         stats->connected++;
@@ -318,33 +320,6 @@ static int __FUNC_peerconn_send_to_peer(void *bto,
     return me->cb.peer_send(me, &me->cb_ctx, peer->nethandle, data, len);
 }
 
-#if 0
-int __fill_bag(bt_dm_private_t *me, void* peer)
-{
-    int idx;
-    bt_piece_t* pce;
-
-    while (1)
-    {
-        idx = me->ips.poll_piece(me->pselector, peer);
-
-        if (idx == -1)
-            return -1;
-
-        pce = me->ipdb->get_piece(me->pdb, idx);
-        assert(pce);
-
-        if (!bt_piece_is_fully_requested(pce) && !bt_piece_is_complete(pce))
-        {
-            bag_put(me->p_candidates, (void *) (long) idx + 1);
-            break;
-        }
-    }
-
-    return 0;
-}
-#endif
-
 typedef struct {
     bt_peer_t* peer;
     bt_block_t blk;
@@ -398,6 +373,7 @@ static void __dispatch_job(bt_dm_private_t* me, bt_job_t* j)
                     break;
 
                 pce = me->ipdb->get_piece(me->pdb, p_idx);
+
                 if (pce && bt_piece_is_complete(pce))
                 {
                     me->ips.have_piece(me->pselector, p_idx);
@@ -525,34 +501,12 @@ int __FUNC_peerconn_pushblock(void *bto,
     }
 
 #if 0
-    if (bt_piece_is_complete(p))
-    {
-//        bt_piecedb_print_pieces_downloaded(bt_dm_get_piecedb(me));
-
-        /*  send have to all peers */
-        if (bt_piece_is_valid(p))
-        {
-            int ii;
-
-            assert(me->ips.have_piece);
-            me->ips.have_piece(me->pselector, block->piece_idx);
-
-            __log(me, NULL, "client,piece downloaded,pieceidx=%d",
-                  bt_piece_get_idx(p));
-
-            /* send HAVE messages to all peers */
-            bt_peermanager_forall(me->pm,me,p,__FUNC_peerconn_send_have);
-        }
-#if 0
-
         /* dump everything to disk if the whole download is complete */
         if (bt_piecedb_all_pieces_are_complete(me))
         {
             me->am_seeding = 1;
 //            bt_diskcache_disk_dump(me->dc);
         }
-#endif
-    }
 #endif
 
     return 1;

@@ -49,7 +49,6 @@ typedef int (
     void *caller,
     const bt_block_t * blk,
     const void *blkdata
-//    int opt
 );
 
 typedef void *(
@@ -73,6 +72,7 @@ typedef struct {
     int failed_connection;
     int connected;
     int peers;
+    int choked;
     int choking;
     int download_rate;
     int upload_rate;
@@ -202,8 +202,7 @@ typedef struct
         * Announce the failed connection to the caller.
         *
         * @param me The caller
-        * @param nethandle Peer ID 
-        */
+        * @param nethandle Peer ID */
         void (*func_connection_failed) (void *, void* nethandle));
 
     /**
@@ -220,7 +219,7 @@ typedef struct
 
     /**
      * Drop the connection for this peer
-     */
+     * @return 1 on success, otherwise 0 */
     int (*peer_disconnect) (void* me, void **udata, void* nethandle);
 
     /**
@@ -252,13 +251,11 @@ int bt_dm_peer_connect(void *bto, void* nethandle, char *ip, const int port);
 
 void bt_dm_set_piece_db(bt_dm_t* me_, bt_piecedb_i* ipdb, void* piecedb);
 
-void bt_dm_set_piece_db(bt_dm_t* me_, bt_piecedb_i* ipdb, void* piecedb);
+void *bt_dm_get_piecedb(bt_dm_t* me_);
 
 void *bt_dm_new();
 
 int bt_dm_get_num_peers(bt_dm_t* me_);
-
-int bt_dm_get_num_pieces(bt_dm_t* me_);
 
 int bt_dm_get_total_file_size(bt_dm_t* me_);
 
@@ -279,8 +276,6 @@ void *bt_dm_add_peer(bt_dm_t* me_,
 void* bt_dm_get_config(bt_dm_t* me_);
 
 char *bt_generate_peer_id();
-
-void *bt_dm_get_piecedb(bt_dm_t* me_);
 
 int bt_piece_write_block(
     bt_piece_t *pceo,

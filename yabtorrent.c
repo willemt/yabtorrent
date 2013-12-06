@@ -417,10 +417,11 @@ static void __bt_periodic(uv_timer_t* handle, int status)
     // bt_piecedb_print_pieces_downloaded(bt_dm_get_piecedb(me));
     // TODO: show inactive peers
     // TODO: show number of invalid pieces
-    printf("peers: %d (active:%d choking:%d failed:%d) "
+    printf("peers: %d (active:%d choked:%d choking:%d failed:%d) "
             "pieces: (downloaded:%d completed:%d/%d) dl:%04dKB/s ul:%04dKB/s\r",
             stat.peers,
             stat.connected,
+            stat.choked,
             stat.choking,
             stat.failed_connection,
             bt_piecedb_get_num_downloaded(bt->db),
