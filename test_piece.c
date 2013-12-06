@@ -16,6 +16,8 @@
 /* used for disk memory backend */
 #include "bt_diskmem.h"
 
+#include "bt_sha1.h"
+
 #include "bt_piece_db.h"
 #include "bt_piece.h"
 #include "bt_local.h"
@@ -245,7 +247,7 @@ void TestBTPiece_Write_Block_To_Stream(
     bt_piece_t *pce;
     bt_block_t blk;
     void *dc;
-    char *msg = "this great message is 40 bytes in length", out[40], *bs;
+    unsigned char *msg = "this great message is 40 bytes in length", out[40], *bs;
 
     bs = out;
 
@@ -301,10 +303,10 @@ void TestBTPiece_write_valid_block_results_in_valid_piece(
     bt_piece_t *pce;
     bt_block_t blk;
     char *msg = "this great message is 40 bytes in length", out[40];
-    char *hash;
+    char hash[21];
 
     peer = malloc(1);
-    hash = str2sha1hash(msg, 40);
+    bt_str2sha1hash(hash, msg, 40);
     pce = bt_piece_new(hash, 40);
     memset(&__mockdisk, 0, sizeof(mockdisk_t));
     bt_piece_set_disk_blockrw(pce, &__mock_disk_rw, &__mockdisk);
@@ -383,7 +385,7 @@ void TxestBTPiece_multi_peer_recognised_as_pontentially_invalidating_piece(
 }
 #endif
 
-void TestBTPiece_get_num_peers(
+void TestBTPiece_get_num_peers_from_write_block(
     CuTest * tc
 )
 {
@@ -391,13 +393,14 @@ void TestBTPiece_get_num_peers(
     bt_piece_t *pce;
     bt_block_t blk;
     char *msg, out[40];
-    char *hash;
+    char hash[21];
 
     p1 = malloc(1);
     p2 = malloc(1);
     msg = strdup("this great message is 40 bytes in length");
-    hash = str2sha1hash(msg, 40);
+    bt_str2sha1hash(hash,msg, 40);
     pce = bt_piece_new(hash, 40);
+    bt_piece_set_disk_blockrw(pce, &__mock_disk_rw, &__mockdisk);
     CuAssertTrue(tc, 0 == bt_piece_num_peers(pce));
 
     blk.len = 10;
@@ -416,7 +419,7 @@ void TestBTPiece_get_num_peers(
     CuAssertTrue(tc, 2 == bt_piece_num_peers(pce));
 }
 
-void TestBTPiece_get_peers(
+void TestBTPiece_get_peers_from_write_block(
     CuTest * tc
 )
 {
@@ -424,12 +427,12 @@ void TestBTPiece_get_peers(
     bt_piece_t *pce;
     bt_block_t blk;
     char *msg, out[40];
-    char *hash;
+    char hash[21];
 
     p1 = malloc(1);
     p2 = malloc(1);
     msg = strdup("this great message is 40 bytes in length");
-    hash = str2sha1hash(msg, 40);
+    bt_str2sha1hash(hash, msg, 40);
     pce = bt_piece_new(hash, 40);
     bt_piece_set_disk_blockrw(pce, &__mock_disk_rw, &__mockdisk);
 

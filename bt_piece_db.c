@@ -19,8 +19,6 @@
 /* for uint32_t */
 #include <stdint.h>
 
-#include <stdbool.h>
-
 #include "block.h"
 
 #include "bitfield.h"
@@ -30,12 +28,16 @@
 #include "bt_local.h"
 #include "bt_block_readwriter_i.h"
 
+#include "linked_list_hashmap.h"
 
 typedef struct
 {
-    int pieces_size;
+    /* number of pieces */
     int npieces;
-    bt_piece_t **pieces;
+
+    hashmap_t *pieces;
+
+    /* default size of piece */
     int piece_length_bytes;
     int tot_file_size_bytes;
 
@@ -48,15 +50,34 @@ typedef struct
 
 #define priv(x) ((bt_piecedb_private_t*)(x))
 
+static unsigned long __piece_hash(const void *obj)
+{
+    //const bt_piece_t* p = obj;
+    //return p->idx;
+    //const unsigned int* p = (void*)obj;
+    const unsigned long p = (unsigned long)obj;
+    return p;
+}
+
+static long __piece_cmp(const void *obj, const void *other)
+{
+//    const bt_piece_t* p1 = obj;
+//    const bt_piece_t* p2 = other;
+//    return p1->idx - p2->idx;
+    const unsigned long p1 = (unsigned long)obj;
+    const unsigned long p2 = (unsigned long)other;
+    return p1 - p2;
+}
+
 bt_piecedb_t *bt_piecedb_new()
 {
     bt_piecedb_t *db;
 
     db = calloc(1, sizeof(bt_piecedb_private_t));
     priv(db)->tot_file_size_bytes = 0;
-    priv(db)->pieces_size = 999;
-    priv(db)->pieces = malloc(sizeof(bt_piece_t *) * priv(db)->pieces_size);
-
+    //priv(db)->pieces_size = 999;
+    //priv(db)->pieces = malloc(sizeof(bt_piece_t *) * priv(db)->pieces_size);
+    priv(db)->pieces = hashmap_new(__piece_hash, __piece_cmp, 11);
     return db;
 }
 
@@ -76,7 +97,6 @@ void bt_piecedb_set_piece_length(bt_piecedb_t * db,
 void bt_piecedb_set_tot_file_size(bt_piecedb_t * db,
                                   const int tot_file_size_bytes)
 {
-//    printf("setting tot file size: %d\n", tot_file_size_bytes);
     priv(db)->tot_file_size_bytes = tot_file_size_bytes;
 }
 
@@ -105,38 +125,6 @@ void* bt_piecedb_get_diskstorage(bt_piecedb_t * db)
     return priv(db)->blockrw_data;
 }
 
-#if 0
-/**
- * Get the best piece to download from this bitfield
- */
-void *bt_piecedb_poll_best_from_bitfield(void * dbo, void * bf_possibles)
-{
-    bt_piecedb_t* db = dbo;
-    int ii;
-
-#if 0 /*  debugging */
-    printf("polling best %d %d\n",
-            priv(db)->npieces, bitfield_get_length(bf_possibles));
-#endif
-
-    for (ii = 0; ii < priv(db)->npieces; ii++)
-    {
-        if (!bitfield_is_marked(bf_possibles, ii))
-            continue;
-
-        if (bt_piece_is_complete(priv(db)->pieces[ii]))
-            continue;
-
-        if (!bt_piece_is_fully_requested(priv(db)->pieces[ii]))
-        {
-            return priv(db)->pieces[ii];
-        }
-    }
-
-    return NULL;
-}
-#endif
-
 /**
  * Obtain this piece from the piece database
  * @return piece specified by piece_idx; otherwise NULL
@@ -145,12 +133,16 @@ void *bt_piecedb_get(void* dbo, const unsigned int idx)
 {
     bt_piecedb_t * db = dbo;
 
+#if 0
 //    assert(idx < priv(db)->npieces);
     if (priv(db)->npieces == 0)
         return NULL;
 
     assert(0 <= idx);
     return priv(db)->pieces[idx];
+#else
+    return hashmap_get(priv(db)->pieces,(void*)idx+1);
+#endif
 }
 
 /** 
@@ -159,15 +151,15 @@ static int __figure_out_new_piece_size(bt_piecedb_t * db)
 {
     int tot_bytes_used = 0, ii;
 
-
-    /*  figure out current total size */
-    for (ii = tot_bytes_used = 0; ii < priv(db)->npieces; ii++)
+    /* figure out current total size */
+    for (ii = 1, tot_bytes_used = 0; ii < hashmap_count(priv(db)->pieces); ii++)
     {
-        tot_bytes_used += bt_piece_get_size(priv(db)->pieces[ii]);
-    }
+        bt_piece_t *pce;
 
-    //printf("%d %d\n", bt_piecedb_get_tot_file_size(db), tot_bytes_used);
-    //    return priv(db)->piece_length_bytes;
+        pce = bt_piecedb_get(db,ii);
+        assert(pce);
+        tot_bytes_used += bt_piece_get_size(pce);
+    }
 
     if (bt_piecedb_get_tot_file_size(db) - tot_bytes_used <
         priv(db)->piece_length_bytes)
@@ -181,16 +173,24 @@ static int __figure_out_new_piece_size(bt_piecedb_t * db)
 }
 
 /**
- * Add a piece with this sha1sum */
-void bt_piecedb_add(bt_piecedb_t * db, const char *sha1)
+ * @return number of pieces */
+int bt_piecedb_count(bt_piecedb_t * db)
+{
+    return hashmap_count(priv(db)->pieces);
+}
+
+/**
+ * Add a piece with this sha1sum
+ * @return piece idx, otherwise -1 on error */
+int bt_piecedb_add(bt_piecedb_t * db, const char *sha1)
 {
     bt_piece_t *pce;
     int size;
 
+    /* check if we have enough file space for this piece */
     if (0 == (size = __figure_out_new_piece_size(db)))
     {
-        /* check if we have enough file space for this piece */
-        return;
+        return -1;
     }
 
 #if 0 /* debugging */
@@ -205,27 +205,21 @@ void bt_piecedb_add(bt_piecedb_t * db, const char *sha1)
     }
 #endif
 
-    priv(db)->npieces += 1;
-
-    assert(priv(db)->pieces);
-
-    /*  double capacity */
-    if (priv(db)->pieces_size <= priv(db)->npieces)
-    {
-        priv(db)->pieces_size *= 2;
-        priv(db)->pieces =
-            realloc(priv(db)->pieces, sizeof(bt_piece_t *) * priv(db)->pieces_size);
-    }
-
     assert(priv(db)->pieces);
 
     /* create piece */
     pce = bt_piece_new((const unsigned char*)sha1, size);
-    bt_piece_set_idx(pce, priv(db)->npieces - 1);
+    bt_piece_set_idx(pce, hashmap_count(priv(db)->pieces));
     bt_piece_set_disk_blockrw(pce, priv(db)->blockrw, priv(db)->blockrw_data);
+    hashmap_put(priv(db)->pieces, (void*)pce->idx+1, pce);
+    return pce->idx;
+}
 
-    /* register piece */
-    priv(db)->pieces[priv(db)->npieces - 1] = pce;
+/**
+ * Remove a piece with this idx */
+void bt_piecedb_remove(bt_piecedb_t * db, int idx)
+{
+
 }
 
 /**
@@ -267,7 +261,6 @@ int bt_piecedb_get_num_downloaded(bt_piecedb_t * db)
     }
 
     return downloaded;
-
 }
 
 /**
@@ -294,7 +287,6 @@ int bt_piecedb_get_num_completed(bt_piecedb_t * db)
 
 /**
  * @return 1 if all complete, 0 otherwise */
-
 int bt_piecedb_get_length(bt_piecedb_t * db)
 {
     return priv(db)->npieces;
@@ -322,20 +314,11 @@ int bt_piecedb_all_pieces_are_complete(bt_piecedb_t* db)
 }
 
 /**
- * Increase total file size by this file's size
- */
+ * Increase total file size by this file's size */
 void bt_piecedb_increase_piece_space(bt_piecedb_t* db, const int size)
 {
-
     bt_piecedb_set_tot_file_size(db,
             bt_piecedb_get_tot_file_size(db) + size);
-}
-
-/**
- * Validate the client's already downloaded pieces */
-void bt_piecedb_validate_downloaded_pieces(void* bto)
-{
-//    bt_piecedb_print_pieces_downloaded();
 }
 
 /**
@@ -388,4 +371,3 @@ static void __dumppiece(bt_client_t* bt)
     close(fd);
 }
 #endif
-

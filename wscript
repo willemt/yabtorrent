@@ -14,11 +14,11 @@ contribs = [
 ('CBipBuffer', 'http://github.com/willemt/CBipBuffer'),
 ('CConfig-re', 'http://github.com/willemt/CConfig-re'),
 ('CEventTimer', 'http://github.com/willemt/CEventTimer'),
+('CTrackerClient', 'http://github.com/willemt/CTrackerClient'),
 ('CSparseCounter', 'http://github.com/willemt/CSparseCounter'),
 ('CLinkedListQueue', 'http://github.com/willemt/CLinkedListQueue'),
-('CBTTrackerClient', 'http://github.com/willemt/CBTTrackerClient'),
 ('CSimpleBitstream', 'http://github.com/willemt/CSimpleBitstream'),
-('CBTPWPConnection', 'http://github.com/willemt/CBTPWPConnection'),
+('PeerWireProtocol', 'http://github.com/willemt/PeerWireProtocol'),
 ('CTorrentFileReader', 'http://github.com/willemt/CTorrentFileReader'),
 ('CSparseFileAllocator', 'http://github.com/willemt/CSparseFileAllocator'),
 ('CHashMapViaLinkedList','http://github.com/willemt/CHashMapViaLinkedList'),
@@ -121,10 +121,11 @@ def end2end(bld, src, ccflag=None):
             "networkfuncs_mock.c",
             "mt19937ar.c",
             "mock_torrent.c",
+            "mock_client.c",
             bld.env.CONTRIB_PATH+"CBipBuffer/bipbuffer.c"
             ],
         stlibpath = ['libuv','.'],
-        target='test_end_to_end',
+        target=src[:-2],
         cflags=[
             '-g',
             '-Werror',
@@ -197,9 +198,9 @@ def build(bld):
             cp+"CSimpleBitstream/bitstream.c",
             cp+"CSparseCounter/sparse_counter.c",
             cp+"CHeaplessBencodeReader/bencode.c",
-            cp+"CBTPWPConnection/pwp_connection.c",
-            cp+"CBTPWPConnection/pwp_msghandler.c",
-            cp+"CBTPWPConnection/pwp_handshaker.c",
+            cp+"PeerWireProtocol/pwp_connection.c",
+            cp+"PeerWireProtocol/pwp_msghandler.c",
+            cp+"PeerWireProtocol/pwp_handshaker.c",
             cp+"CLinkedListQueue/linked_list_queue.c",
             cp+"CTorrentFileReader/torrentfile_reader.c",
             cp+"CHashMapViaLinkedList/linked_list_hashmap.c",
@@ -221,9 +222,9 @@ def build(bld):
             cp+"CConfig-re",
             cp+"CEventTimer",
             cp+"CSparseCounter",
-            cp+"CBTTrackerClient",
+            cp+"CTrackerClient",
             cp+"CLinkedListQueue",
-            cp+"CBTPWPConnection",
+            cp+"PeerWireProtocol",
             cp+"CSimpleBitstream",
             cp+"CSparseFileAllocator",
             cp+"CHashMapViaLinkedList",
@@ -249,7 +250,10 @@ def build(bld):
     unittest(bld,'test_selector_sequential.c')
     unittest(bld,'test_piece.c',ccflag='-I../'+cp+"CBitfield")
     unittest(bld,'test_piece_db.c')
-    end2end(bld,'test_end_to_end.c')
+    end2end(bld,'test_scenario_shares_all_pieces.c')
+    end2end(bld,'test_scenario_shares_all_pieces_between_each_other.c')
+    end2end(bld,'test_scenario_share_20_pieces.c')
+    end2end(bld,'test_scenario_three_peers_share_all_pieces_between_each_other.c')
 
     libs = ['yabbt','uv']
     if sys.platform == 'win32':
@@ -267,11 +271,11 @@ def build(bld):
             'yabtorrent.c',
             "networkfuncs_libuv.c",
             cp+"CBipBuffer/bipbuffer.c",
-            cp+"CBTTrackerClient/url_encoder.c",
-            cp+"CBTTrackerClient/tracker_http.c",
-            cp+"CBTTrackerClient/tracker_client.c",
-            cp+"CBTTrackerClient/tracker_http_response_reader.c",
-            cp+"CBTTrackerClient/http-parser/http_parser.c",
+            cp+"CTrackerClient/url_encoder.c",
+            cp+"CTrackerClient/tracker_http.c",
+            cp+"CTrackerClient/tracker_client.c",
+            cp+"CTrackerClient/tracker_http_response_reader.c",
+            cp+"CTrackerClient/http-parser/http_parser.c",
             ],
         target='yabtorrent',
         cflags=[
@@ -288,10 +292,10 @@ def build(bld):
             cp+"CBipBuffer",
             cp+"CConfig-re",
             cp+"CLinkedListQueue",
-            cp+"CBTTrackerClient",
+            cp+"CTrackerClient",
             cp+"CTorrentFileReader",
             cp+"CHashMapViaLinkedList",
             cp+"CHeaplessBencodeReader",
-            cp+"CBTTrackerClient/http-parser",
+            cp+"CTrackerClient/http-parser",
            ])
 

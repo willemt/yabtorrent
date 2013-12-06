@@ -28,3 +28,8 @@ void* bt_piece_get_peers(bt_piece_t *me, int *iter);
 int bt_piece_num_peers(bt_piece_t *me);
 
 void bt_piece_drop_download_progress(bt_piece_t *me);
+
+int bt_piece_write_block_to_stream(
+    bt_piece_t * me,
+    bt_block_t * blk,
+    unsigned char ** msg);

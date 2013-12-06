@@ -105,6 +105,7 @@ void bt_random_selector_remove_peer(
 
     if ((pr = hashmap_remove(rf->peers, peer)))
     {
+        printf("remove peer %lx\n", (unsigned long)peer);
 //        hashmap_free(pr->have_pieces);
         free(pr);
     }
@@ -126,6 +127,8 @@ void bt_random_selector_add_peer(
     pr->p_candidates = bag_new();
 //    pr->have_pieces = hashmap_new(__peer_hash, __peer_compare, 11);
     hashmap_put(rf->peers, peer, pr);
+
+    printf("added peer %lx\n", (unsigned long)peer);
 }
 
 /**
@@ -185,6 +188,11 @@ void bt_random_selector_peer_have_piece(
     /*  get the peer */
     pr = hashmap_get(rf->peers, peer);
 
+    if (!pr)
+    {
+        int a = 0;
+        printf("%lx\n", 2 / a);
+    }
     assert(pr);
 
     if (!(p = hashmap_get(rf->p_polled, (void *) (long) piece_idx + 1)))
@@ -227,10 +235,12 @@ int bt_random_selector_poll_best_piece(
         return -1;
     }
 
+    /* get a random piece that the client might have */
     while (0 < bag_count(pr->p_candidates))
     {
         piece_idx = ((unsigned long int)bag_take(pr->p_candidates)) - 1;
 
+        /* don't poll if it has been polled already */
         if (!(hashmap_get(rf->p_polled, (void *) (long) piece_idx + 1)))
         {
             void* i = (void *) ((long) piece_idx + 1);

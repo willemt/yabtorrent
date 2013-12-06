@@ -24,6 +24,8 @@
 #include "bt_diskcache.h"
 #include "bt_filedumper.h"
 #include "bt_string.h"
+#include "bt_sha1.h"
+#include "bt_selector_random.h"
 #include "tracker_client.h"
 #include "torrentfile_reader.h"
 #include "readfile.h"
@@ -281,10 +283,10 @@ static int __tfr_event_str(void* udata, const char* key, const char* val, int le
     }
     else if (!strcmp(key,"infohash"))
     {
-        char* ihash;
+        char hash[21];
 
-        ihash = str2sha1hash(val, len);
-        config_set_va(me->bt->cfg,"infohash","%.*s", 20, ihash);
+        bt_str2sha1hash(hash, val, len);
+        config_set_va(me->bt->cfg,"infohash","%.*s", 20, hash);
     }
     else if (!strcmp(key,"pieces"))
     {
@@ -370,8 +372,9 @@ static void __log_process_info()
     }
     else
     {
-        unsigned int diff = abs(last_run - tv.tv_usec);
-
+        unsigned int diff;
+        
+        diff = abs(last_run - tv.tv_usec);
         if (diff >= SECONDS_SINCE_LAST_LOG)
             return;
         last_run = tv.tv_usec;
@@ -435,6 +438,7 @@ int main(int argc, char **argv)
     atexit (close_stdin);
 #endif
 
+    /* TODO: replace with gnugetops generator */
     while ((c = getopt_long(argc, argv, "cesi:p:", long_opts, NULL)) != -1)
     {
         switch (c)
@@ -474,12 +478,13 @@ int main(int argc, char **argv)
             bc, open("dump_log", O_CREAT | O_TRUNC | O_RDWR, 0666), __log);
 
     /* set network functions */
-    bt_dm_funcs_t func = {
+    bt_dm_cbs_t func = {
         .peer_connect = peer_connect,
         .peer_send = peer_send,
         .peer_disconnect = peer_disconnect, 
     };
-    bt_dm_set_funcs(bc, &func, NULL);
+
+    bt_dm_set_cbs(bc, &func, NULL);
 
     /* database for dumping pieces to disk */
     bt_piecedb_i pdb_funcs = {
@@ -524,6 +529,21 @@ int main(int argc, char **argv)
 
     bt_piecedb_print_pieces_downloaded(bt.db);
 
+    /* Selector */
+    bt_pieceselector_i ips = {
+        .new = bt_random_selector_new,
+        .peer_giveback_piece = bt_random_selector_giveback_piece,
+        .have_piece = bt_random_selector_have_piece,
+        .remove_peer = bt_random_selector_remove_peer,
+        .add_peer = bt_random_selector_add_peer,
+        .peer_have_piece = bt_random_selector_peer_have_piece,
+        .get_npeers = bt_random_selector_get_npeers,
+        .get_npieces = bt_random_selector_get_npieces,
+        .poll_piece = bt_random_selector_poll_best_piece
+    };
+
+    bt_dm_set_piece_selector(bt.bc, &ips, NULL);
+
     /* start uv */
     loop = uv_default_loop();
     uv_mutex_init(&bt.mutex);
@@ -543,8 +563,6 @@ int main(int argc, char **argv)
     }
 
     uv_run(loop, UV_RUN_DEFAULT);
-
     bt_dm_release(bc);
-
     return 1;
 }

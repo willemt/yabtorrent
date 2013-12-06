@@ -34,9 +34,7 @@ typedef struct {
     void* cfg;
     void* caller;
     void* (*func_peerconn_init)(void* caller);
-
     hashmap_t *peers;
-
 } bt_peermanager_t;
 
 /**
@@ -89,6 +87,8 @@ int bt_peermanager_contains(void *pm, const char *ip, const int port)
     return 0;
 }
 
+/**
+ * @return peer that corresponds to nethandle, otherwise NULL */
 void *bt_peermanager_nethandle_to_peer(void * pm, void* nethandle)
 {
     bt_peermanager_t *me = pm;

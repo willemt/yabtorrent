@@ -21,7 +21,7 @@ void *bt_piecedb_poll_best_from_bitfield(void * dbo, void * bf_possibles);
 
 void *bt_piecedb_get(void* dbo, const unsigned int idx);
 
-void bt_piecedb_add(bt_piecedb_t * db, const char *sha1);
+int bt_piecedb_add(bt_piecedb_t * db, const char *sha1);
 
 int bt_piecedb_get_length(bt_piecedb_t * db);
 

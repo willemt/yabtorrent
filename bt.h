@@ -117,13 +117,13 @@ typedef struct
 /*  bittorrent piece */
 typedef struct
 {
-    /* index on 'bit stream' */
-    const int idx;
+    /* TODO: change to const? */
+    int idx;
 
 } bt_piece_t;
 
 typedef struct {
-    void* (*poll_best_from_bitfield)(void * db, void * bf_possibles);
+//    void* (*poll_best_from_bitfield)(void * db, void * bf_possibles);
     void* (*get_piece)(void *db, const unsigned int piece_idx);
 } bt_piecedb_i;
 
@@ -139,7 +139,11 @@ typedef struct {
     void (*peer_have_piece)(void *r, void* peer, int piece_idx);
     /* give this piece back to the selector */
     void (*peer_giveback_piece)(void *r, void* peer, int piece_idx);
-    /* poll a piece */
+    /**
+     * Poll best piece from peer
+     * @param r random object
+     * @param peer Best piece in context of this peer
+     * @return idx of piece which is best; otherwise -1 */
     int (*poll_piece)(void* r, const void* peer);
     /* get number of peers */
     int (*get_npeers)(void* r);
@@ -151,7 +155,7 @@ typedef struct
 {
     /**
      * Connect to the peer
-     * @param caller 
+     * @param me 
      * @param nethandle Pointer available for the callee to identify the peer
      * @param udata Memory to be used for connection. Callee's responsibility to alloc memory.
      * @param host Hostname
@@ -159,21 +163,21 @@ typedef struct
      * @param func_process_connection Callback for sucessful connections.
      * @param func_connection_failed Callback for failed connections.
      * @return 1 if successful; otherwise 0 */
-    int (*peer_connect) (void* caller,
+    int (*peer_connect) (void* me,
                         void **udata,
                         void **nethandle,
                         const char *host, const int port,
 
        /**
         * We've received data from the peer.
-        * Announce this to the caller.
+        * Announce this to the cb_ctx.
         *
-        * @param caller The caller
+        * @param me The caller
         * @param nethandle Peer ID 
         * @param buf Buffer containing data
         * @param len Bytes available in buffer
         */
-        int (*func_process_data) (void *caller,
+        int (*func_process_data) (void *me,
         void* nethandle,
         const unsigned char* buf,
         unsigned int len),
@@ -182,13 +186,13 @@ typedef struct
         * We've determined that we are now connected.
         * Announce the connection to the caller.
         *
-        * @param caller The caller
+        * @param me The caller
         * @param nethandle Peer ID 
         * @param ip The IP that connected to us
         * @return 0 on failure
         */
         int (*func_process_connection) (
-            void *caller,
+            void *me,
             void *nethandle,
             char *ip,
             int port),
@@ -197,7 +201,7 @@ typedef struct
         * The connection attempt failed.
         * Announce the failed connection to the caller.
         *
-        * @param caller The caller
+        * @param me The caller
         * @param nethandle Peer ID 
         */
         void (*func_connection_failed) (void *, void* nethandle));
@@ -205,11 +209,11 @@ typedef struct
     /**
      * Send data to peer
      *
-     * @param caller 
+     * @param me 
      * @param nethandle The peer's network ID
      * @param send_data Data to be sent
      * @param len Length of data to be sent */
-    int (*peer_send) (void* caller,
+    int (*peer_send) (void* me,
                       void **udata,
                       void* nethandle,
                       const unsigned char *send_data, const int len);
@@ -217,9 +221,34 @@ typedef struct
     /**
      * Drop the connection for this peer
      */
-    int (*peer_disconnect) (void* caller,void **udata, void* nethandle);
+    int (*peer_disconnect) (void* me, void **udata, void* nethandle);
 
-} bt_dm_funcs_t;
+#if 0
+    /**
+     * Create mutually exclusive lock. */
+    int (*lock_create)(void *udata, void **lock);
+
+    /**
+     * Obtain mutually exclusive lock. */
+    int (*lock_get)(void *udata, void **lock);
+
+    /**
+     * Release mutually exclusive lock. */
+    int (*lock_release)(void *udata, void **lock);
+#else
+    /**
+     * Waits until lock is released, and then runs callback.
+     * Creates lock when lock is NULL
+     * @param me The caller
+     * @param lock Lock to be used. Will be initialised if NULL
+     * @param udata Argument for callback
+     * @param cb Callback
+     * @return result of callback */
+    void* (*call_exclusively)(void* me, void* cb_ctx, void **lock, void* udata,
+            void* (*cb)(void* me, void* udata));
+#endif
+
+} bt_dm_cbs_t;
 
 int bt_dm_dispatch_from_buffer(
         void *bto,
@@ -260,8 +289,6 @@ void *bt_dm_add_peer(bt_dm_t* me_,
                               void* nethandle);
 
 void* bt_dm_get_config(bt_dm_t* me_);
-
-char *str2sha1hash(const char *str, int len);
 
 char *bt_generate_peer_id();
 

@@ -45,9 +45,10 @@ void *mocktorrent_get_data(void* _me, unsigned int piece)
     return me->data + piece * me->piece_len;
 }
 
-void *mocktorrent_get_piece_sha1(void* _me, unsigned int piece)
+void *mocktorrent_get_piece_sha1(void* _me, char* hash, unsigned int piece)
 {
     mock_torrent_t* me = _me;
 
-    return str2sha1hash(me->data + piece * me->piece_len, me->piece_len);
+    bt_str2sha1hash(hash, me->data + piece * me->piece_len, me->piece_len);
+    return hash;
 }
