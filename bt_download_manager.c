@@ -157,7 +157,7 @@ void __FUNC_peer_stats_visitor(void* cb_ctx, void* peer, void* udata)
 
     if (pwp_conn_im_choked(p->pc))
         stats->choked++;
-    if (pwp_conn_im_choking(p->pc))
+    if (pwp_conn_peer_is_choked(p->pc))
         stats->choking++;
     if (pwp_conn_flag_is_set(p->pc, PC_HANDSHAKE_RECEIVED))
         stats->connected++;

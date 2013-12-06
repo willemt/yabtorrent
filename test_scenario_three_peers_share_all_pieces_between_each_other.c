@@ -44,17 +44,11 @@ void TestBT_Peer_three_share_all_pieces_between_each_other(
     void* clients;
     char *addr;
 
-    printf("d\n");
     clients_setup();
-    printf("d\n");
     mt = mocktorrent_new(3,5);
-    printf("d\n");
     a = mock_client_setup(5);
-    printf("d\n");
     b = mock_client_setup(5);
-    printf("d\n");
     c = mock_client_setup(5);
-    printf("d\n");
 
     for (
         hashmap_iterator(clients_get(), &iter);
