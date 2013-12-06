@@ -67,7 +67,6 @@ static int __cmp_address(
     return e2 - e1;
 }
 
-
 void *bt_blacklist_new()
 {
     blacklist_t* me;
@@ -87,6 +86,12 @@ static piece_t* __init_piece()
     return p;
 }
 
+int bt_blacklist_get_npieces(void* blacklist)
+{
+    blacklist_t* me = blacklist;
+    return avltree_count(me->pieces);
+}
+
 void bt_blacklist_add_peer(
     void* blacklist,
     void* piece,
@@ -98,7 +103,7 @@ void bt_blacklist_add_peer(
     if (!(p = avltree_get(me->pieces,piece)))
     {
         p = __init_piece();
-        avltree_insert(me->pieces,p,p);
+        avltree_insert(me->pieces,piece,p);
     }
     avltree_insert(p->peers_blacklisted,peer,peer);
 }
@@ -114,7 +119,7 @@ void bt_blacklist_add_peer_as_potentially_blacklisted(
     if (!(p = avltree_get(me->pieces,piece)))
     {
         p = __init_piece();
-        avltree_insert(me->pieces,p,p);
+        avltree_insert(me->pieces,piece,p);
     }
     llqueue_offer(p->peers_potential_invalid, peer);
 }

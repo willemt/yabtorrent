@@ -62,51 +62,49 @@ def configure(conf):
 from waflib.Task import Task
 
 class compiletest(Task):
-        def run(self):
-                return self.exec_command('sh ../make-tests.sh %s > %s' % (
-                                self.inputs[0].abspath(),
-                                self.outputs[0].abspath()
-                        )
-                )
+    def run(self):
+        return self.exec_command('sh ../make-tests.sh %s > %s' % (
+                            self.inputs[0].abspath(),
+                            self.outputs[0].abspath()))
 
-def unittest(bld, src, ccflag=None):
-        #bld(rule='cp ../make-tests.sh .')
-        #bld(rule='cp ../%s .' % src)
-        # collect tests into one area
-        bld(rule='sh ../make-tests.sh ../'+src+' > ${TGT}', target="t_"+src)
+def unit_test(bld, src, ccflag=None):
+    #bld(rule='cp ../make-tests.sh .')
+    #bld(rule='cp ../%s .' % src)
+    # collect tests into one area
+    bld(rule='sh ../make-tests.sh ../'+src+' > ${TGT}', target="t_"+src)
 
-        libs = []
+    libs = []
 
-        # build the test program
-        bld.program(
-                source=[
-                    src,
-                    "t_"+src,
-                    'CuTest.c',
-                    bld.env.CONTRIB_PATH+"CBitfield/bitfield.c",
-                ],
-                target=src[:-2],
-                cflags=[
-                    '-g',
-                    '-Werror'
-                ],
-                use='yabbt',
-                lib = libs,
-                unit_test='yes',
-                includes=[
-                    '.',
-                    bld.env.CONTRIB_PATH+"CBitfield"
-                ]
-                )
+    # build the test program
+    bld.program(
+        source=[
+            src,
+            "t_"+src,
+            'CuTest.c',
+            bld.env.CONTRIB_PATH+"CBitfield/bitfield.c",
+        ],
+        target=src[:-2],
+        cflags=[
+            '-g',
+            '-Werror'
+        ],
+        use='yabbt',
+        lib = libs,
+        unit_test='yes',
+        includes=[
+            '.',
+            bld.env.CONTRIB_PATH+"CBitfield"
+        ]
+        )
 
-        # run the test
-        if sys.platform == 'win32':
-            bld(rule='${SRC}',source=src[:-2]+'.exe')
-        else:
-            bld(rule='export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:. && ./${SRC}',source=src[:-2])
-            #bld(rule='pwd && ./build/'+src[:-2])
+    # run the test
+    if sys.platform == 'win32':
+        bld(rule='${SRC}',source=src[:-2]+'.exe')
+    else:
+        bld(rule='export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:. && ./${SRC}',source=src[:-2])
+        #bld(rule='pwd && ./build/'+src[:-2])
 
-def end2end(bld, src, ccflag=None):
+def scenario_test(bld, src, ccflag=None):
     bld(rule='cp ../make-tests.sh .')
     bld(rule='cp ../%s .' % src)
     # collect tests into one area
@@ -240,20 +238,21 @@ def build(bld):
             '-Wcast-align'],
         )
 
-    unittest(bld,"test_bt.c")
-    unittest(bld,"test_download_manager.c")
-    unittest(bld,"test_peer_manager.c")
-    unittest(bld,'test_choker_leecher.c')
-    unittest(bld,'test_choker_seeder.c')
-    unittest(bld,'test_rarestfirst.c')
-    unittest(bld,'test_selector_random.c')
-    unittest(bld,'test_selector_sequential.c')
-    unittest(bld,'test_piece.c',ccflag='-I../'+cp+"CBitfield")
-    unittest(bld,'test_piece_db.c')
-    end2end(bld,'test_scenario_shares_all_pieces.c')
-    end2end(bld,'test_scenario_shares_all_pieces_between_each_other.c')
-    end2end(bld,'test_scenario_share_20_pieces.c')
-    end2end(bld,'test_scenario_three_peers_share_all_pieces_between_each_other.c')
+    unit_test(bld,"test_bt.c")
+    unit_test(bld,"test_download_manager.c")
+    unit_test(bld,"test_peer_manager.c")
+    unit_test(bld,'test_choker_leecher.c')
+    unit_test(bld,'test_choker_seeder.c')
+    unit_test(bld,'test_rarestfirst.c')
+    unit_test(bld,'test_selector_random.c')
+    unit_test(bld,'test_selector_sequential.c')
+    unit_test(bld,'test_piece.c',ccflag='-I../'+cp+"CBitfield")
+    unit_test(bld,'test_piece_db.c')
+    unit_test(bld,'test_blacklist.c')
+    scenario_test(bld,'test_scenario_shares_all_pieces.c')
+    scenario_test(bld,'test_scenario_shares_all_pieces_between_each_other.c')
+    scenario_test(bld,'test_scenario_share_20_pieces.c')
+    scenario_test(bld,'test_scenario_three_peers_share_all_pieces_between_each_other.c')
 
     libs = ['yabbt','uv']
     if sys.platform == 'win32':

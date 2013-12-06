@@ -477,54 +477,51 @@ int __FUNC_peerconn_pushblock(void *bto,
 
     switch (bt_piece_write_block(p, NULL, block, data, peer))
     {
-        /* complete piece */
-        case 2:
+    case 2: /* complete piece */
+    {
+        __log(me, NULL, "client,piece downloaded,pieceidx=%d",
+              bt_piece_get_idx(p));
+
+        assert(me->ips.have_piece);
+        me->ips.have_piece(me->pselector, block->piece_idx);
+        bt_peermanager_forall(me->pm,me,p,__FUNC_peerconn_send_have);
+    }
+        break;
+
+    case 0: /* write error */
+        printf("error writing block\n");
+        break;
+
+    case -1: /* invalid piece created */
+    {
+        printf("invalid piece detected\n");
+
+        /* only peer involved in piece download, therefore treat as
+         * untrusted and blacklist */
+        if (1 == bt_piece_num_peers(p))
         {
-            int ii;
-
-            __log(me, NULL, "client,piece downloaded,pieceidx=%d",
-                  bt_piece_get_idx(p));
-
-            assert(me->ips.have_piece);
-            me->ips.have_piece(me->pselector, block->piece_idx);
-
-            /* send HAVE messages to all peers */
-            bt_peermanager_forall(me->pm,me,p,__FUNC_peerconn_send_have);
+            bt_blacklist_add_peer(me->blacklist,p,peer);
         }
-            break;
-        case 0:
-            printf("error writing block\n");
-            break;
-        case -1:
+        else 
+        {
+            int i = 0;
+            void* peer2;
+
+            for (peer2 = bt_piece_get_peers(p,&i);
+                 peer2;
+                 peer2 = bt_piece_get_peers(p,&i))
             {
-                printf("invalid piece detected\n");
-
-                /* only peer involved in piece download, therefore treat as
-                 * untrusted and blacklist */
-                if (1 == bt_piece_num_peers(p))
-                {
-                    bt_blacklist_add_peer(me->blacklist,p,peer);
-                }
-                else 
-                {
-                    int i = 0;
-                    void* peer2;
-
-                    for (peer2 = bt_piece_get_peers(p,&i);
-                         peer2;
-                         peer2 = bt_piece_get_peers(p,&i))
-                    {
-                        bt_blacklist_add_peer_as_potentially_blacklisted(
-                                me->blacklist,p,peer2);
-                    }
-
-                    bt_piece_drop_download_progress(p);
-                    me->ips.peer_giveback_piece(me->pselector, NULL, p->idx);
-                }
+                bt_blacklist_add_peer_as_potentially_blacklisted(
+                        me->blacklist,p,peer2);
             }
-            break;
-        default:
-            break;
+
+            bt_piece_drop_download_progress(p);
+            me->ips.peer_giveback_piece(me->pselector, NULL, p->idx);
+        }
+    }
+        break;
+    default:
+        break;
     }
 
 #if 0
@@ -565,10 +562,11 @@ void __FUNC_peerconn_log(void *bto, void *src_peer, const char *buf, ...)
 {
     bt_dm_private_t *me = bto;
     bt_peer_t *peer = src_peer;
-    char buffer[256];
+    char buffer[1000];
 
     sprintf(buffer, "pwp,%s,%s", peer->peer_id, buf);
-    me->cb.log(me->cb_ctx, NULL, buffer);
+    __FUNC_log(bto,NULL,buffer);
+    //me->cb.log(me->cb_ctx, NULL, buffer);
 }
 
 int __FUNC_peerconn_disconnect(void *bto,
@@ -681,7 +679,7 @@ void *bt_dm_add_peer(bt_dm_t* me_,
         peer->nethandle = nethandle;
 
     pwp_conn_cbs_t funcs = {
-        .log = __FUNC_log,
+        .log = __FUNC_peerconn_log,
         .send = __FUNC_peerconn_send_to_peer,
         .getpiece = __FUNC_get_piece,
         .pushblock = __FUNC_peerconn_pushblock,

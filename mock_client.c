@@ -121,9 +121,8 @@ void client_add_peer(
 
 static void __log(void *udata, void *src, const char *buf, ...)
 {
-    printf("%s\n", buf);
+//    printf("%s\n", buf);
 }
-
 
 client_t* mock_client_setup(int piecelen)
 {

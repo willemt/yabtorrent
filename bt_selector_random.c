@@ -127,8 +127,6 @@ void bt_random_selector_add_peer(
     pr->p_candidates = bag_new();
 //    pr->have_pieces = hashmap_new(__peer_hash, __peer_compare, 11);
     hashmap_put(rf->peers, peer, pr);
-
-    printf("added peer %lx\n", (unsigned long)peer);
 }
 
 /**

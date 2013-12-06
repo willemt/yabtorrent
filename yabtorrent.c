@@ -94,7 +94,7 @@ static void __log(void *udata, void *src, const char *buf, ...)
 //    int fd = (unsigned long) udata;
     struct timeval tv;
 
-    printf("%s\n", buf);
+    //printf("%s\n", buf);
     gettimeofday(&tv, NULL);
     sprintf(stamp, "%d,%0.2f,", (int) tv.tv_sec, (float) tv.tv_usec / 100000);
 //    write(fd, stamp, strlen(stamp));
@@ -313,7 +313,6 @@ static int __tfr_event_str(void* udata, const char* key, const char* val, int le
         for (i=0; i < len; i += 20)
         {
             bt_piecedb_add(me->bt->db,val + i);
-            printf("pieces: %d\n", bt_piecedb_get_length(me->bt->db));
         }
 
         config_set_va(me->bt->cfg, "npieces", "%d",

@@ -21,3 +21,4 @@ int bt_blacklist_peer_is_potentially_blacklisted(
     void* piece,
     void* peer);
 
+int bt_blacklist_get_npieces(void* blacklist);
