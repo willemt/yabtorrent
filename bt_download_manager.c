@@ -25,6 +25,7 @@
 #include "event_timer.h"
 #include "config.h"
 #include "linked_list_queue.h"
+#include "sparse_counter.h"
 
 #include "pwp_connection.h"
 #include "pwp_handshaker.h"
@@ -88,13 +89,15 @@ typedef struct
     bt_pieceselector_i ips;
     void* pselector;
 
-    /*  pieces */
+    /* pieces */
     bag_t *p_candidates;
 
     linked_list_queue_t *jobs;
 
     /* are we seeding? */
     int am_seeding;
+
+    sparsecounter_t* pieces_completed;
 
 } bt_dm_private_t;
 
@@ -157,7 +160,7 @@ void __FUNC_peer_stats_visitor(void* cb_ctx, void* peer, void* udata)
 
     if (pwp_conn_im_choked(p->pc))
         stats->choked++;
-    if (pwp_conn_peer_is_choked(p->pc))
+    if (pwp_conn_im_choking(p->pc))
         stats->choking++;
     if (pwp_conn_flag_is_set(p->pc, PC_HANDSHAKE_RECEIVED))
         stats->connected++;
@@ -358,43 +361,42 @@ static void __dispatch_job(bt_dm_private_t* me, bt_job_t* j)
 
     switch (j->type)
     {
-        case BT_JOB_POLLBLOCK:
+    case BT_JOB_POLLBLOCK:
+    {
+        assert(me->ips.poll_piece);
+
+        while (1)
         {
-            assert(me->ips.poll_piece);
+            int p_idx;
+            bt_piece_t* pce;
 
-            while (1)
-            {
-                int p_idx;
-                bt_piece_t* pce;
+            p_idx = me->ips.poll_piece(me->pselector, j->pollblock.peer);
 
-                p_idx = me->ips.poll_piece(me->pselector, j->pollblock.peer);
-
-                if (-1 == p_idx)
-                    break;
-
-                pce = me->ipdb->get_piece(me->pdb, p_idx);
-
-                if (pce && bt_piece_is_complete(pce))
-                {
-                    me->ips.have_piece(me->pselector, p_idx);
-                    continue;
-                }
-
-                while (!bt_piece_is_fully_requested(pce))
-                {
-                    bt_block_t blk;
-
-                    bt_piece_poll_block_request(pce, &blk);
-                    pwp_conn_offer_block(j->pollblock.peer->pc, &blk);
-                }
-
+            if (-1 == p_idx)
                 break;
+
+            pce = me->ipdb->get_piece(me->pdb, p_idx);
+
+            if (pce && bt_piece_is_complete(pce))
+            {
+                me->ips.have_piece(me->pselector, p_idx);
+                continue;
             }
+
+            while (!bt_piece_is_fully_requested(pce))
+            {
+                bt_block_t blk;
+                bt_piece_poll_block_request(pce, &blk);
+                pwp_conn_offer_block(j->pollblock.peer->pc, &blk);
+            }
+
+            break;
         }
-            break;
-        default:
-            assert(0);
-            break;
+    }
+        break;
+    default:
+        assert(0);
+        break;
     }
 
     // TODO: replace with mempool
@@ -434,12 +436,8 @@ static void* __FUNC_get_piece(void* cb_ctx, unsigned int idx)
 /**
  * Received a block from a peer
  * @param peer Peer received from
- * @param data Data to be pushed
- **/
-int __FUNC_peerconn_pushblock(void *bto,
-                                    void* pr,
-                                    bt_block_t * block,
-                                    const void *data)
+ * @param data Data to be pushed */
+int __FUNC_peerconn_pushblock(void *bto, void* pr, bt_block_t *b, const void *data)
 {
     bt_peer_t * peer = pr;
     bt_dm_private_t *me = bto;
@@ -447,11 +445,11 @@ int __FUNC_peerconn_pushblock(void *bto,
 
     assert(me->ipdb->get_piece);
 
-    p = me->ipdb->get_piece(me->pdb, block->piece_idx);
+    p = me->ipdb->get_piece(me->pdb, b->piece_idx);
 
     assert(p);
 
-    switch (bt_piece_write_block(p, NULL, block, data, peer))
+    switch (bt_piece_write_block(p, NULL, b, data, peer))
     {
     case 2: /* complete piece */
     {
@@ -459,7 +457,8 @@ int __FUNC_peerconn_pushblock(void *bto,
               bt_piece_get_idx(p));
 
         assert(me->ips.have_piece);
-        me->ips.have_piece(me->pselector, block->piece_idx);
+        me->ips.have_piece(me->pselector, b->piece_idx);
+        sc_mark_complete(me->pieces_completed, b->piece_idx, 1);
         bt_peermanager_forall(me->pm,me,p,__FUNC_peerconn_send_have);
     }
         break;
@@ -652,6 +651,7 @@ void *bt_dm_add_peer(bt_dm_t* me_,
     /* create a peer connection for this peer */
     peer->pc = pc = pwp_conn_new();
     pwp_conn_set_cbs(pc, &funcs, me);
+    pwp_conn_set_progress(pc, me->pieces_completed);
     pwp_conn_set_piece_info(pc,
             config_get_int(me->cfg,"npieces"),
             config_get_int(me->cfg,"piece_length"));
@@ -838,16 +838,15 @@ void *bt_dm_new()
     config_set_if_not_set(me->cfg,"infohash", "00000000000000000000");
     config_set_if_not_set(me->cfg,"my_ip", "127.0.0.1");
     config_set_if_not_set(me->cfg,"pwp_listen_port", "6881");
-    config_set_if_not_set(me->cfg,"max_peer_connections", "10");
-    config_set_if_not_set(me->cfg,"max_active_peers", "4");
-    config_set_if_not_set(me->cfg,"tracker_scrape_interval", "10");
+    config_set_if_not_set(me->cfg,"max_peer_connections", "32");
+    config_set_if_not_set(me->cfg,"max_active_peers", "32");
     config_set_if_not_set(me->cfg,"max_pending_requests", "10");
     /* How many pieces are there of this file
      * The size of a piece is determined by the publisher of the torrent.
      * A good recommendation is to use a piece size so that the metainfo file does
      * not exceed 70 kilobytes.  */
-    config_set_if_not_set(me->cfg,"npieces", "10");
-    config_set_if_not_set(me->cfg,"piece_length", "10");
+    config_set_if_not_set(me->cfg,"npieces", "0");
+    config_set_if_not_set(me->cfg,"piece_length", "0");
     config_set_if_not_set(me->cfg,"download_path", ".");
     /* Set maximum amount of megabytes used by piece cache */
     config_set_if_not_set(me->cfg,"max_cache_mem_bytes", "1000000");
@@ -879,6 +878,9 @@ void *bt_dm_new()
     /* job management */
     me->jobs = llqueue_new();
     me->job_lock = NULL;
+
+    /* we don't need to specify the amount of pieces we need */
+    me->pieces_completed = sc_init(0);
 
     return me;
 }

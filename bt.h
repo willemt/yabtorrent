@@ -125,6 +125,7 @@ typedef struct
 typedef struct {
 //    void* (*poll_best_from_bitfield)(void * db, void * bf_possibles);
     void* (*get_piece)(void *db, const unsigned int piece_idx);
+    void* (*get_sparsecounter)(void *db);
 } bt_piecedb_i;
 
 typedef struct {

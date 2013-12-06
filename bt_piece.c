@@ -466,6 +466,7 @@ int bt_piece_get_size(
     bt_piece_t * me
 )
 {
+    assert(me);
     return priv(me)->piece_length;
 }
 

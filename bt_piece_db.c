@@ -43,6 +43,7 @@ typedef struct
     void *blockrw_data;
 
     func_add_file_f func_addfile;
+
 } bt_piecedb_private_t;
 
 #define priv(x) ((bt_piecedb_private_t*)(x))
@@ -151,11 +152,8 @@ static int __figure_out_new_piece_size(bt_piecedb_t * db)
     /* figure out current total size */
     for (ii = 1, tot_bytes_used = 0; ii < hashmap_count(priv(db)->pieces); ii++)
     {
-        bt_piece_t *pce;
-
-        pce = bt_piecedb_get(db,ii);
-        assert(pce);
-        tot_bytes_used += bt_piece_get_size(pce);
+        bt_piece_t *p = bt_piecedb_get(db,ii);
+        tot_bytes_used += bt_piece_get_size(p);
     }
 
     if (bt_piecedb_get_tot_file_size(db) - tot_bytes_used <
@@ -247,11 +245,9 @@ int bt_piecedb_get_num_downloaded(bt_piecedb_t * db)
 
     for (ii = 0; ii < bt_piecedb_get_length(db); ii++)
     {
-        bt_piece_t *pce;
-        
-        pce = bt_piecedb_get(db, ii);
+        bt_piece_t *p = bt_piecedb_get(db, ii);
 
-        if (bt_piece_is_downloaded(pce))
+        if (bt_piece_is_downloaded(p))
         {
             downloaded += 1;
         }
@@ -269,11 +265,9 @@ int bt_piecedb_get_num_completed(bt_piecedb_t * db)
 
     for (ii = 0; ii < bt_piecedb_get_length(db); ii++)
     {
-        bt_piece_t *pce;
-        
-        pce = bt_piecedb_get(db, ii);
+        bt_piece_t *p = bt_piecedb_get(db, ii);
 
-        if (bt_piece_is_complete(pce))
+        if (bt_piece_is_complete(p))
         {
             cnt += 1;
         }
@@ -329,11 +323,9 @@ void bt_piecedb_print_pieces_downloaded(bt_piecedb_t * db)
     for (ii = 0, depth = 3;
          ii < bt_piecedb_get_length(db); ii++, depth += 1)
     {
-        bt_piece_t *pce;
+        bt_piece_t * p = bt_piecedb_get(db, ii);
 
-        pce = bt_piecedb_get(db, ii);
-
-        if (bt_piece_is_complete(pce))
+        if (bt_piece_is_complete(p))
         {
             printf("1");
         }
