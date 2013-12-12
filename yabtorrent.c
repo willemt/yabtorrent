@@ -396,8 +396,6 @@ static void __log_process_info()
     }
 }
 
-#include "windows.h"
-
 static int __cmp_peer_stats(const void * a, const void *b)
 {
     return ((bt_dm_peer_stats_t*)b)->drate - ((bt_dm_peer_stats_t*)a)->drate;
