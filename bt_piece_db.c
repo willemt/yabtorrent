@@ -240,17 +240,13 @@ void bt_piecedb_add_all(bt_piecedb_t * db, const char *pieces, const int len)
  * @return number of pieces downloaded */
 int bt_piecedb_get_num_downloaded(bt_piecedb_t * db)
 {
-    int ii;
-    int downloaded = 0;
+    int ii, downloaded = 0;
 
     for (ii = 0; ii < bt_piecedb_get_length(db); ii++)
     {
         bt_piece_t *p = bt_piecedb_get(db, ii);
-
         if (bt_piece_is_downloaded(p))
-        {
             downloaded += 1;
-        }
     }
 
     return downloaded;
@@ -260,17 +256,14 @@ int bt_piecedb_get_num_downloaded(bt_piecedb_t * db)
  * @return number of pieces downloaded */
 int bt_piecedb_get_num_completed(bt_piecedb_t * db)
 {
-    int ii;
-    int cnt = 0;
+    int ii, cnt = 0;
 
     for (ii = 0; ii < bt_piecedb_get_length(db); ii++)
     {
         bt_piece_t *p = bt_piecedb_get(db, ii);
 
         if (bt_piece_is_complete(p))
-        {
             cnt += 1;
-        }
     }
 
     return cnt;
@@ -291,14 +284,9 @@ int bt_piecedb_all_pieces_are_complete(bt_piecedb_t* db)
 
     for (ii = 0; ii < bt_piecedb_get_length(db); ii++)
     {
-        bt_piece_t *pce;
-        
-        pce = bt_piecedb_get(db, ii);
-
+        bt_piece_t *pce = bt_piecedb_get(db, ii);
         if (!bt_piece_is_complete(pce))
-        {
             return 0;
-        }
     }
 
     return 1;

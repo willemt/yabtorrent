@@ -18,6 +18,9 @@
 #include <uv.h>
 #include <sys/time.h>
 
+/* for INT_MAX */
+#include <limits.h>
+
 #include "block.h"
 #include "bt.h"
 #include "bt_piece_db.h"
@@ -32,6 +35,8 @@
 #include "config.h"
 #include "networkfuncs.h"
 #include "linked_list_queue.h"
+
+#include "docopt.c"
 
 #define PROGRAM_NAME "bt"
 
@@ -57,6 +62,8 @@ typedef struct {
     /* tracker client */
     void* tc;
 
+    bt_dm_stats_t stat;
+
     uv_mutex_t mutex;
 } bt_t;
 
@@ -76,17 +83,6 @@ static void __on_tc_add_peer(void* callee,
         char* ip,
         unsigned int ip_len,
         unsigned int port);
-
-static struct option const long_opts[] = {
-    { "archive", no_argument, NULL, 'a'},
-    /* The bounded network interface for net communications */
-    { "verify-download", no_argument, NULL, 'e'},
-    { "shutdown-when-complete", no_argument, NULL, 's'},
-    { "show-config", no_argument, NULL, 'c'},
-    { "pwp_listen_port", required_argument, NULL, 'p'},
-    { "torrent_file_report_only", required_argument, NULL, 't'},
-    { NULL, 0, NULL, 0}
-};
 
 static void __log(void *udata, void *src, const char *buf, ...)
 {
@@ -400,101 +396,111 @@ static void __log_process_info()
     }
 }
 
-static void __bt_periodic(uv_timer_t* handle, int status)
+#include "windows.h"
+
+static int __cmp_peer_stats(const void * a, const void *b)
+{
+    return ((bt_dm_peer_stats_t*)b)->drate - ((bt_dm_peer_stats_t*)a)->drate;
+}
+
+static void __periodic(uv_timer_t* handle, int status)
 {
     bt_t* bt = handle->data;
-    bt_dm_stats_t stat;
+    int i;
 
     if (bt->bc)
     {
         uv_mutex_lock(&bt->mutex);
-        bt_dm_periodic(bt->bc, &stat);
+        bt_dm_periodic(bt->bc, &bt->stat);
         uv_mutex_unlock(&bt->mutex);
     }
 
     __log_process_info();
 
     // bt_piecedb_print_pieces_downloaded(bt_dm_get_piecedb(me));
+
     // TODO: show inactive peers
     // TODO: show number of invalid pieces
-    printf("peers: %d (active:%d choked:%d choking:%d failed:%d) "
-            "pieces: (downloaded:%d completed:%d/%d) dl:%04dKB/s ul:%04dKB/s\r",
-            stat.peers,
-            stat.connected,
-            stat.choked,
-            stat.choking,
-            stat.failed_connection,
-            bt_piecedb_get_num_downloaded(bt->db),
-            bt_piecedb_get_num_completed(bt->db),
-            bt_piecedb_get_length(bt->db),
-            stat.download_rate == 0 ? 0 : stat.download_rate / 1000,
-            stat.upload_rate == 0 ? 0 : stat.upload_rate / 1000
+
+    int connected = 0, choked = 0, choking = 0, failed_connection = 0;
+    int drate = 0, urate = 0, downloading = 0;
+    int min=INT_MAX, max=0, avg=0;
+
+    qsort(bt->stat.peers, bt->stat.npeers, sizeof(bt_dm_peer_stats_t),
+        __cmp_peer_stats);
+
+    for (i=0; i < bt->stat.npeers; i++)
+    {
+        bt_dm_peer_stats_t* ps = &bt->stat.peers[i];
+        failed_connection += ps->failed_connection;
+        connected += ps->connected;
+        choking += ps->choking;
+        choked += ps->choked;
+        drate += ps->drate;
+        urate += ps->urate;
+        if (0 < ps->drate)
+        {
+            downloading += 1;
+            avg += ps->drate;
+            if (ps->drate < min) min = ps->drate;
+            if (max < ps->drate) max = ps->drate;
+        }
+        if (0 == ps->drate || 5 < i) continue;
+#if 0
+        printf("peer (choked:%d choking:%d) "
+                "dl:%04dKB/s ul:%04dKB/s\n",
+                ps->choked, ps->choking,
+                ps->drate == 0 ?  0 : ps->drate / 1000,
+                ps->urate == 0 ?  0 : ps->urate / 1000
+                );
+#endif
+    }
+
+    if (0 < downloading)
+        avg /= downloading;
+
+    printf(
+            "done:%d/%d dl:%3dKBs(avg:%d min:%d max:%d) ul:%3dKBs "
+            "peer:%d actv:%d dlng:%d chkd:%d chkg:%d fail:%d "
+            "\t\t\t\t\r",
+            bt_piecedb_get_num_completed(bt->db), bt_piecedb_get_length(bt->db),
+            drate == 0 ? 0 : drate / 1000, 
+            avg == 0 ? 0 : avg / 1000,
+            min == 0 ? 0 : min / 1000,
+            max == 0 ? 0 : max / 1000,
+            urate == 0 ? 0 : urate / 1000,
+            bt->stat.npeers, connected, downloading, choked, choking,
+            failed_connection
             );
 }
 
 int main(int argc, char **argv)
 {
-    char c;
-    int o_verify_download,
-        o_shutdown_when_complete,
-        o_torrent_file_report_only,
-        o_show_config;
+    DocoptArgs args = docopt(argc, argv, 1, "0.1");
     void *bc;
-    char *str;
     config_t* cfg;
     bt_t bt;
 
-    o_show_config = 0;
-    o_verify_download = 0;
-    o_shutdown_when_complete = 0;
-    o_torrent_file_report_only = 0;
     bt.bc = bc = bt_dm_new();
     bt.cfg = cfg = bt_dm_get_config(bc);
     bt.announces = llqueue_new();
+    memset(&bt.stat, 0, sizeof(bt_dm_stats_t));
 
 #if 0
     status = config_read(cfg, "yabtc", "config");
     setlocale(LC_ALL, " ");
     atexit (close_stdin);
+    bt_dm_set_logging(bc,
+            open("dump_log", O_CREAT | O_TRUNC | O_RDWR, 0666), __log);
 #endif
 
-    /* TODO: replace with gnugetops generator */
-    while ((c = getopt_long(argc, argv, "cesi:p:", long_opts, NULL)) != -1)
-    {
-        switch (c)
-        {
-        case 's':
-            o_shutdown_when_complete = 1;
-            break;
-        case 'p':
-            config_set_va(cfg,"pwp_listen_port","%.*s",strlen(optarg), optarg);
-            break;
-        case 't':
-            config_set_va(cfg,"torrent_file","%.*s",strlen(optarg), optarg);
-            o_torrent_file_report_only = 1;
-            break;
-        case 'i':
-            config_set_va(cfg,"bounded_iface","%.*s",strlen(optarg), optarg);
-            break;
-        case 'c':
-            o_show_config = 1;
-            break;
-        case 'e':
-            o_verify_download = 1;
-            break;
-
-        default:
-            __usage(EXIT_FAILURE);
-        }
-    }
-
-    /* do configuration */
-    config_set_va(cfg, "shutdown_when_complete", "%d", o_shutdown_when_complete);
+    if (args.torrent_file)
+        config_set_va(cfg,"torrent_file","%s", args.torrent_file);
+    if (args.port)
+        config_set_va(cfg,"pwp_listen_port","%.*s", args.port);
+    //config_set_va(cfg, "shutdown_when_complete", "%d", o_shutdown_when_complete);
     config_set(cfg, "my_peerid", bt_generate_peer_id());
     assert(config_get(cfg, "my_peerid"));
-
-//    bt_dm_set_logging(
-//            bc, open("dump_log", O_CREAT | O_TRUNC | O_RDWR, 0666), __log);
 
     /* set network functions */
     bt_dm_cbs_t func = {
@@ -527,14 +533,12 @@ int main(int argc, char **argv)
             bt.dc);
     bt_dm_set_piece_db(bt.bc,&pdb_funcs,bt.db);
 
-    if (o_torrent_file_report_only)
-    {
+    if (args.info)
         __read_torrent_file(&bt, config_get(cfg,"torrent_file"));
-    }
 
     if (argc == optind)
     {
-        printf("ERROR: Please specify torrent file\n");
+        printf("%s", args.help_message);
         exit(EXIT_FAILURE);
     }
     else if (0 == __read_torrent_file(&bt,argv[optind]))
@@ -542,10 +546,8 @@ int main(int argc, char **argv)
         exit(EXIT_FAILURE);
     }
 
-    if (o_show_config)
-    {
-        config_print(cfg);
-    }
+//    if (o_show_config)
+//        config_print(cfg);
 
     /* Selector */
     bt_pieceselector_i ips = {
@@ -573,7 +575,7 @@ int main(int argc, char **argv)
     periodic_req = malloc(sizeof(uv_timer_t));
     periodic_req->data = &bt;
     uv_timer_init(loop, periodic_req);
-    uv_timer_start(periodic_req, __bt_periodic, 0, 1000);
+    uv_timer_start(periodic_req, __periodic, 0, 1000);
 
     /* try to connect to tracker */
     if (0 == __trackerclient_try_announces(&bt))

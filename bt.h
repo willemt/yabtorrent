@@ -68,14 +68,23 @@ typedef void *(
 );
 
 typedef struct {
-    /* Peer stats */
-    int failed_connection;
-    int connected;
-    int peers;
+    int drate;
+    int urate;
     int choked;
     int choking;
-    int download_rate;
-    int upload_rate;
+    int connected;
+    int failed_connection;
+} bt_dm_peer_stats_t;
+
+typedef struct {
+    /* individual peer stats */
+    bt_dm_peer_stats_t *peers;
+
+    /* number of peers in array */
+    int npeers;
+
+    /* size of array */
+    int npeers_size;
 } bt_dm_stats_t;
 
 #ifndef HAVE_FUNC_LOG

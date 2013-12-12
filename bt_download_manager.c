@@ -155,20 +155,17 @@ void __FUNC_peer_periodic(void* cb_ctx, void* peer, void* udata)
  * Processes each peer connection retrieving stats */
 void __FUNC_peer_stats_visitor(void* cb_ctx, void* peer, void* udata)
 {
-    bt_dm_stats_t *stats = udata;
+    bt_dm_stats_t *s = udata;
+    bt_dm_peer_stats_t *ps; 
     bt_peer_t* p = peer;
 
-    if (pwp_conn_im_choked(p->pc))
-        stats->choked++;
-    if (pwp_conn_im_choking(p->pc))
-        stats->choking++;
-    if (pwp_conn_flag_is_set(p->pc, PC_HANDSHAKE_RECEIVED))
-        stats->connected++;
-    if (pwp_conn_flag_is_set(p->pc, PC_FAILED_CONNECTION))
-        stats->failed_connection++;
-    stats->download_rate += pwp_conn_get_download_rate(p->pc);
-    stats->upload_rate += pwp_conn_get_upload_rate(p->pc);
-    stats->peers++;
+    ps = &s->peers[s->npeers++];
+    ps->choked = pwp_conn_im_choked(p->pc);
+    ps->choking = pwp_conn_im_choking(p->pc);
+    ps->connected = pwp_conn_flag_is_set(p->pc, PC_HANDSHAKE_RECEIVED);
+    ps->failed_connection = pwp_conn_flag_is_set(p->pc, PC_FAILED_CONNECTION);
+    ps->drate = pwp_conn_get_download_rate(p->pc);
+    ps->urate = pwp_conn_get_upload_rate(p->pc);
 }
 
 /**
@@ -420,15 +417,6 @@ static void __FUNC_peerconn_send_have(void* cb_ctx, void* peer, void* udata)
     pwp_conn_send_have(p->pc, bt_piece_get_idx(udata));
 }
 
-static void* __FUNC_get_piece(void* cb_ctx, unsigned int idx)
-{
-    bt_dm_private_t *me = cb_ctx;
-    void* pce;
-
-    pce = me->ipdb->get_piece(me->pdb, idx);
-    return pce;
-}
-
 /**
  * Received a block from a peer
  * @param peer Peer received from
@@ -465,8 +453,6 @@ int __FUNC_peerconn_pushblock(void *bto, void* pr, bt_block_t *b, const void *da
 
     case -1: /* invalid piece created */
     {
-        printf("invalid piece detected\n");
-
         /* only peer involved in piece download, therefore treat as
          * untrusted and blacklist */
         if (1 == bt_piece_num_peers(p))
@@ -527,16 +513,6 @@ int __FUNC_peerconn_disconnect(void *bto,
     __log(bto,NULL,"disconnecting,%s", reason);
     bt_dm_remove_peer(me,peer);
     return 1;
-}
-
-static int __FUNC_peerconn_pieceiscomplete(void *bto, void *piece)
-{
-    bt_dm_private_t *me = bto;
-    bt_piece_t *pce = piece;
-    int r;
-
-    r = bt_piece_is_complete(pce);
-    return r;
 }
 
 static void __FUNC_peerconn_peer_have_piece(
@@ -630,12 +606,10 @@ void *bt_dm_add_peer(bt_dm_t* me_,
     pwp_conn_cbs_t funcs = {
         .log = __FUNC_peerconn_log,
         .send = __FUNC_peerconn_send_to_peer,
-        .getpiece = __FUNC_get_piece,
         .pushblock = __FUNC_peerconn_pushblock,
         .pollblock = __FUNC_peerconn_pollblock,
         .disconnect = __FUNC_peerconn_disconnect,
         .peer_have_piece = __FUNC_peerconn_peer_have_piece,
-        .piece_is_complete = __FUNC_peerconn_pieceiscomplete,
         .write_block_to_stream = __FUNC_peerconn_write_block_to_stream,
         .peer_giveback_block = __FUNC_peerconn_giveback_block
     };
@@ -741,7 +715,13 @@ cleanup:
 
     if (stats)
     {
-        memset(stats,0,sizeof(bt_dm_stats_t));
+        if (stats->npeers_size < bt_peermanager_count(me->pm))
+        {
+            stats->npeers_size = bt_peermanager_count(me->pm);
+            stats->peers = realloc(stats->peers,
+                    stats->npeers_size * sizeof(bt_dm_peer_stats_t));
+        }
+        stats->npeers = 0;
         bt_peermanager_forall(me->pm,me,stats,__FUNC_peer_stats_visitor);
     }
 

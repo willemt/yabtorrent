@@ -1,0 +1,49 @@
+yabtorrent - a bittorrent client
+
+Usage:
+  yabtorrent --help
+  yabtorrent --info <torrent-file>
+  yabtorrent --scrape <torrent-file>
+  yabtorrent <new-torrent-file> --new=<sourcefile>
+      [--announce=<url>]
+      [--comment=<comment-text>]
+      [--private]
+  yabtorrent <torrent-file>
+      [--blocklist | --no-blocklist]
+      [--downlimit=<downlimit-number> | -no-downlimit]
+      [--encryption-required | --encryption-preferred | --encryption-tolerated]
+      [--finish=<script>]
+      [--config-directory=<config-directory>]
+      [--help]
+      [--portmap | --no-portmap]
+      [--port=<listen-port>]
+      [--tos]
+      [--uplimit=<uplimit-number> | --no-uplimit]
+      [--verbose]
+      [--download-dir=<download-dir>] 
+
+Options:
+  -a --announce=<announce-url>  When creating a new torrent, set its announce URL.
+  -b --blocklist  Enable peer blocklists.
+  -B --no-blocklist  Disable blocklists.
+  -c --comment=<comment-text>  When creating a new torrent, set its comment field.
+  -d --downlimit=<downlimit-number>  Set the maximum download speed in KB/s.
+  -D --no-downlimit  Don’t limit the download speed.
+  -er --encryption-required  Encrypt all peer connections.
+  -ep --encryption-preferred  Prefer encrypted peer connetions.
+  -et --encryption-tolerated  Prefer unencrypted peer connections.
+  -f --finish=<script>  Set a script to run when the torrent finishes.
+  -g --config-dir=<directory>  Where to look for configuration files.
+  -h --help  Prints a short usage summary.
+  -i --info=<torrent-file>  Shows torrent details and exit.
+  -m --portmap  Enable portmapping via NAT-PMP or UPnP.
+  -M --no-portmap  Disable portmapping.
+  -n --new=<sourcefile>  Create torrent from the specified file or directory.
+  -p --port=<listen-port>  Set the port to listen for incoming peers. (Default: 51413).
+  -r --private  When creating a new torrent, set its ’private’ flag.
+  -s --scrape  Print the current number of seeders and leechers for the specified torrent.
+  -t --tos  Set the peer socket TOS for local router-based traffic shaping.
+  -u --uplimit=<uplimit-number>  Set the maximum upload speed in KB/s.
+  -U --no-uplimit  Don’t limit the upload speed.
+  -v --verify  Verify the torrent’s downloaded data.
+  -w --download-dir=<download-dir>  Where to save downloaded data.
