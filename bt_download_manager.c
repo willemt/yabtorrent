@@ -48,8 +48,6 @@
 #include "bt_selector_rarestfirst.h"
 #include "bt_selector_sequential.h"
 
-#include "bag.h"
-
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -68,7 +66,9 @@ typedef struct
     /* callback context */
     void *cb_ctx;
 
+    /* job management */
     void *job_lock;
+    linked_list_queue_t *jobs;
 
     /* configuration */
     void* cfg;
@@ -88,11 +88,6 @@ typedef struct
     /* for selecting pieces */
     bt_pieceselector_i ips;
     void* pselector;
-
-    /* pieces */
-    bag_t *p_candidates;
-
-    linked_list_queue_t *jobs;
 
     /* are we seeding? */
     int am_seeding;
@@ -577,7 +572,7 @@ void *bt_dm_add_peer(bt_dm_t* me_,
                               void* nethandle)
 {
     bt_dm_private_t *me = (void*)me_;
-    bt_peer_t* peer;
+    bt_peer_t* p;
 
     /*  ensure we aren't adding ourselves as a peer */
     if (!strncmp(ip, config_get(me->cfg,"my_ip"), ip_len) &&
@@ -587,62 +582,58 @@ void *bt_dm_add_peer(bt_dm_t* me_,
     }
 
     /* remember the peer */
-    if (!(peer = bt_peermanager_add_peer(me->pm, peer_id, peer_id_len, ip, ip_len, port)))
+    if (!(p = bt_peermanager_add_peer(me->pm, peer_id, peer_id_len,
+                    ip, ip_len, port)))
     {
 #if 0 /* debug */
-        fprintf(stderr, "cant add peer %s:%d as it has been added already\n", ip, port);
+        fprintf(stderr, "cant add %s:%d, it's been added already\n", ip, port);
 #endif
         return NULL;
     }
     else
     {
         if (me->pselector)
-            me->ips.add_peer(me->pselector, peer);
+            me->ips.add_peer(me->pselector, p);
     }
 
     if (nethandle)
-        peer->nethandle = nethandle;
+        p->nethandle = nethandle;
 
-    pwp_conn_cbs_t funcs = {
+    funcs.call_exclusively = me->cb.call_exclusively;
+
+    /* create a peer connection for this peer */
+    void* pc = p->pc = pwp_conn_new();
+    pwp_conn_set_cbs(pc, &((pwp_conn_cbs_t) {
         .log = __FUNC_peerconn_log,
         .send = __FUNC_peerconn_send_to_peer,
         .pushblock = __FUNC_peerconn_pushblock,
         .pollblock = __FUNC_peerconn_pollblock,
         .disconnect = __FUNC_peerconn_disconnect,
         .peer_have_piece = __FUNC_peerconn_peer_have_piece,
-        .write_block_to_stream = __FUNC_peerconn_write_block_to_stream,
         .peer_giveback_block = __FUNC_peerconn_giveback_block
-    };
-
-    funcs.call_exclusively = me->cb.call_exclusively;
-
-    void* pc;
-
-    /* create a peer connection for this peer */
-    peer->pc = pc = pwp_conn_new();
-    pwp_conn_set_cbs(pc, &funcs, me);
+        .write_block_to_stream = __FUNC_peerconn_write_block_to_stream,
+        }), me);
     pwp_conn_set_progress(pc, me->pieces_completed);
     pwp_conn_set_piece_info(pc,
             config_get_int(me->cfg,"npieces"),
             config_get_int(me->cfg,"piece_length"));
-    pwp_conn_set_peer(pc, peer);
+    pwp_conn_set_peer(pc, p);
 
     /* the remote peer will have always send a handshake */
     if (NULL == me->cb.peer_connect)
     {
-        //fprintf(stderr, "cant add peer, peer_connect function not available\n");
+        //fprintf(stderr, "cant add, peer_connect function not available\n");
         return NULL;
     }
 
 #if 1
     if (!nethandle)
     {
-        /* connection */
         if (0 == me->cb.peer_connect(me,
                     &me->cb_ctx,
-                    &peer->nethandle,
-                    peer->ip,
-                    peer->port,
+                    &p->nethandle,
+                    p->ip,
+                    p->port,
                     bt_dm_dispatch_from_buffer,
                     bt_dm_peer_connect,
                     bt_dm_peer_connect_fail))
@@ -653,14 +644,13 @@ void *bt_dm_add_peer(bt_dm_t* me_,
     }
 #endif
 
-    /* create handshaker */
-    peer->mh = pwp_handshaker_new(
+    p->mh = pwp_handshaker_new(
             config_get(me->cfg,"infohash"),
             config_get(me->cfg,"my_peerid"));
 
-    bt_leeching_choker_add_peer(me->lchoke, peer->pc);
+    bt_leeching_choker_add_peer(me->lchoke, p->pc);
 
-    return peer;
+    return p;
 }
 
 /**
@@ -776,13 +766,9 @@ void bt_dm_set_piece_selector(bt_dm_t* me_, bt_pieceselector_i* ips, void* piece
     memcpy(&me->ips, ips, sizeof(bt_pieceselector_i));
 
     if (!piece_selector)
-    {
         me->pselector = me->ips.new(0);
-    }
     else
-    {
         me->pselector = piece_selector;
-    }
 
     bt_dm_check_pieces(me_);
 }
@@ -823,8 +809,6 @@ void *bt_dm_new()
     /* need to be able to tell the time */
     me->ticker = eventtimer_new();
 
-    me->p_candidates = bag_new();
-
     /* peer manager */
     me->pm = bt_peermanager_new(me);
     bt_peermanager_set_config(me->pm, me->cfg);
@@ -832,7 +816,8 @@ void *bt_dm_new()
     me->blacklist = bt_blacklist_new();
 
     /*  set leeching choker */
-    me->lchoke = bt_leeching_choker_new(atoi(config_get(me->cfg,"max_active_peers")));
+    me->lchoke = bt_leeching_choker_new(
+            atoi(config_get(me->cfg,"max_active_peers")));
     bt_leeching_choker_set_choker_peer_iface(me->lchoke, me,
                                              &iface_choker_peer);
 
