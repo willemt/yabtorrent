@@ -15,8 +15,8 @@
 #include <assert.h>
 #include <fcntl.h>
 #include <getopt.h>
-#include <uv.h>
 #include <sys/time.h>
+#include <uv.h>
 
 /* for INT_MAX */
 #include <limits.h>
@@ -254,27 +254,6 @@ static void __on_tc_add_peer(void* callee,
     peer = bt_dm_add_peer(bt->bc, peer_id, peer_id_len, ip, ip_len, port, peer_nethandle);
 
     uv_mutex_unlock(&bt->mutex);
-}
-
-static void __usage(int status)
-{
-    if (status != EXIT_SUCCESS)
-    {
-        fprintf(stderr, ("Try `%s --help' for more information.\n"),
-                PROGRAM_NAME);
-    }
-    else
-    {
-        printf("\
-Usage: %s [OPTION]... TORRENT_FILE\n", PROGRAM_NAME);
-        fputs(("\
-Download torrent indicated by TORRENT_FILE. \n\n\
-Mandatory arguments to long options are mandatory for short options too. \n\
-  -e, --verify-download        check downloaded files and quit \n\
-  -t, --torrent_file_report_only    only report the contents of the torrent file \n\
-  -b                                                    \n "), stdout);
-        exit(status);
-    }
 }
 
 static int __tfr_event(void* udata, const char* key)
