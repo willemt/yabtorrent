@@ -357,6 +357,7 @@ static void __log_process_info()
     struct timeval tv;
 
 #define SECONDS_SINCE_LAST_LOG 1
+
     gettimeofday(&tv, NULL);
 
     /*  run every n seconds */
@@ -366,9 +367,7 @@ static void __log_process_info()
     }
     else
     {
-        unsigned int diff;
-        
-        diff = abs(last_run - tv.tv_usec);
+        unsigned int diff = abs(last_run - tv.tv_usec);
         if (diff >= SECONDS_SINCE_LAST_LOG)
             return;
         last_run = tv.tv_usec;
@@ -475,25 +474,12 @@ int main(int argc, char **argv)
         config_set_va(cfg,"torrent_file","%s", args.torrent_file);
     if (args.port)
         config_set_va(cfg,"pwp_listen_port","%.*s", args.port);
-    //config_set_va(cfg, "shutdown_when_complete", "%d", o_shutdown_when_complete);
     config_set(cfg, "my_peerid", bt_generate_peer_id());
     assert(config_get(cfg, "my_peerid"));
-
-    /* set network functions */
-    bt_dm_cbs_t func = {
-        .peer_connect = peer_connect,
-        .peer_send = peer_send,
-        .peer_disconnect = peer_disconnect, 
-        .call_exclusively = on_call_exclusively,
-        .log = __log
-    };
-
-    bt_dm_set_cbs(bc, &func, NULL);
+    //if (o_show_config)
+    //    config_print(cfg);
 
     /* database for dumping pieces to disk */
-    bt_piecedb_i pdb_funcs = {
-        .get_piece = bt_piecedb_get
-    };
     bt.fd = bt_filedumper_new();
 
     /* Disk Cache */
@@ -505,10 +491,34 @@ int main(int argc, char **argv)
     /* Piece DB */
     bt.db = bt_piecedb_new();
     bt_piecedb_set_diskstorage(bt.db,
-            bt_diskcache_get_blockrw(bt.dc),
-            NULL,//(void*)bt_filedumper_add_file,
-            bt.dc);
-    bt_dm_set_piece_db(bt.bc,&pdb_funcs,bt.db);
+            bt_diskcache_get_blockrw(bt.dc), NULL, bt.dc);
+    bt_dm_set_piece_db(bt.bc,
+            &((bt_piecedb_i) {
+            .get_piece = bt_piecedb_get
+            }), bt.db);
+
+    /* Selector */
+    bt_dm_set_piece_selector(bt.bc, &((bt_pieceselector_i) {
+                .new = bt_random_selector_new,
+                .peer_giveback_piece = bt_random_selector_giveback_piece,
+                .have_piece = bt_random_selector_have_piece,
+                .remove_peer = bt_random_selector_remove_peer,
+                .add_peer = bt_random_selector_add_peer,
+                .peer_have_piece = bt_random_selector_peer_have_piece,
+                .get_npeers = bt_random_selector_get_npeers,
+                .get_npieces = bt_random_selector_get_npieces,
+                .poll_piece = bt_random_selector_poll_best_piece }), NULL);
+    bt_dm_check_pieces(bt.bc);
+    bt_piecedb_print_pieces_downloaded(bt.db);
+
+    /* set network functions */
+    bt_dm_set_cbs(bc, &((bt_dm_cbs_t) {
+            .peer_connect = peer_connect,
+            .peer_send = peer_send,
+            .peer_disconnect = peer_disconnect, 
+            .call_exclusively = on_call_exclusively,
+            .log = __log
+            }), NULL);
 
     if (args.info)
         __read_torrent_file(&bt, config_get(cfg,"torrent_file"));
@@ -522,26 +532,6 @@ int main(int argc, char **argv)
     {
         exit(EXIT_FAILURE);
     }
-
-//    if (o_show_config)
-//        config_print(cfg);
-
-    /* Selector */
-    bt_pieceselector_i ips = {
-        .new = bt_random_selector_new,
-        .peer_giveback_piece = bt_random_selector_giveback_piece,
-        .have_piece = bt_random_selector_have_piece,
-        .remove_peer = bt_random_selector_remove_peer,
-        .add_peer = bt_random_selector_add_peer,
-        .peer_have_piece = bt_random_selector_peer_have_piece,
-        .get_npeers = bt_random_selector_get_npeers,
-        .get_npieces = bt_random_selector_get_npieces,
-        .poll_piece = bt_random_selector_poll_best_piece
-    };
-
-    bt_dm_set_piece_selector(bt.bc, &ips, NULL);
-    bt_dm_check_pieces(bt.bc);
-    bt_piecedb_print_pieces_downloaded(bt.db);
 
     /* start uv */
     loop = uv_default_loop();

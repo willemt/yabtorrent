@@ -122,27 +122,8 @@ void bt_filedumper_add_file(
     sfa_add_file(me->sfa, fname, fname_len, size);
 }
 
-#if 0
-int bt_piecedb_add_file(
-    bt_piecedb_t * db,
-    const char *fname,
-    const int fname_len,
-    const int flen
-)
-{
-    /* increase total file size by this file's size */
-    bt_piecedb_set_tot_file_size(db, bt_piecedb_get_tot_file_size(db) + flen);
-
-    if (priv(db)->func_addfile)
-    {
-        priv(db)->func_addfile(priv(db)->blockrw_data, fname, flen);
-        return 1;
-    }
-
-    return 0;
-}
-#endif
-
+/**
+ * @return number of files */
 int bt_filedumper_get_nfiles(
     void * fl
 )
