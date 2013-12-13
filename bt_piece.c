@@ -192,12 +192,12 @@ void *bt_piece_read_block(
     return priv(me)->disk->read_block(priv(me)->disk_udata, me, blk);
 }
 
-static int __cmp_address(
+static unsigned long __cmp_address(
     const void *e1,
     const void *e2
 )
 {
-    return e2 - e1;
+    return (unsigned long)e2 - (unsigned long)e1;
 }
 
 bt_piece_t *bt_piece_new(

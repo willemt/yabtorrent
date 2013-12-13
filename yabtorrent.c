@@ -432,19 +432,20 @@ static void __periodic(uv_timer_t* handle, int status)
     if (0 < downloading)
         avg /= downloading;
 
-    printf(
-            "%d/%d dl:%dKBs(avg:%d min:%d max:%d) ul:%dKBs "
-            "peer:%d actv:%d dlng:%d chkd:%d chkg:%d fail:%d "
-            "\t\t\t\t\r",
-            bt_piecedb_get_num_completed(me->db), bt_piecedb_get_length(me->db),
-            drate == 0 ? 0 : drate / 1000, 
-            avg == 0 ? 0 : avg / 1000,
-            min == 0 ? 0 : min / 1000,
-            max == 0 ? 0 : max / 1000,
-            urate == 0 ? 0 : urate / 1000,
-            me->stat.npeers, connected, downloading, choked, choking,
-            failed_connection
-            );
+    printf("%d/%d dl:%dKBs ",
+        bt_piecedb_get_num_completed(me->db),
+        bt_piecedb_get_length(me->db),
+        drate == 0 ? 0 : drate / 1000);
+    if (0 < drate)
+        printf("(avg:%d min:%d max:%d) ",
+                avg == 0 ? 0 : avg / 1000,
+                min == 0 ? 0 : min / 1000,
+                max == 0 ? 0 : max / 1000);
+    printf("ul:%dKBs ", urate == 0 ? 0 : urate / 1000);
+    printf("peer:%d actv:%d dlng:%d chkd:%d chkg:%d fail:%d ",
+        me->stat.npeers, connected, downloading, choked, choking,
+        failed_connection);
+    printf("\t\t\t\t\r");
 }
 
 int main(int argc, char **argv)
