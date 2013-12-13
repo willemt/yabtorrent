@@ -51,20 +51,20 @@ typedef struct
     avltree_t* pieces;
 } blacklist_t;
 
-static int __cmp_piece(
+static unsigned long __cmp_piece(
     const void *i1,
     const void *i2
 )
 {
-    return i2 - i1;
+    return (unsigned long)i2 - (unsigned long)i1;
 }
 
-static int __cmp_address(
+static unsigned long __cmp_address(
     const void *e1,
     const void *e2
 )
 {
-    return e2 - e1;
+    return (unsigned long)e2 - (unsigned long)e1;
 }
 
 void *bt_blacklist_new()
