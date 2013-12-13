@@ -65,10 +65,10 @@ typedef struct {
     bt_dm_stats_t stat;
 
     uv_mutex_t mutex;
-} bt_t;
+} sys_t;
 
 typedef struct {
-    bt_t* bt;
+    sys_t* sys;
     char fname[256];
     int fname_len;
     int flen;
@@ -100,22 +100,19 @@ static void __log(void *udata, void *src, const char *buf, ...)
 /**
  * Try to connect to this list of announces
  * @return 0 when no attempts could be made */
-static int __trackerclient_try_announces(bt_t* bt)
+static int __trackerclient_try_announces(sys_t* me)
 {
     void* tc;
-    char* a; /*  announcement */
+    char* a; /* announcement */
     int waiting_for_response_from_connection = 0;
 
-    /*  connect to one of the announces */
-    if (0 == llqueue_count(bt->announces))
-    {
+    if (0 == llqueue_count(me->announces))
         return 0;
-    }
 
-    bt->tc = tc = trackerclient_new(__on_tc_done, __on_tc_add_peer, bt);
-    trackerclient_set_cfg(tc,bt->cfg);
+    me->tc = tc = trackerclient_new(__on_tc_done, __on_tc_add_peer, me);
+    trackerclient_set_cfg(tc,me->cfg);
 
-    while ((a = llqueue_poll(bt->announces)))
+    while ((a = llqueue_poll(me->announces)))
     {
         if (1 == trackerclient_supports_uri(tc, a))
         {
@@ -150,9 +147,9 @@ skip:
  * Tracker client is done. */
 static void __on_tc_done(void* data, int status)
 {
-    bt_t* bt = data;
+    sys_t* me = data;
 
-    if (0 == __trackerclient_try_announces(bt))
+    if (0 == __trackerclient_try_announces(me))
     {
         printf("No connections made, quitting\n");
         exit(0);
@@ -182,11 +179,11 @@ static int __dispatch_from_buffer(
         const unsigned char* buf,
         unsigned int len)
 {
-    bt_t* bt = callee;
+    sys_t* me = callee;
 
-    uv_mutex_lock(&bt->mutex);
-    bt_dm_dispatch_from_buffer(bt->bc,peer_nethandle,buf,len);
-    uv_mutex_unlock(&bt->mutex);
+    uv_mutex_lock(&me->mutex);
+    bt_dm_dispatch_from_buffer(me->bc,peer_nethandle,buf,len);
+    uv_mutex_unlock(&me->mutex);
     return 1;
 }
 
@@ -196,11 +193,11 @@ static int __on_peer_connect(
         char *ip,
         const int port)
 {
-    bt_t* bt = callee;
+    sys_t* me = callee;
 
-    uv_mutex_lock(&bt->mutex);
-    bt_dm_peer_connect(bt->bc,peer_nethandle,ip,port);
-    uv_mutex_unlock(&bt->mutex);
+    uv_mutex_lock(&me->mutex);
+    bt_dm_peer_connect(me->bc,peer_nethandle,ip,port);
+    uv_mutex_unlock(&me->mutex);
 
     return 1;
 }
@@ -209,11 +206,11 @@ static void __on_peer_connect_fail(
     void *callee,
     void* peer_nethandle)
 {
-    bt_t* bt = callee;
+    sys_t* me = callee;
 
-    uv_mutex_lock(&bt->mutex);
-    bt_dm_peer_connect_fail(bt->bc,peer_nethandle);
-    uv_mutex_unlock(&bt->mutex);
+    uv_mutex_lock(&me->mutex);
+    bt_dm_peer_connect_fail(me->bc,peer_nethandle);
+    uv_mutex_unlock(&me->mutex);
 }
 
 /**
@@ -225,7 +222,7 @@ static void __on_tc_add_peer(void* callee,
         unsigned int ip_len,
         unsigned int port)
 {
-    bt_t* bt = callee;
+    sys_t* me = callee;
     void* peer;
     void* netdata;
     void* peer_nethandle;
@@ -238,9 +235,9 @@ static void __on_tc_add_peer(void* callee,
     printf("adding peer: %s %d\n", ip_string, port);
 #endif
 
-    uv_mutex_lock(&bt->mutex);
+    uv_mutex_lock(&me->mutex);
 
-    if (0 == peer_connect(bt,
+    if (0 == peer_connect(me,
                 &netdata,
                 &peer_nethandle,
                 ip_string, port,
@@ -251,9 +248,9 @@ static void __on_tc_add_peer(void* callee,
 
     }
 
-    peer = bt_dm_add_peer(bt->bc, peer_id, peer_id_len, ip, ip_len, port, peer_nethandle);
+    peer = bt_dm_add_peer(me->bc, peer_id, peer_id_len, ip, ip_len, port, peer_nethandle);
 
-    uv_mutex_unlock(&bt->mutex);
+    uv_mutex_unlock(&me->mutex);
 }
 
 static int __tfr_event(void* udata, const char* key)
@@ -272,14 +269,14 @@ static int __tfr_event_str(void* udata, const char* key, const char* val, int le
     if (!strcmp(key,"announce"))
     {
         /* add to queue. We'll try them out by polling the queue elsewhere */
-        llqueue_offer(me->bt->announces, strndup(val,len));
+        llqueue_offer(me->sys->announces, strndup(val,len));
     }
     else if (!strcmp(key,"infohash"))
     {
         char hash[21];
 
         bt_str2sha1hash(hash, val, len);
-        config_set_va(me->bt->cfg,"infohash","%.*s", 20, hash);
+        config_set_va(me->sys->cfg,"infohash","%.*s", 20, hash);
     }
     else if (!strcmp(key,"pieces"))
     {
@@ -287,19 +284,19 @@ static int __tfr_event_str(void* udata, const char* key, const char* val, int le
 
         for (i=0; i < len; i += 20)
         {
-            bt_piecedb_add(me->bt->db,val + i);
+            bt_piecedb_add(me->sys->db,val + i);
         }
 
-        config_set_va(me->bt->cfg, "npieces", "%d",
-                bt_piecedb_get_length(me->bt->db));
+        config_set_va(me->sys->cfg, "npieces", "%d",
+                bt_piecedb_get_length(me->sys->db));
     }
     else if (!strcmp(key,"file path"))
     {
         assert(len < 256);
         strncpy(me->fname,val,len);
         me->fname_len = len;
-        bt_piecedb_increase_piece_space(me->bt->db, me->flen);
-        bt_filedumper_add_file(me->bt->fd, me->fname, me->fname_len, me->flen);
+        bt_piecedb_increase_piece_space(me->sys->db, me->flen);
+        bt_filedumper_add_file(me->sys->fd, me->fname, me->fname_len, me->flen);
     }
 
     return 1;
@@ -319,10 +316,10 @@ static int __tfr_event_int(void* udata, const char* key, int val)
     }
     else if (!strcmp(key,"piece length"))
     {
-        config_set_va(me->bt->cfg, "piece_length", "%d", val);
-        bt_piecedb_set_piece_length(me->bt->db, val);
-        bt_diskcache_set_piece_length(me->bt->dc, val);
-        bt_filedumper_set_piece_length(me->bt->fd, val);
+        config_set_va(me->sys->cfg, "piece_length", "%d", val);
+        bt_piecedb_set_piece_length(me->sys->db, val);
+        bt_diskcache_set_piece_length(me->sys->dc, val);
+        bt_filedumper_set_piece_length(me->sys->fd, val);
     }
 
     return 1;
@@ -336,7 +333,7 @@ static int __tfr_event_int(void* udata, const char* key, int val)
  *  @param fd filedumper
  *  @return 1 on sucess; otherwise 0
  */
-static int __read_torrent_file(bt_t* bt, const char* torrent_file)
+static int __read_torrent_file(sys_t* me, const char* torrent_file)
 {
     void* tf;
     int len;
@@ -344,7 +341,7 @@ static int __read_torrent_file(bt_t* bt, const char* torrent_file)
     torrent_reader_t r;
 
     memset(&r, 0, sizeof(torrent_reader_t));
-    r.bt = bt;
+    r.sys = me;
     tf = tfr_new(__tfr_event, __tfr_event_str, __tfr_event_int, &r);
     metainfo = read_file(torrent_file,&len);
     tfr_read_metainfo(tf, metainfo, len);
@@ -381,14 +378,14 @@ static int __cmp_peer_stats(const void * a, const void *b)
 
 static void __periodic(uv_timer_t* handle, int status)
 {
-    bt_t* bt = handle->data;
+    sys_t* me = handle->data;
     int i;
 
-    if (bt->bc)
+    if (me->bc)
     {
-        uv_mutex_lock(&bt->mutex);
-        bt_dm_periodic(bt->bc, &bt->stat);
-        uv_mutex_unlock(&bt->mutex);
+        uv_mutex_lock(&me->mutex);
+        bt_dm_periodic(me->bc, &me->stat);
+        uv_mutex_unlock(&me->mutex);
     }
 
     __log_process_info();
@@ -402,12 +399,12 @@ static void __periodic(uv_timer_t* handle, int status)
     int drate = 0, urate = 0, downloading = 0;
     int min=INT_MAX, max=0, avg=0;
 
-    qsort(bt->stat.peers, bt->stat.npeers, sizeof(bt_dm_peer_stats_t),
+    qsort(me->stat.peers, me->stat.npeers, sizeof(bt_dm_peer_stats_t),
         __cmp_peer_stats);
 
-    for (i=0; i < bt->stat.npeers; i++)
+    for (i=0; i < me->stat.npeers; i++)
     {
-        bt_dm_peer_stats_t* ps = &bt->stat.peers[i];
+        bt_dm_peer_stats_t* ps = &me->stat.peers[i];
         failed_connection += ps->failed_connection;
         connected += ps->connected;
         choking += ps->choking;
@@ -436,16 +433,16 @@ static void __periodic(uv_timer_t* handle, int status)
         avg /= downloading;
 
     printf(
-            "done:%d/%d dl:%3dKBs(avg:%d min:%d max:%d) ul:%3dKBs "
+            "%d/%d dl:%dKBs(avg:%d min:%d max:%d) ul:%dKBs "
             "peer:%d actv:%d dlng:%d chkd:%d chkg:%d fail:%d "
             "\t\t\t\t\r",
-            bt_piecedb_get_num_completed(bt->db), bt_piecedb_get_length(bt->db),
+            bt_piecedb_get_num_completed(me->db), bt_piecedb_get_length(me->db),
             drate == 0 ? 0 : drate / 1000, 
             avg == 0 ? 0 : avg / 1000,
             min == 0 ? 0 : min / 1000,
             max == 0 ? 0 : max / 1000,
             urate == 0 ? 0 : urate / 1000,
-            bt->stat.npeers, connected, downloading, choked, choking,
+            me->stat.npeers, connected, downloading, choked, choking,
             failed_connection
             );
 }
@@ -453,14 +450,12 @@ static void __periodic(uv_timer_t* handle, int status)
 int main(int argc, char **argv)
 {
     DocoptArgs args = docopt(argc, argv, 1, "0.1");
-    void *bc;
-    config_t* cfg;
-    bt_t bt;
+    sys_t me;
 
-    bt.bc = bc = bt_dm_new();
-    bt.cfg = cfg = bt_dm_get_config(bc);
-    bt.announces = llqueue_new();
-    memset(&bt.stat, 0, sizeof(bt_dm_stats_t));
+    me.bc = bt_dm_new();
+    me.cfg = bt_dm_get_config(me.bc);
+    me.announces = llqueue_new();
+    memset(&me.stat, 0, sizeof(bt_dm_stats_t));
 
 #if 0
     status = config_read(cfg, "yabtc", "config");
@@ -471,34 +466,34 @@ int main(int argc, char **argv)
 #endif
 
     if (args.torrent_file)
-        config_set_va(cfg,"torrent_file","%s", args.torrent_file);
+        config_set_va(me.cfg,"torrent_file","%s", args.torrent_file);
     if (args.port)
-        config_set_va(cfg,"pwp_listen_port","%.*s", args.port);
-    config_set(cfg, "my_peerid", bt_generate_peer_id());
-    assert(config_get(cfg, "my_peerid"));
+        config_set_va(me.cfg,"pwp_listen_port","%.*s", args.port);
+    config_set(me.cfg, "my_peerid", bt_generate_peer_id());
+    assert(config_get(me.cfg, "my_peerid"));
     //if (o_show_config)
     //    config_print(cfg);
 
     /* database for dumping pieces to disk */
-    bt.fd = bt_filedumper_new();
+    me.fd = bt_filedumper_new();
 
     /* Disk Cache */
-    bt.dc = bt_diskcache_new();
+    me.dc = bt_diskcache_new();
     /* point diskcache to filedumper */
-    bt_diskcache_set_disk_blockrw(bt.dc,
-            bt_filedumper_get_blockrw(bt.fd), bt.fd);
+    bt_diskcache_set_disk_blockrw(me.dc,
+            bt_filedumper_get_blockrw(me.fd), me.fd);
 
     /* Piece DB */
-    bt.db = bt_piecedb_new();
-    bt_piecedb_set_diskstorage(bt.db,
-            bt_diskcache_get_blockrw(bt.dc), NULL, bt.dc);
-    bt_dm_set_piece_db(bt.bc,
+    me.db = bt_piecedb_new();
+    bt_piecedb_set_diskstorage(me.db,
+            bt_diskcache_get_blockrw(me.dc), NULL, me.dc);
+    bt_dm_set_piece_db(me.bc,
             &((bt_piecedb_i) {
             .get_piece = bt_piecedb_get
-            }), bt.db);
+            }), me.db);
 
     /* Selector */
-    bt_dm_set_piece_selector(bt.bc, &((bt_pieceselector_i) {
+    bt_dm_set_piece_selector(me.bc, &((bt_pieceselector_i) {
                 .new = bt_random_selector_new,
                 .peer_giveback_piece = bt_random_selector_giveback_piece,
                 .have_piece = bt_random_selector_have_piece,
@@ -508,11 +503,11 @@ int main(int argc, char **argv)
                 .get_npeers = bt_random_selector_get_npeers,
                 .get_npieces = bt_random_selector_get_npieces,
                 .poll_piece = bt_random_selector_poll_best_piece }), NULL);
-    bt_dm_check_pieces(bt.bc);
-    bt_piecedb_print_pieces_downloaded(bt.db);
+    bt_dm_check_pieces(me.bc);
+    bt_piecedb_print_pieces_downloaded(me.db);
 
     /* set network functions */
-    bt_dm_set_cbs(bc, &((bt_dm_cbs_t) {
+    bt_dm_set_cbs(me.bc, &((bt_dm_cbs_t) {
             .peer_connect = peer_connect,
             .peer_send = peer_send,
             .peer_disconnect = peer_disconnect, 
@@ -521,37 +516,37 @@ int main(int argc, char **argv)
             }), NULL);
 
     if (args.info)
-        __read_torrent_file(&bt, config_get(cfg,"torrent_file"));
+        __read_torrent_file(&me, config_get(me.cfg,"torrent_file"));
 
     if (argc == optind)
     {
         printf("%s", args.help_message);
         exit(EXIT_FAILURE);
     }
-    else if (0 == __read_torrent_file(&bt,argv[optind]))
+    else if (0 == __read_torrent_file(&me,argv[optind]))
     {
         exit(EXIT_FAILURE);
     }
 
     /* start uv */
     loop = uv_default_loop();
-    uv_mutex_init(&bt.mutex);
+    uv_mutex_init(&me.mutex);
 
     /* create periodic timer */
     uv_timer_t *periodic_req;
     periodic_req = malloc(sizeof(uv_timer_t));
-    periodic_req->data = &bt;
+    periodic_req->data = &me;
     uv_timer_init(loop, periodic_req);
     uv_timer_start(periodic_req, __periodic, 0, 1000);
 
     /* try to connect to tracker */
-    if (0 == __trackerclient_try_announces(&bt))
+    if (0 == __trackerclient_try_announces(&me))
     {
         printf("No connections made, quitting\n");
         exit(0);
     }
 
     uv_run(loop, UV_RUN_DEFAULT);
-    bt_dm_release(bc);
+    bt_dm_release(me.bc);
     return 1;
 }

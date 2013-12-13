@@ -599,8 +599,6 @@ void *bt_dm_add_peer(bt_dm_t* me_,
     if (nethandle)
         p->nethandle = nethandle;
 
-    funcs.call_exclusively = me->cb.call_exclusively;
-
     /* create a peer connection for this peer */
     void* pc = p->pc = pwp_conn_new();
     pwp_conn_set_cbs(pc, &((pwp_conn_cbs_t) {
@@ -610,8 +608,9 @@ void *bt_dm_add_peer(bt_dm_t* me_,
         .pollblock = __FUNC_peerconn_pollblock,
         .disconnect = __FUNC_peerconn_disconnect,
         .peer_have_piece = __FUNC_peerconn_peer_have_piece,
-        .peer_giveback_block = __FUNC_peerconn_giveback_block
+        .peer_giveback_block = __FUNC_peerconn_giveback_block,
         .write_block_to_stream = __FUNC_peerconn_write_block_to_stream,
+        .call_exclusively = me->cb.call_exclusively
         }), me);
     pwp_conn_set_progress(pc, me->pieces_completed);
     pwp_conn_set_piece_info(pc,
