@@ -105,7 +105,6 @@ void bt_random_selector_remove_peer(
 
     if ((pr = hashmap_remove(rf->peers, peer)))
     {
-        printf("remove peer %lx\n", (unsigned long)peer);
 //        hashmap_free(pr->have_pieces);
         free(pr);
     }

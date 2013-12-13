@@ -121,7 +121,7 @@ int bt_piece_write_block(
     }
 #endif
 
-    avltree_insert(priv(me)->peers,peer,peer);
+    avltree_insert(priv(me)->peers, peer, peer);
 
     assert(priv(me)->disk->write_block);
     assert(priv(me)->disk_udata);
@@ -192,7 +192,7 @@ void *bt_piece_read_block(
     return priv(me)->disk->read_block(priv(me)->disk_udata, me, blk);
 }
 
-static unsigned long __cmp_address(
+static long __cmp_address(
     const void *e1,
     const void *e2
 )
@@ -462,9 +462,7 @@ char *bt_piece_get_hash(
     return priv(me)->sha1;
 }
 
-int bt_piece_get_size(
-    bt_piece_t * me
-)
+int bt_piece_get_size(bt_piece_t * me)
 {
     assert(me);
     return priv(me)->piece_length;

@@ -33,3 +33,4 @@ void bt_filedumper_set_piece_length( void * fl, const int piece_size);
 
 void bt_filedumper_set_cwd( void * fl, const char *path);
 
+unsigned int bt_filedumper_get_total_size(void * fl);

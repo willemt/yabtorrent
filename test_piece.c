@@ -316,7 +316,7 @@ void TestBTPiece_write_valid_block_results_in_valid_piece(
     /* write valid block */
     blk.offset = 0;
     blk.len = 40;
-    CuAssertTrue(tc, 1 == bt_piece_write_block(pce, NULL, &blk, msg, peer));
+    CuAssertTrue(tc, 2 == bt_piece_write_block(pce, NULL, &blk, msg, peer));
     CuAssertTrue(tc, 1 == bt_piece_is_complete(pce));
     CuAssertTrue(tc, 1 == bt_piece_is_valid(pce));
 }

@@ -67,7 +67,9 @@ void TestBT_Peer_shares_all_pieces(
         /* add files/pieces */
         //bt_piecedb_add_file(bt_dm_get_piecedb(bt),"test.txt",8,5);
         bt_piecedb_increase_piece_space(bt_dm_get_piecedb(bt),5);
-        bt_piecedb_add(bt_dm_get_piecedb(bt),mocktorrent_get_piece_sha1(mt,hash,0));
+        bt_piecedb_add(bt_dm_get_piecedb(bt),
+                mocktorrent_get_piece_sha1(mt,hash,0),
+                5);
     }
 
     /* write blocks to client A */

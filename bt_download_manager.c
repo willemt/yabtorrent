@@ -197,7 +197,17 @@ int bt_dm_dispatch_from_buffer(
     }
 
     /* handle regular PWP traffic */
-    pwp_msghandler_dispatch_from_buffer(peer->mh, buf, len);
+    switch (pwp_msghandler_dispatch_from_buffer(peer->mh, buf, len))
+    {
+        case 1:
+            /* successful */
+            break;
+        case 0:
+            /* error, we need to disconnect */
+            __log(bto,NULL,"disconnecting,%s", "bad msg detected by PWP handler");
+            bt_dm_remove_peer(me,peer);
+            break;
+    }
 
     return 1;
 }

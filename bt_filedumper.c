@@ -29,7 +29,7 @@
 /* file dumper */
 typedef struct
 {
-    int piece_size;
+    int piece_length;
     bt_blockrw_i irw;
     void* sfa;
 } bt_filedumper_t;
@@ -45,7 +45,7 @@ int bt_filedumper_write_block(
 
     return sfa_write(
             me->sfa,
-            blk->piece_idx * me->piece_size + blk->offset,
+            blk->piece_idx * me->piece_length + blk->offset,
             blk->len,
             data);
 }
@@ -65,7 +65,7 @@ void *bt_filedumper_read_block(
 
     return sfa_read(
             me->sfa,
-            blk->piece_idx * me->piece_size + blk->offset,
+            blk->piece_idx * me->piece_length + blk->offset,
             blk->len);
 }
 
@@ -80,7 +80,7 @@ int bt_filedumper_flush_block(
 
     return sfa_write(
             me->sfa,
-            blk->piece_idx * me->piece_size + blk->offset,
+            blk->piece_idx * me->piece_length + blk->offset,
             blk->len,
             data);
 #endif
@@ -151,14 +151,16 @@ bt_blockrw_i *bt_filedumper_get_blockrw(
     return &me->irw;
 }
 
+/**
+ * Piece_length is required for figuring out where we are writing blocks */
 void bt_filedumper_set_piece_length(
     void * fl,
-    const int piece_size
+    const int piece_length
 )
 {
     bt_filedumper_t* me = fl;
 
-    me->piece_size = piece_size;
+    me->piece_length = piece_length;
 }
 
 void bt_filedumper_set_cwd(
@@ -169,5 +171,13 @@ void bt_filedumper_set_cwd(
     bt_filedumper_t* me = fl;
 
     sfa_set_cwd(me->sfa, path);
+}
+
+/**
+ * @return total file size in bytes */
+unsigned int bt_filedumper_get_total_size(void * fl)
+{
+    bt_filedumper_t* me = fl;
+    return sfa_get_total_size(me->sfa);
 }
 

@@ -280,12 +280,26 @@ static int __tfr_event_str(void* udata, const char* key, const char* val, int le
     }
     else if (!strcmp(key,"pieces"))
     {
-        int i;
+        int i, bytes_used = 0, piece_size;
 
-        for (i=0; i < len; i += 20)
+        piece_size = atoi(config_get(me->sys->cfg, "piece_length"));
+
+        printf("piece size: %d\n", piece_size);
+
+        /* do N-1 pieces */
+        for (i=0; i < len - 20; i += 20)
         {
-            bt_piecedb_add(me->sys->db,val + i);
+            bt_piecedb_add(me->sys->db, val + i, piece_size);
+            bytes_used += piece_size;
         }
+
+#if 1
+        /* last piece probably has a different size... */
+        int tot_size = bt_filedumper_get_total_size(me->sys->fd);
+        assert(bytes_used < tot_size);
+        assert(tot_size - bytes_used <= piece_size);
+        bt_piecedb_add(me->sys->db, val + i, tot_size - bytes_used);
+#endif
 
         config_set_va(me->sys->cfg, "npieces", "%d",
                 bt_piecedb_get_length(me->sys->db));
@@ -487,7 +501,7 @@ int main(int argc, char **argv)
     /* Piece DB */
     me.db = bt_piecedb_new();
     bt_piecedb_set_diskstorage(me.db,
-            bt_diskcache_get_blockrw(me.dc), NULL, me.dc);
+            bt_diskcache_get_blockrw(me.dc), me.dc);
     bt_dm_set_piece_db(me.bc,
             &((bt_piecedb_i) {
             .get_piece = bt_piecedb_get
