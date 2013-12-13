@@ -104,7 +104,7 @@ static void __client_create_connection(client_t* me, void* nethandle)
     }
 
     /* message inbox */
-    cn = calloc(0,sizeof(client_connection_t));
+    cn = calloc(1,sizeof(client_connection_t));
     cn->inbox = bipbuf_new(1000);
     cn->connect_status = 0;
     cn->nethandle = nethandle;
@@ -138,7 +138,7 @@ void* networkfuns_mock_client_new(void* nethandle)
 {
     client_t* cli;
 
-    cli = calloc(0,sizeof(client_t));
+    cli = calloc(1,sizeof(client_t));
     cli->connections = hashmap_new(__vptr_hash, __vptr_compare, 11);
     cli->nethandle = cli;
     return cli;
