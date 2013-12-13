@@ -177,7 +177,10 @@ int bt_dm_dispatch_from_buffer(
     bt_peer_t* peer;
 
     /* get the peer that this message is for via nethandle */
-    peer = bt_peermanager_nethandle_to_peer(me->pm, peer_nethandle);
+    if (!(peer = bt_peermanager_nethandle_to_peer(me->pm, peer_nethandle)))
+    {
+        return 0;
+    }
 
     /* handle handshake */
     if (!pwp_conn_flag_is_set(peer->pc, PC_HANDSHAKE_RECEIVED))
