@@ -692,6 +692,8 @@ void bt_dm_periodic(bt_dm_t* me_, bt_dm_stats_t *stats)
     bt_dm_private_t *me = (void*)me_;
     int ii;
 
+    /* TODO: pump out keep alive message */
+
     /*  shutdown if we are setup to not seed */
     if (1 == me->am_seeding && 1 == config_get_int(me->cfg,"shutdown_when_complete"))
     {
