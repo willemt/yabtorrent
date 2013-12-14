@@ -197,6 +197,8 @@ def build(bld):
             cp+"CSparseCounter/sparse_counter.c",
             cp+"CHeaplessBencodeReader/bencode.c",
             cp+"PeerWireProtocol/pwp_connection.c",
+            cp+"PeerWireProtocol/pwp_util.c",
+            cp+"PeerWireProtocol/pwp_bitfield.c",
             cp+"PeerWireProtocol/pwp_msghandler.c",
             cp+"PeerWireProtocol/pwp_handshaker.c",
             cp+"CLinkedListQueue/linked_list_queue.c",
