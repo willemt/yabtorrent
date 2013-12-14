@@ -192,7 +192,12 @@ int bt_dm_dispatch_from_buffer(
             pwp_handshaker_release(peer->mh);
             peer->mh = pwp_msghandler_new(peer->pc);
             pwp_conn_set_state(peer->pc, PC_HANDSHAKE_RECEIVED);
-            pwp_conn_send_bitfield(peer->pc);
+            __log(me, NULL, "send,bitfield");
+            if (0 == pwp_send_bitfield(config_get_int(me->cfg,"npieces"),
+                    me->pieces_completed, __FUNC_peerconn_send_to_peer))
+            {
+                bt_dm_remove_peer(me,peer);
+            }
             break;
         default:
             return 0;
