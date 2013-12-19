@@ -35,11 +35,6 @@
 
 void *__clients = NULL;
 
-void* clients_get()
-{
-    return __clients;
-}
-
 static void* call_exclusively_pass_through(void* me, void* cb_ctx, void **lock, void* udata,
         void* (*cb)(void* me, void* udata))
 {
@@ -59,6 +54,16 @@ static long __vptr_compare(
 )
 {
     return (unsigned long)e1 - (unsigned long)e2;
+}
+
+static void __log(void *udata, void *src, const char *buf, ...)
+{
+//    printf("%s\n", buf);
+}
+
+void* clients_get()
+{
+    return __clients;
 }
 
 void* clients_setup()
@@ -115,11 +120,6 @@ void client_add_peer(
     peer = bt_dm_add_peer(me->bt, peer_id, peer_id_len, ip, ip_len, port, peer_nethandle);
 }
 
-static void __log(void *udata, void *src, const char *buf, ...)
-{
-//    printf("%s\n", buf);
-}
-
 client_t* mock_client_setup(int piecelen)
 {
     client_t* cli;
@@ -127,17 +127,20 @@ client_t* mock_client_setup(int piecelen)
 
     cli = networkfuns_mock_client_new(NULL);
 
-    /* set network functions */
-    bt_dm_cbs_t func = {
+    /* bittorrent client */
+    cli->bt = bt_dm_new();
+    cfg = bt_dm_get_config(cli->bt);
+    config_set(cfg, "my_peerid", bt_generate_peer_id());
+    bt_dm_set_cbs(cli->bt,
+        &((bt_dm_cbs_t) {
         .peer_connect = peer_connect,
         .peer_send = peer_send,
         .peer_disconnect = peer_disconnect,
         .call_exclusively = call_exclusively_pass_through,
         .log = __log
-    };
-
-    /* Selector */
-    bt_pieceselector_i ips = {
+        ), cli);
+    bt_dm_set_piece_selector(cli->bt, 
+        &((bt_pieceselector_i) {
         .new = bt_random_selector_new,
         .peer_giveback_piece = bt_random_selector_giveback_piece,
         .have_piece = bt_random_selector_have_piece,
@@ -147,15 +150,8 @@ client_t* mock_client_setup(int piecelen)
         .get_npeers = bt_random_selector_get_npeers,
         .get_npieces = bt_random_selector_get_npieces,
         .poll_piece = bt_random_selector_poll_best_piece
-    };
-
-    /* bittorrent client */
-    cli->bt = bt_dm_new();
-    cfg = bt_dm_get_config(cli->bt);
-    config_set(cfg, "my_peerid", bt_generate_peer_id());
-    bt_dm_set_cbs(cli->bt, &func, cli);
-    mock_client_setup_disk_backend(cli->bt,piecelen);
-    bt_dm_set_piece_selector(cli->bt, &ips, NULL);
+        ), NULL);
+    mock_client_setup_disk_backend(cli->bt, piecelen);
 
     hashmap_put(__clients, cli, cli);
 
