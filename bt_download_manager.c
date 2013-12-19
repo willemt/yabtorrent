@@ -57,7 +57,7 @@
 typedef struct
 {
     /* database for writing pieces */
-    bt_piecedb_i *ipdb;
+    bt_piecedb_i ipdb;
     bt_piecedb_t* pdb;
 
     /* callbacks */
@@ -382,7 +382,7 @@ static void __dispatch_job(bt_dm_private_t* me, bt_job_t* j)
             if (-1 == p_idx)
                 break;
 
-            pce = me->ipdb->get_piece(me->pdb, p_idx);
+            pce = me->ipdb.get_piece(me->pdb, p_idx);
 
             if (pce && bt_piece_is_complete(pce))
             {
@@ -441,9 +441,9 @@ int __FUNC_peerconn_pushblock(void *bto, void* pr, bt_block_t *b, const void *da
     bt_dm_private_t *me = bto;
     bt_piece_t *p;
 
-    assert(me->ipdb->get_piece);
+    assert(me->ipdb.get_piece);
 
-    p = me->ipdb->get_piece(me->pdb, b->piece_idx);
+    p = me->ipdb.get_piece(me->pdb, b->piece_idx);
 
     assert(p);
 
@@ -552,7 +552,7 @@ static void __FUNC_peerconn_giveback_block(
     if (b->len < 0)
         return;
 
-    p = me->ipdb->get_piece(me->pdb, b->piece_idx);
+    p = me->ipdb.get_piece(me->pdb, b->piece_idx);
     assert(p);
 
     bt_piece_giveback_block(p, b);
@@ -567,7 +567,7 @@ static void __FUNC_peerconn_write_block_to_stream(
     bt_dm_private_t *me = cb_ctx;
     void* p;
 
-    if (!(p = me->ipdb->get_piece(me->pdb, blk->piece_idx)))
+    if (!(p = me->ipdb.get_piece(me->pdb, blk->piece_idx)))
     {
         __log(me,NULL,"ERROR,unable to obtain piece");
         return;
@@ -861,7 +861,7 @@ void bt_dm_set_piece_db(bt_dm_t* me_, bt_piecedb_i* ipdb, void* piece_db)
 {
     bt_dm_private_t* me = (void*)me_;
 
-    me->ipdb = ipdb;
+    memcpy(&me->ipdb,ipdb,sizeof(bt_piecedb_i));
     me->pdb = piece_db;
 }
 
@@ -881,7 +881,7 @@ void bt_dm_check_pieces(bt_dm_t* me_)
 
     for (i=0, end = config_get_int(me->cfg,"npieces"); i<end; i++)
     {
-        bt_piece_t* p = me->ipdb->get_piece(me->pdb, i);
+        bt_piece_t* p = me->ipdb.get_piece(me->pdb, i);
 
         if (p && bt_piece_is_complete(p))
         {
