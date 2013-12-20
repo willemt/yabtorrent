@@ -138,7 +138,7 @@ client_t* mock_client_setup(int piecelen)
         .peer_disconnect = peer_disconnect,
         .call_exclusively = call_exclusively_pass_through,
         .log = __log
-        ), cli);
+        }), cli);
     bt_dm_set_piece_selector(cli->bt, 
         &((bt_pieceselector_i) {
         .new = bt_random_selector_new,
@@ -150,7 +150,7 @@ client_t* mock_client_setup(int piecelen)
         .get_npeers = bt_random_selector_get_npeers,
         .get_npieces = bt_random_selector_get_npieces,
         .poll_piece = bt_random_selector_poll_best_piece
-        ), NULL);
+        }), NULL);
     mock_client_setup_disk_backend(cli->bt, piecelen);
 
     hashmap_put(__clients, cli, cli);
