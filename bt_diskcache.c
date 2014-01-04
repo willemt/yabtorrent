@@ -28,7 +28,6 @@
 #include "bt_block.h"
 #include "bt.h"
 #include "bt_local.h"
-#include "bt_block_readwriter_i.h"
 
 #include "pseudolru.h"
 

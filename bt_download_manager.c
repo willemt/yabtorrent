@@ -34,7 +34,6 @@
 #include "bt.h"
 #include "bt_local.h"
 #include "bt_peermanager.h"
-#include "bt_block_readwriter_i.h"
 #include "bt_string.h"
 #include "bt_piece_db.h"
 #include "bt_piece.h"
