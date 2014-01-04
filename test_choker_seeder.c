@@ -9,7 +9,6 @@
 
 #include <stdint.h>
 
-#include "block.h"
 #include "bt.h"
 #include "bt_local.h"
 #include "bt_choker_peer.h"

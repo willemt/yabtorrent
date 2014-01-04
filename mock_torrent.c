@@ -7,7 +7,6 @@
 
 #include "mock_torrent.h"
 #include "mt19937ar.h"
-#include "block.h"
 #include "bt.h"
 #include "bt_local.h"
 

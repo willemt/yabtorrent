@@ -15,7 +15,6 @@
 #include <assert.h>
 #include <uv.h>
 
-#include "block.h"
 #include "bt.h"
 
 typedef struct {

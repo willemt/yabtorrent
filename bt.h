@@ -1,4 +1,19 @@
 
+#ifndef HAVE_BT_BLOCK_T
+#define HAVE_BT_BLOCK_T
+typedef struct
+{
+    unsigned int piece_idx;
+    unsigned int offset;
+    unsigned int len;
+} bt_block_t;
+#endif
+
+typedef struct
+{
+    void* in;
+} bt_diskcache_t;
+
 typedef void* bt_dm_t;
 
 typedef int (
@@ -22,41 +37,6 @@ typedef int (
 )   (
     const void *,
     const void *pr
-);
-
-#if 0
-enum {
-    BT_WRITEBLOCK_NONE,
-    /*  commit this block as much as possible */
-    BT_WRITEBLOCK_FLUSH
-};
-#endif
-
-typedef int (
-    *func_flush_block_f
-)   (
-    void *udata,
-    void *caller,
-    const bt_block_t * blk
-);
-
-/**
- * @return 0 on error */
-typedef int (
-    *func_write_block_f
-)   (
-    void *udata,
-    void *caller,
-    const bt_block_t * blk,
-    const void *blkdata
-);
-
-typedef void *(
-    *func_read_block_f
-)    (
-    void *udata,
-    void *caller,
-    const bt_block_t * blk
 );
 
 typedef void *(
@@ -99,12 +79,41 @@ typedef void (
 );
 #endif
 
+#if 1
+typedef int (
+    *func_flush_block_f
+)   (
+    void *udata,
+    void *caller,
+    const bt_block_t * blk
+);
+
+/**
+ * @return 0 on error */
+typedef int (
+    *func_write_block_f
+)   (
+    void *udata,
+    void *caller,
+    const bt_block_t * blk,
+    const void *blkdata
+);
+
+typedef void *(
+    *func_read_block_f
+)    (
+    void *udata,
+    void *caller,
+    const bt_block_t * blk
+);
+
 typedef struct
 {
     func_write_block_f write_block;
     func_read_block_f read_block;
     func_flush_block_f flush_block;
 } bt_blockrw_i;
+#endif
 
 /**
  * Piece info

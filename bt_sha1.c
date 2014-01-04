@@ -16,10 +16,8 @@
 
 #include "sha1.h"
 
-#include "block.h"
 #include "bt.h"
 #include "bt_local.h"
-
 
 int bt_sha1_equal(
     char * s1,

@@ -15,7 +15,6 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "block.h"
 #include "bt.h"
 #include "bt_local.h"
 

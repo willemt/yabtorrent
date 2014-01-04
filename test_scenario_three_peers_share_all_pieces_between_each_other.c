@@ -16,7 +16,6 @@
 #include <string.h>
 #include <assert.h>
 
-#include "block.h"
 #include "bt.h"
 #include "networkfuncs.h"
 #include "networkfuncs_mock.h"

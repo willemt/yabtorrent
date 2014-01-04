@@ -17,13 +17,11 @@
 
 #include <stdint.h>
 
-#include "block.h"
 #include "bt.h"
 #include "bt_local.h"
 #include "bt_choker_peer.h"
 #include "bt_choker.h"
 #include "bt_choker_leecher.h"
-
 
 #if 0
 void TxestBTPiece_new_has_set_size_and_hashsum(
@@ -37,7 +35,6 @@ void TxestBTPiece_new_has_set_size_and_hashsum(
     CuAssertTrue(tc, 40 == bt_piece_get_size(pce));
 }
 #endif
-
 
 typedef struct
 {

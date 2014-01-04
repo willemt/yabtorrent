@@ -247,7 +247,7 @@ def build(bld):
     unit_test(bld,"test_peer_manager.c")
     unit_test(bld,'test_choker_leecher.c')
     unit_test(bld,'test_choker_seeder.c')
-    unit_test(bld,'test_rarestfirst.c')
+    unit_test(bld,'test_selector_rarestfirst.c')
     unit_test(bld,'test_selector_random.c')
     unit_test(bld,'test_selector_sequential.c')
     unit_test(bld,'test_piece.c',ccflag='-I../'+cp+"CBitfield")

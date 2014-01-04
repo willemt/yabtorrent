@@ -24,7 +24,6 @@
 
 #include "bt.h"
 #include "bt_local.h"
-#include "bt_block_readwriter_i.h"
 #include "bt_peermanager.h"
 
 #include "linked_list_hashmap.h"

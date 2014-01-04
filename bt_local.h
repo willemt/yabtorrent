@@ -13,8 +13,6 @@
 
 #include <sys/types.h>
 
-#include "bt_interfaces.h"
-
 #define PROTOCOL_NAME "BitTorrent protocol"
 #define INFOKEY_LEN 20
 #define BLOCK_SIZE 1 << 14      // 16kb

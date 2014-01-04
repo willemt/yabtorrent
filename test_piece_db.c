@@ -11,7 +11,6 @@
 
 #include "bitfield.h"
 
-#include "block.h"
 #include "bt.h"
 #include "bt_piece_db.h"
 #include "bt_piece.h"

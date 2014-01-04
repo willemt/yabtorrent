@@ -16,7 +16,6 @@
 #include <string.h>
 #include <assert.h>
 
-#include "block.h"
 #include "bt.h"
 #include "bt_selector_random.h"
 #include "networkfuncs.h"
