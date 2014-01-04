@@ -79,7 +79,6 @@ typedef void (
 );
 #endif
 
-#if 1
 typedef int (
     *func_flush_block_f
 )   (
@@ -113,7 +112,6 @@ typedef struct
     func_read_block_f read_block;
     func_flush_block_f flush_block;
 } bt_blockrw_i;
-#endif
 
 /**
  * Piece info
