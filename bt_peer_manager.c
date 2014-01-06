@@ -72,8 +72,8 @@ int bt_peermanager_contains(void *pm, const char *ip, const int port)
     hashmap_iterator_t iter;
 
     /* find peerconn that has this ip and port */
-    hashmap_iterator(me->peers,&iter);
-    while (hashmap_iterator_has_next(me->peers,&iter))
+    for (hashmap_iterator(me->peers,&iter);
+        hashmap_iterator_has_next(me->peers,&iter);)
     {
         bt_peer_t* peer;
 
