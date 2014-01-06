@@ -73,7 +73,7 @@ int bt_peermanager_contains(void *pm, const char *ip, const int port)
 
     /* find peerconn that has this ip and port */
     for (hashmap_iterator(me->peers,&iter);
-        hashmap_iterator_has_next(me->peers,&iter);)
+         hashmap_iterator_has_next(me->peers,&iter);)
     {
         bt_peer_t* peer;
 
@@ -95,7 +95,7 @@ void *bt_peermanager_nethandle_to_peer(void * pm, void* nethandle)
 
     /* find peerconn that has this nethandle */
     for (hashmap_iterator(me->peers,&iter);
-        hashmap_iterator_has_next(me->peers,&iter);)
+         hashmap_iterator_has_next(me->peers,&iter);)
     {
         bt_peer_t* peer;
 
@@ -207,15 +207,14 @@ void* bt_peermanager_get_peer_from_pc(void* pm, const void* pc)
     hashmap_iterator_t iter;
 
     /* find peerconn that has this ip and port */
-    hashmap_iterator(me->peers,&iter);
-    while (hashmap_iterator_has_next(me->peers,&iter))
+    for (hashmap_iterator(me->peers,&iter);
+         hashmap_iterator_has_next(me->peers,&iter);)
     {
-        bt_peer_t* peer;
+        bt_peer_t* p = hashmap_iterator_next(me->peers,&iter);
 
-        peer = hashmap_iterator_next(me->peers,&iter);
-        if (peer->pc == pc)
+        if (p->pc == pc)
         {
-            return peer;
+            return p;
         }
     }
     return NULL;
