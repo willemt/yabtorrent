@@ -109,7 +109,7 @@ static int __trackerclient_try_announces(sys_t* me)
         return 0;
 
     me->tc = tc = trackerclient_new(__on_tc_done, __on_tc_add_peer, me);
-    trackerclient_set_cfg(tc,me->cfg);
+    trackerclient_set_cfg(tc, me->cfg);
 
     while ((a = llqueue_poll(me->announces)))
     {
@@ -235,20 +235,14 @@ static void __on_tc_add_peer(void* callee,
 #endif
 
     uv_mutex_lock(&me->mutex);
-
-    if (0 == peer_connect(me,
-                &netdata,
-                &peer_nethandle,
-                ip_string, port,
+    if (0 == peer_connect(me, &netdata, &peer_nethandle, ip_string, port,
                 __dispatch_from_buffer,
                 __on_peer_connect,
                 __on_peer_connect_fail))
     {
 
     }
-
     peer = bt_dm_add_peer(me->bc, peer_id, peer_id_len, ip, ip_len, port, peer_nethandle);
-
     uv_mutex_unlock(&me->mutex);
 }
 
@@ -481,8 +475,6 @@ int main(int argc, char **argv)
 
     if (args.torrent_file)
         config_set_va(me.cfg,"torrent_file","%s", args.torrent_file);
-    if (args.port)
-        config_set_va(me.cfg,"pwp_listen_port","%.*s", args.port);
     config_set(me.cfg, "my_peerid", bt_generate_peer_id());
     assert(config_get(me.cfg, "my_peerid"));
     //if (o_show_config)
@@ -552,6 +544,21 @@ int main(int argc, char **argv)
     periodic_req->data = &me;
     uv_timer_init(loop, periodic_req);
     uv_timer_start(periodic_req, __periodic, 0, 1000);
+
+    /* open listening port */
+    void* netdata;
+    int listen_port = args.port ? atoi(args.port) : 0;
+    if (0 == (listen_port = peer_listen(&me, &netdata, listen_port,
+                __dispatch_from_buffer,
+                __on_peer_connect,
+                __on_peer_connect_fail)))
+    {
+        printf("ERROR: can't create listening socket");
+        exit(0);
+    }
+
+    config_set_va(me.cfg, "pwp_listen_port", "%d", listen_port);
+    printf("Listening on port: %d\n", listen_port);
 
     /* try to connect to tracker */
     if (0 == __trackerclient_try_announces(&me))

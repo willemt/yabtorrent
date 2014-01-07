@@ -27,7 +27,6 @@ typedef struct {
     void* callee;
     /*  socket for sending on */
     uv_stream_t* stream;
-    //uv_tcp_t* socket;
 } connection_attempt_t;
 
 static void __alloc_cb(uv_handle_t* handle, size_t size, uv_buf_t* buf)
@@ -164,5 +163,82 @@ int peer_send(void* caller, void **udata, void* nethandle,
 int peer_disconnect(void* caller, void **udata, void* nethandle)
 {
     return 1;
+}
+
+static void __on_new_connection(uv_stream_t *t, int status)
+{
+    /* TCP client socket */
+    uv_tcp_t *tc;
+    connection_attempt_t *ca, *ca_me;
+
+    tc = malloc(sizeof(uv_tcp_t));
+    if (0 != uv_tcp_init(uv_default_loop(), tc))
+    {
+        printf("FAILED TCP socket creation\n");
+        return;
+    }
+    /* pass through callbacks */
+    ca_me = t->data;
+    tc->data = ca = calloc(1,sizeof(connection_attempt_t));
+    ca->func_process_data = ca_me->func_process_data;
+    ca->func_process_connection = ca_me->func_process_connection;
+    ca->func_process_connection_fail = ca_me->func_process_connection_fail;
+    ca->callee = ca_me->callee;
+
+    if (uv_accept(t, (uv_stream_t*)tc) == 0)
+    {
+        uv_read_start((uv_stream_t*)tc, __alloc_cb, __read_cb);
+        /* TODO: pass on IP:Port */
+        ca->func_process_connection(ca->callee, ca, "", 0);
+    }
+    else
+    {
+        uv_close((uv_handle_t*) tc, NULL);
+    }
+}
+
+/**
+ * Open up a socket for accepting connections
+ * @return port for listening on success, otherwise 0 */
+int peer_listen(void* caller,
+        void **nethandle,
+        int port,
+        int (*func_process_data) (void *caller,
+                        void* nethandle,
+                        const unsigned char* buf,
+                        unsigned int len),
+        int (*func_process_connection) (void *, void* nethandle, char *ip, int iplen),
+        void (*func_connection_failed) (void *, void* nethandle))
+{
+    uv_tcp_t *t;
+    connection_attempt_t *ca;
+
+    *nethandle = ca = calloc(1,sizeof(connection_attempt_t));
+    ca->func_process_data = func_process_data;
+    ca->func_process_connection = func_process_connection;
+    ca->func_process_connection_fail = func_connection_failed;
+    ca->callee = caller;
+
+    t = malloc(sizeof(uv_tcp_t));
+    if (0 != uv_tcp_init(uv_default_loop(), t))
+    {
+        printf("FAILED TCP socket creation\n");
+        return 0;
+    }
+
+    struct sockaddr_in bind_addr;
+    
+    uv_ip4_addr("0.0.0.0", port, &bind_addr);
+    uv_tcp_bind(t, (const struct sockaddr*)&bind_addr);
+    if (0 != uv_listen((uv_stream_t*)t, 128, __on_new_connection))
+    {
+        printf("ERROR: listen error\n");
+        return 0;
+    }
+
+    int namelen = sizeof(bind_addr);
+    uv_tcp_getsockname(t, (struct sockaddr*)&bind_addr, &namelen);
+
+    return bind_addr.sin_port;
 }
 
