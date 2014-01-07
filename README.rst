@@ -13,13 +13,7 @@ YABTorrent was spawned by:
 
 1. There are not that many bittorrent clients in C that are licensed under non-copyleft licenses
 
-2. There are not that many light weight torrent libraries which can be used for adding bittorrent-like download capability. 
-
-Features in-progress
-----------------
-- µTP
-- peer exchange
-- DHT trackers
+2. There are not that many lightweight torrent libraries which can be used for adding bittorrent-like download capability. 
 
 Building
 --------
@@ -37,3 +31,10 @@ Usage
 -----
 
 $./yabtorrent torrentfile.torrent
+
+TODO
+----------------
+- BEP 5 - DHT Protocol
+- BEP 9 - Extension for Peers to Send Metadata Files
+- BEP 2 - uTorrent transport protocol
+- uTorrent Peer Exchange
