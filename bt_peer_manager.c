@@ -178,7 +178,7 @@ void bt_peermanager_forall(
     hashmap_iterator_t iter;
 
     for (hashmap_iterator(me->peers,&iter);
-            hashmap_iterator_has_next(me->peers,&iter);)
+         hashmap_iterator_has_next(me->peers,&iter);)
     {
         bt_peer_t* peer;
 
