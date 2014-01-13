@@ -68,19 +68,17 @@ class compiletest(Task):
                             self.outputs[0].abspath()))
 
 def unit_test(bld, src, ccflag=None):
-    #bld(rule='cp ../make-tests.sh .')
-    #bld(rule='cp ../%s .' % src)
     # collect tests into one area
-    bld(rule='sh ../make-tests.sh ../'+src+' > ${TGT}', target="t_"+src)
+    bld(rule='sh ../tests/make-tests.sh ../tests/'+src+' > ${TGT}', target="tests/t_"+src)
 
     libs = []
 
     # build the test program
     bld.program(
         source=[
-            src,
-            "t_"+src,
-            'CuTest.c',
+            "tests/"+src,
+            "tests/t_"+src,
+            'tests/CuTest.c',
             bld.env.CONTRIB_PATH+"CBitfield/bitfield.c",
         ],
         target=src[:-2],
@@ -92,7 +90,7 @@ def unit_test(bld, src, ccflag=None):
         lib = libs,
         unit_test='yes',
         includes=[
-            '.',
+            "./include",
             bld.env.CONTRIB_PATH+"CBitfield"
         ]
         )
@@ -101,25 +99,25 @@ def unit_test(bld, src, ccflag=None):
     if sys.platform == 'win32':
         bld(rule='${SRC}',source=src[:-2]+'.exe')
     else:
-        bld(rule='export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:. && ./${SRC}',source=src[:-2])
-        #bld(rule='pwd && ./build/'+src[:-2])
+        bld(rule='export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:. && ./${SRC}', source=src[:-2])
 
 def scenario_test(bld, src, ccflag=None):
-    bld(rule='cp ../make-tests.sh .')
-    bld(rule='cp ../%s .' % src)
+    src = "tests/"+src
+    bld(rule='cp ../tests/make-tests.sh .')
+    bld(rule='cp %s .' % src)
     # collect tests into one area
-    bld(rule='sh ../make-tests.sh '+src+' > ${TGT}', target="t_"+src)
+    bld(rule='sh ../tests/make-tests.sh '+src+' > ${TGT}', target="t_"+src)
 
     libs = []
     bld.program(
         source=[
             src,
             "t_"+src,
-            'CuTest.c',
+            "tests/CuTest.c",
             "networkfuncs_mock.c",
             "mt19937ar.c",
-            "mock_torrent.c",
-            "mock_client.c",
+            "tests/mock_torrent.c",
+            "tests/mock_client.c",
             bld.env.CONTRIB_PATH+"CBipBuffer/bipbuffer.c"
             ],
         stlibpath = ['libuv','.'],
@@ -133,6 +131,8 @@ def scenario_test(bld, src, ccflag=None):
         lib = libs,
         unit_test='yes',
         includes=[
+            "./include",
+            "./tests",
             bld.env.CONTRIB_PATH+"CConfig-re",
             bld.env.CONTRIB_PATH+"CBTTrackerClient",
             bld.env.CONTRIB_PATH+"CHeaplessBencodeReader",
@@ -212,6 +212,7 @@ def build(bld):
         target='yabbt',
         lib = libs,
         includes=[
+            './include',
             cp+"CBag",
             cp+"CHeap",
             cp+"CAVLTree",
@@ -253,10 +254,10 @@ def build(bld):
     unit_test(bld,'test_piece.c',ccflag='-I../'+cp+"CBitfield")
     unit_test(bld,'test_piece_db.c')
     unit_test(bld,'test_blacklist.c')
-    scenario_test(bld,'test_scenario_shares_all_pieces.c')
-    scenario_test(bld,'test_scenario_shares_all_pieces_between_each_other.c')
-    scenario_test(bld,'test_scenario_share_20_pieces.c')
-    scenario_test(bld,'test_scenario_three_peers_share_all_pieces_between_each_other.c')
+    #scenario_test(bld,'test_scenario_shares_all_pieces.c')
+    #scenario_test(bld,'test_scenario_shares_all_pieces_between_each_other.c')
+    #scenario_test(bld,'test_scenario_share_20_pieces.c')
+    #scenario_test(bld,'test_scenario_three_peers_share_all_pieces_between_each_other.c')
 
     libs = ['yabbt','uv']
     if sys.platform == 'win32':
@@ -291,6 +292,7 @@ def build(bld):
         stlibpath = ['./libuv','.'],
         lib = libs,
         includes=[
+            './include',
             './libuv/include',
             cp+"CBipBuffer",
             cp+"CConfig-re",
