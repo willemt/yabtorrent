@@ -87,20 +87,20 @@ int bt_peermanager_contains(void *pm, const char *ip, const int port)
 }
 
 /**
- * @return peer that corresponds to nethandle, otherwise NULL */
-void *bt_peermanager_nethandle_to_peer(void * pm, void* nethandle)
+ * @return peer that corresponds to conn_ctx, otherwise NULL */
+void *bt_peermanager_conn_ctx_to_peer(void * pm, void* conn_ctx)
 {
     bt_peermanager_t *me = pm;
     hashmap_iterator_t iter;
 
-    /* find peerconn that has this nethandle */
+    /* find peerconn that has this conn_ctx */
     for (hashmap_iterator(me->peers,&iter);
          hashmap_iterator_has_next(me->peers,&iter);)
     {
         bt_peer_t* peer;
 
         peer = hashmap_iterator_next(me->peers,&iter);
-        if (peer->nethandle == nethandle)
+        if (peer->conn_ctx == conn_ctx)
             return peer;
     }
 

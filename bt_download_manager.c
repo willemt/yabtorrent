@@ -162,41 +162,36 @@ void __FUNC_peer_stats_visitor(void* cb_ctx, void* peer, void* udata)
     ps->urate = pwp_conn_get_upload_rate(p->pc);
 }
 
-/**
- * Take this PWP message and process it on the Peer Connection side
- * @return 1 on sucess; 0 otherwise
- **/
 int bt_dm_dispatch_from_buffer(
         void *bto,
-        void *peer_nethandle,
+        void *peer_conn_ctx,
         const unsigned char* buf,
         unsigned int len)
 {
     bt_dm_private_t *me = bto;
-    bt_peer_t* peer;
+    bt_peer_t* p;
 
-    /* get the peer that this message is for via nethandle */
-    if (!(peer = bt_peermanager_nethandle_to_peer(me->pm, peer_nethandle)))
+    /* get the peer that this message is for via conn_ctx */
+    if (!(p = bt_peermanager_conn_ctx_to_peer(me->pm, peer_conn_ctx)))
     {
         return 0;
     }
 
     /* handle handshake */
-    if (!pwp_conn_flag_is_set(peer->pc, PC_HANDSHAKE_RECEIVED))
+    if (!pwp_conn_flag_is_set(p->pc, PC_HANDSHAKE_RECEIVED))
     {
-        switch (pwp_handshaker_dispatch_from_buffer(peer->mh, &buf, &len))
+        switch (pwp_handshaker_dispatch_from_buffer(p->mh, &buf, &len))
         {
         case 1:
             /* we're done with handshaking */
-            pwp_handshaker_release(peer->mh);
-            peer->mh = pwp_msghandler_new(peer->pc);
-            pwp_conn_set_state(peer->pc, PC_HANDSHAKE_RECEIVED);
+            pwp_handshaker_release(p->mh);
+            p->mh = pwp_msghandler_new(p->pc);
+            pwp_conn_set_state(p->pc, PC_HANDSHAKE_RECEIVED);
             __log(me, NULL, "send,bitfield");
             if (0 == pwp_send_bitfield(config_get_int(me->cfg,"npieces"),
-                    me->pieces_completed, __FUNC_peerconn_send_to_peer,
-                    me, peer))
+                    me->pieces_completed, __FUNC_peerconn_send_to_peer, me, p))
             {
-                bt_dm_remove_peer(me,peer);
+                bt_dm_remove_peer(me,p);
             }
             break;
         default:
@@ -205,7 +200,7 @@ int bt_dm_dispatch_from_buffer(
     }
 
     /* handle regular PWP traffic */
-    switch (pwp_msghandler_dispatch_from_buffer(peer->mh, buf, len))
+    switch (pwp_msghandler_dispatch_from_buffer(p->mh, buf, len))
     {
         case 1:
             /* successful */
@@ -213,19 +208,19 @@ int bt_dm_dispatch_from_buffer(
         case 0:
             /* error, we need to disconnect */
             __log(bto,NULL,"disconnecting,%s", "bad msg detected by PWP handler");
-            bt_dm_remove_peer(me,peer);
+            bt_dm_remove_peer(me,p);
             break;
     }
 
     return 1;
 }
 
-void bt_dm_peer_connect_fail(void *bto, void* nethandle)
+void bt_dm_peer_connect_fail(void *bto, void* conn_ctx)
 {
     bt_dm_private_t *me = bto;
     bt_peer_t *peer;
 
-    if (!(peer = bt_peermanager_nethandle_to_peer(me->pm, nethandle)))
+    if (!(peer = bt_peermanager_conn_ctx_to_peer(me->pm, conn_ctx)))
     {
         return;
     }
@@ -235,19 +230,19 @@ void bt_dm_peer_connect_fail(void *bto, void* nethandle)
 
 /**
  * @return 0 on error */
-int bt_dm_peer_connect(void *bto, void* nethandle, char *ip, const int port)
+int bt_dm_peer_connect(void *bto, void* conn_ctx, char *ip, const int port)
 {
     bt_dm_private_t *me = bto;
     bt_peer_t *peer;
 
     /* this is the first time we have come across this peer */
-    if (!(peer = bt_peermanager_nethandle_to_peer(me->pm, nethandle)))
+    if (!(peer = bt_peermanager_conn_ctx_to_peer(me->pm, conn_ctx)))
     {
         if (!(peer = bt_dm_add_peer((bt_dm_t*)me, "", 0,
-                        ip, strlen(ip), port, nethandle)))
+                        ip, strlen(ip), port, conn_ctx)))
         {
             __log(bto,NULL,"cant add peer %s:%d %lx\n",
-                ip, port, (unsigned long int)nethandle);
+                ip, port, (unsigned long int)conn_ctx);
             return 0;
         }
     }
@@ -326,7 +321,7 @@ static int __FUNC_peerconn_send_to_peer(void *bto,
 
     assert(peer);
     assert(me->cb.peer_send);
-    return me->cb.peer_send(me, &me->cb_ctx, peer->nethandle, data, len);
+    return me->cb.peer_send(me, &me->cb_ctx, peer->conn_ctx, data, len);
 }
 
 typedef struct {
@@ -587,7 +582,7 @@ void *bt_dm_add_peer(bt_dm_t* me_,
                               const char *peer_id,
                               const int peer_id_len,
                               const char *ip, const int ip_len, const int port,
-                              void* nethandle)
+                              void* conn_ctx)
 {
     bt_dm_private_t *me = (void*)me_;
     bt_peer_t* p;
@@ -614,8 +609,8 @@ void *bt_dm_add_peer(bt_dm_t* me_,
             me->ips.add_peer(me->pselector, p);
     }
 
-    if (nethandle)
-        p->nethandle = nethandle;
+    if (conn_ctx)
+        p->conn_ctx = conn_ctx;
 
     /* create a peer connection for this peer */
     void* pc = p->pc = pwp_conn_new();
@@ -643,12 +638,11 @@ void *bt_dm_add_peer(bt_dm_t* me_,
         return NULL;
     }
 
-#if 1
-    if (!nethandle)
+    if (!conn_ctx)
     {
         if (0 == me->cb.peer_connect(me,
                     &me->cb_ctx,
-                    &p->nethandle,
+                    &p->conn_ctx,
                     p->ip,
                     p->port,
                     bt_dm_dispatch_from_buffer,
@@ -659,7 +653,6 @@ void *bt_dm_add_peer(bt_dm_t* me_,
             return 0;
         }
     }
-#endif
 
     p->mh = pwp_handshaker_new(
             config_get(me->cfg,"infohash"),
@@ -792,70 +785,6 @@ void bt_dm_set_piece_selector(bt_dm_t* me_, bt_pieceselector_i* ips, void* piece
     bt_dm_check_pieces(me_);
 }
 
-/**
- * Initiliase the bittorrent client
- * bt_dm uses the mediator pattern to manage the bittorrent download
- * @return 1 on sucess; otherwise 0
- * \nosubgrouping
- */
-void *bt_dm_new()
-{
-    bt_dm_private_t *me;
-
-    me = calloc(1, sizeof(bt_dm_private_t));
-
-    /* default configuration */
-    me->cfg = config_new();
-    config_set(me->cfg,"default", "0");
-    config_set_if_not_set(me->cfg,"infohash", "00000000000000000000");
-    config_set_if_not_set(me->cfg,"my_ip", "127.0.0.1");
-    config_set_if_not_set(me->cfg,"pwp_listen_port", "6881");
-    config_set_if_not_set(me->cfg,"max_peer_connections", "32");
-    config_set_if_not_set(me->cfg,"max_active_peers", "32");
-    config_set_if_not_set(me->cfg,"max_pending_requests", "10");
-    /* How many pieces are there of this file
-     * The size of a piece is determined by the publisher of the torrent.
-     * A good recommendation is to use a piece size so that the metainfo file does
-     * not exceed 70 kilobytes.  */
-    config_set_if_not_set(me->cfg,"npieces", "0");
-    config_set_if_not_set(me->cfg,"piece_length", "0");
-    config_set_if_not_set(me->cfg,"download_path", ".");
-    /* Set maximum amount of megabytes used by piece cache */
-    config_set_if_not_set(me->cfg,"max_cache_mem_bytes", "1000000");
-    /* If this is set, the client will shutdown when the download is completed. */
-    config_set_if_not_set(me->cfg,"shutdown_when_complete", "0");
-
-    /* need to be able to tell the time */
-    me->ticker = eventtimer_new();
-
-    /* peer manager */
-    me->pm = bt_peermanager_new(me);
-    bt_peermanager_set_config(me->pm, me->cfg);
-
-    me->blacklist = bt_blacklist_new();
-
-    /*  set leeching choker */
-    me->lchoke = bt_leeching_choker_new(
-            atoi(config_get(me->cfg,"max_active_peers")));
-    bt_leeching_choker_set_choker_peer_iface(me->lchoke, me,
-                                             &iface_choker_peer);
-
-    /* start reciprocation timer */
-    eventtimer_push_event(me->ticker, 10, me, __leecher_peer_reciprocation);
-
-    /* start optimistic unchoker timer */
-    eventtimer_push_event(me->ticker, 30, me, __leecher_peer_optimistic_unchoke);
-
-    /* job management */
-    me->jobs = llqueue_new();
-    me->job_lock = NULL;
-
-    /* we don't need to specify the amount of pieces we need */
-    me->pieces_completed = sc_init(0);
-
-    return me;
-}
-
 void bt_dm_set_piece_db(bt_dm_t* me_, bt_piecedb_i* ipdb, void* piece_db)
 {
     bt_dm_private_t* me = (void*)me_;
@@ -864,11 +793,11 @@ void bt_dm_set_piece_db(bt_dm_t* me_, bt_piecedb_i* ipdb, void* piece_db)
     me->pdb = piece_db;
 }
 
-void *bt_peer_get_nethandle(void* pr)
+void *bt_peer_get_conn_ctx(void* pr)
 {
     bt_peer_t* peer = pr;
 
-    return peer->nethandle;
+    return peer->conn_ctx;
 }
 
 /**
@@ -890,12 +819,63 @@ void bt_dm_check_pieces(bt_dm_t* me_)
     }
 }
 
-/**
- * Release all memory used by the client
- * Close all peer connections
- */
 int bt_dm_release(bt_dm_t* me_)
 {
     //TODO add destructors
     return 1;
 }
+
+void *bt_dm_new()
+{
+    bt_dm_private_t *me;
+
+    me = calloc(1, sizeof(bt_dm_private_t));
+
+    /* default configuration */
+    me->cfg = config_new();
+    config_set(me->cfg,"default", "0");
+    config_set_if_not_set(me->cfg,"infohash", "00000000000000000000");
+    config_set_if_not_set(me->cfg,"my_ip", "127.0.0.1");
+    config_set_if_not_set(me->cfg,"pwp_listen_port", "6881");
+    config_set_if_not_set(me->cfg,"max_peer_connections", "32");
+    config_set_if_not_set(me->cfg,"max_active_peers", "32");
+    config_set_if_not_set(me->cfg,"max_pending_requests", "10");
+    config_set_if_not_set(me->cfg,"npieces", "0");
+    config_set_if_not_set(me->cfg,"piece_length", "0");
+    config_set_if_not_set(me->cfg,"download_path", ".");
+    //config_set_if_not_set(me->cfg,"max_cache_mem_bytes", "1000000");
+    config_set_if_not_set(me->cfg,"shutdown_when_complete", "0");
+
+    /* need to be able to tell the time */
+    me->ticker = eventtimer_new();
+
+    /* peer manager */
+    me->pm = bt_peermanager_new(me);
+    bt_peermanager_set_config(me->pm, me->cfg);
+
+    me->blacklist = bt_blacklist_new();
+
+    /*  set leeching choker */
+    me->lchoke = bt_leeching_choker_new(
+            atoi(config_get(me->cfg,"max_active_peers")));
+    bt_leeching_choker_set_choker_peer_iface(me->lchoke, me,
+                                             &iface_choker_peer);
+
+    /* start reciprocation timer */
+    eventtimer_push_event(me->ticker, 10, me,
+            __leecher_peer_reciprocation);
+
+    /* start optimistic unchoker timer */
+    eventtimer_push_event(me->ticker, 30, me,
+            __leecher_peer_optimistic_unchoke);
+
+    /* job management */
+    me->jobs = llqueue_new();
+    me->job_lock = NULL;
+
+    /* we don't need to specify the amount of pieces we need */
+    me->pieces_completed = sc_init(0);
+
+    return me;
+}
+

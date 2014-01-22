@@ -254,6 +254,29 @@ typedef struct
 
 } bt_dm_cbs_t;
 
+/**
+ * Initiliase the bittorrent client
+ * bt_dm uses the mediator pattern to manage the bittorrent download
+ * @return download manager on sucess; otherwise NULL */
+void *bt_dm_new();
+
+/**
+ * Release all memory used by the client
+ * Close all peer connections */
+int bt_dm_release(bt_dm_t* me_);
+
+/**
+ * Add the peer to the download manager
+ *
+ * @pararm conn_ctx Context for this peer
+ * @param ip IP that the peer is from
+ * @param port Port that this peer is on
+ * @return 0 on error */
+int bt_dm_peer_connect(void *bto, void* nethandle, char *ip, const int port);
+
+/**
+ * Take this PWP message and process it on the Peer Connection side
+ * @return 1 on sucess; 0 otherwise */
 int bt_dm_dispatch_from_buffer(
         void *bto,
         void *peer_nethandle,
@@ -264,13 +287,10 @@ void *bt_peer_get_nethandle(void* pr);
 
 void bt_dm_peer_connect_fail(void *bto, void* nethandle);
 
-int bt_dm_peer_connect(void *bto, void* nethandle, char *ip, const int port);
 
 void bt_dm_set_piece_db(bt_dm_t* me_, bt_piecedb_i* ipdb, void* piecedb);
 
 void *bt_dm_get_piecedb(bt_dm_t* me_);
-
-void *bt_dm_new();
 
 int bt_dm_get_num_peers(bt_dm_t* me_);
 

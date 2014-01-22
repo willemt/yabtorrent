@@ -25,7 +25,7 @@
 typedef struct
 {
     /* for network api */
-    void* nethandle;
+    void* conn_ctx;
 
     /* 20 byte sha1 string */
     char *peer_id;
