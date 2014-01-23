@@ -97,9 +97,9 @@ typedef struct
 
 void *bt_dm_get_piecedb(bt_dm_t* me_);
 
-static void __FUNC_log(void *bto, void *src, const char *fmt, ...)
+static void __FUNC_log(void *me_, void *src, const char *fmt, ...)
 {
-    bt_dm_private_t *me = bto;
+    bt_dm_private_t *me = me_;
     char buf[1024], *p;
     va_list args;
 
@@ -115,9 +115,9 @@ static void __FUNC_log(void *bto, void *src, const char *fmt, ...)
     me->cb.log(me->cb_ctx, NULL, buf);
 }
 
-static void __log(void *bto, void *src, const char *fmt, ...)
+static void __log(void *me_, void *src, const char *fmt, ...)
 {
-    bt_dm_private_t *me = bto;
+    bt_dm_private_t *me = me_;
     char buf[1024];
     va_list args;
 
@@ -126,10 +126,10 @@ static void __log(void *bto, void *src, const char *fmt, ...)
 
     va_start(args, fmt);
     vsprintf(buf, fmt, args);
-    __FUNC_log(bto,src,buf);
+    __FUNC_log(me_,src,buf);
 }
 
-static int __FUNC_peerconn_send_to_peer(void *bto,
+static int __FUNC_peerconn_send_to_peer(void *me_,
                                         const void* pc_peer,
                                         const void *data,
                                         const int len);
@@ -163,12 +163,12 @@ void __FUNC_peer_stats_visitor(void* cb_ctx, void* peer, void* udata)
 }
 
 int bt_dm_dispatch_from_buffer(
-        void *bto,
+        void *me_,
         void *peer_conn_ctx,
         const unsigned char* buf,
         unsigned int len)
 {
-    bt_dm_private_t *me = bto;
+    bt_dm_private_t *me = me_;
     bt_peer_t* p;
 
     /* get the peer that this message is for via conn_ctx */
@@ -191,7 +191,7 @@ int bt_dm_dispatch_from_buffer(
             if (0 == pwp_send_bitfield(config_get_int(me->cfg,"npieces"),
                     me->pieces_completed, __FUNC_peerconn_send_to_peer, me, p))
             {
-                bt_dm_remove_peer(me,p);
+                bt_dm_remove_peer(me_,p);
             }
             break;
         default:
@@ -207,17 +207,17 @@ int bt_dm_dispatch_from_buffer(
             break;
         case 0:
             /* error, we need to disconnect */
-            __log(bto,NULL,"disconnecting,%s", "bad msg detected by PWP handler");
-            bt_dm_remove_peer(me,p);
+            __log(me_,NULL,"disconnecting,%s", "bad msg detected by PWP handler");
+            bt_dm_remove_peer(me_,p);
             break;
     }
 
     return 1;
 }
 
-void bt_dm_peer_connect_fail(void *bto, void* conn_ctx)
+void bt_dm_peer_connect_fail(void *me_, void* conn_ctx)
 {
-    bt_dm_private_t *me = bto;
+    bt_dm_private_t *me = me_;
     bt_peer_t *peer;
 
     if (!(peer = bt_peermanager_conn_ctx_to_peer(me->pm, conn_ctx)))
@@ -228,11 +228,9 @@ void bt_dm_peer_connect_fail(void *bto, void* conn_ctx)
     pwp_conn_set_state(peer->pc, PC_FAILED_CONNECTION);
 }
 
-/**
- * @return 0 on error */
-int bt_dm_peer_connect(void *bto, void* conn_ctx, char *ip, const int port)
+int bt_dm_peer_connect(void *me_, void* conn_ctx, char *ip, const int port)
 {
-    bt_dm_private_t *me = bto;
+    bt_dm_private_t *me = me_;
     bt_peer_t *peer;
 
     /* this is the first time we have come across this peer */
@@ -241,45 +239,45 @@ int bt_dm_peer_connect(void *bto, void* conn_ctx, char *ip, const int port)
         if (!(peer = bt_dm_add_peer((bt_dm_t*)me, "", 0,
                         ip, strlen(ip), port, conn_ctx)))
         {
-            __log(bto,NULL,"cant add peer %s:%d %lx\n",
+            __log(me_,NULL,"cant add peer %s:%d %lx\n",
                 ip, port, (unsigned long int)conn_ctx);
             return 0;
         }
     }
 
-    pwp_handshaker_send_handshake(bto, peer,
+    pwp_handshaker_send_handshake(me_, peer,
         __FUNC_peerconn_send_to_peer,
         config_get(me->cfg,"infohash"),
         config_get(me->cfg,"my_peerid"));
 
 //    pwp_conn_send_handshake(peer->pc);
-//    __log(bto,NULL,"CONNECTED: peerid:%d ip:%s", netpeerid, ip);
+//    __log(me_,NULL,"CONNECTED: peerid:%d ip:%s", netpeerid, ip);
     return 1;
 }
 
-static int __get_drate(const void *bto, const void *pc)
+static int __get_drate(const void *me_, const void *pc)
 {
 //    return pwp_conn_get_download_rate(pc);
     return 0;
 }
 
-static int __get_urate(const void *bto, const void *pc)
+static int __get_urate(const void *me_, const void *pc)
 {
 //    return pwp_conn_get_upload_rate(pc);
     return 0;
 }
 
-static int __get_is_interested(void *bto, void *pc)
+static int __get_is_interested(void *me_, void *pc)
 {
     return pwp_conn_peer_is_interested(pc);
 }
 
-static void __choke_peer(void *bto, void *pc)
+static void __choke_peer(void *me_, void *pc)
 {
     pwp_conn_choke_peer(pc);
 }
 
-static void __unchoke_peer(void *bto, void *pc)
+static void __unchoke_peer(void *me_, void *pc)
 {
     pwp_conn_unchoke_peer(pc);
 }
@@ -292,17 +290,17 @@ static bt_choker_peer_i iface_choker_peer = {
     .unchoke_peer = __unchoke_peer
 };
 
-static void __leecher_peer_reciprocation(void *bto)
+static void __leecher_peer_reciprocation(void *me_)
 {
-    bt_dm_private_t *me = bto;
+    bt_dm_private_t *me = me_;
 
     bt_leeching_choker_decide_best_npeers(me->lchoke);
     eventtimer_push_event(me->ticker, 10, me, __leecher_peer_reciprocation);
 }
 
-static void __leecher_peer_optimistic_unchoke(void *bto)
+static void __leecher_peer_optimistic_unchoke(void *me_)
 {
-    bt_dm_private_t *me = bto;
+    bt_dm_private_t *me = me_;
 
     bt_leeching_choker_optimistically_unchoke(me->lchoke);
     eventtimer_push_event(me->ticker, 30, me, __leecher_peer_optimistic_unchoke);
@@ -311,13 +309,13 @@ static void __leecher_peer_optimistic_unchoke(void *bto)
 /**
  * Peer connections are given this as a callback whenever they want to send
  * information */
-static int __FUNC_peerconn_send_to_peer(void *bto,
+static int __FUNC_peerconn_send_to_peer(void *me_,
                                         const void* pc_peer,
                                         const void *data,
                                         const int len)
 {
     const bt_peer_t * peer = pc_peer;
-    bt_dm_private_t *me = bto;
+    bt_dm_private_t *me = me_;
 
     assert(peer);
     assert(me->cb.peer_send);
@@ -404,9 +402,9 @@ static void __dispatch_job(bt_dm_private_t* me, bt_job_t* j)
     free(j);
 }
 
-static int __FUNC_peerconn_pollblock(void *bto, void* peer)
+static int __FUNC_peerconn_pollblock(void *me_, void* peer)
 {
-    bt_dm_private_t *me = bto;
+    bt_dm_private_t *me = me_;
     bt_job_t* j;
 
     /* TODO: replace malloc() with memory pool/arena */
@@ -429,10 +427,10 @@ static void __FUNC_peerconn_send_have(void* cb_ctx, void* peer, void* udata)
  * Received a block from a peer
  * @param peer Peer received from
  * @param data Data to be pushed */
-int __FUNC_peerconn_pushblock(void *bto, void* pr, bt_block_t *b, const void *data)
+int __FUNC_peerconn_pushblock(void *me_, void* pr, bt_block_t *b, const void *data)
 {
     bt_peer_t * peer = pr;
-    bt_dm_private_t *me = bto;
+    bt_dm_private_t *me = me_;
     bt_piece_t *p;
 
     assert(me->ipdb.get_piece);
@@ -501,25 +499,25 @@ int __FUNC_peerconn_pushblock(void *bto, void* pr, bt_block_t *b, const void *da
     return 1;
 }
 
-void __FUNC_peerconn_log(void *bto, void *src_peer, const char *buf, ...)
+void __FUNC_peerconn_log(void *me_, void *src_peer, const char *buf, ...)
 {
-    bt_dm_private_t *me = bto;
+    bt_dm_private_t *me = me_;
     bt_peer_t *peer = src_peer;
     char buffer[1000];
 
     sprintf(buffer, "pwp,%s,%s", peer->peer_id, buf);
-    __FUNC_log(bto,NULL,buffer);
+    __FUNC_log(me_,NULL,buffer);
     //me->cb.log(me->cb_ctx, NULL, buffer);
 }
 
-int __FUNC_peerconn_disconnect(void *bto,
+int __FUNC_peerconn_disconnect(void *me_,
         void* pr, char *reason)
 {
-    bt_dm_private_t *me = bto;
+    bt_dm_private_t *me = me_;
     bt_peer_t * peer = pr;
 
-    __log(bto,NULL,"disconnecting,%s", reason);
-    bt_dm_remove_peer(me,peer);
+    __log(me_,NULL,"disconnecting,%s", reason);
+    bt_dm_remove_peer(me_,peer);
     return 1;
 }
 
@@ -573,11 +571,6 @@ static void __FUNC_peerconn_write_block_to_stream(
     }
 }
 
-/**
- * Add the peer.
- * Initiate connection with 
- * @return freshly created bt_peer
- */
 void *bt_dm_add_peer(bt_dm_t* me_,
                               const char *peer_id,
                               const int peer_id_len,
@@ -663,12 +656,6 @@ void *bt_dm_add_peer(bt_dm_t* me_,
     return p;
 }
 
-/**
- * Remove the peer.
- * Disconnect the peer
- * @todo add disconnection functionality
- * @return 1 on sucess; otherwise 0
- */
 int bt_dm_remove_peer(bt_dm_t* me_, void* pr)
 {
     bt_dm_private_t* me = (void*)me_;
@@ -730,16 +717,6 @@ cleanup:
     return;
 }
 
-void* bt_dm_get_config(bt_dm_t* me_)
-{
-    bt_dm_private_t *me = (void*)me_;
-
-    return me->cfg;
-}
-
-/**
- * Set callback functions
- */
 void bt_dm_set_cbs(bt_dm_t* me_, bt_dm_cbs_t * func, void* cb_ctx)
 {
     bt_dm_private_t *me = (void*)me_;
@@ -748,9 +725,12 @@ void bt_dm_set_cbs(bt_dm_t* me_, bt_dm_cbs_t * func, void* cb_ctx)
     me->cb_ctx = cb_ctx;
 }
 
-/**
- * @return number of peers this client is involved with
- */
+void* bt_dm_get_config(bt_dm_t* me_)
+{
+    bt_dm_private_t *me = (void*)me_;
+    return me->cfg;
+}
+
 int bt_dm_get_num_peers(bt_dm_t* me_)
 {
     bt_dm_private_t *me = (void*)me_;
@@ -765,12 +745,6 @@ void *bt_dm_get_piecedb(bt_dm_t* me_)
     return me->pdb;
 }
 
-/**
- * Set the current piece selector
- * This allows us to use dependency injection to de-couple the
- * implementation of the piece selector from bt_dm
- * @param ips Struct of function pointers for piece selector operation
- * @param piece_selector Selector instance. If NULL we call the constructor. */
 void bt_dm_set_piece_selector(bt_dm_t* me_, bt_pieceselector_i* ips, void* piece_selector)
 {
     bt_dm_private_t* me = (void*)me_;
@@ -793,15 +767,6 @@ void bt_dm_set_piece_db(bt_dm_t* me_, bt_piecedb_i* ipdb, void* piece_db)
     me->pdb = piece_db;
 }
 
-void *bt_peer_get_conn_ctx(void* pr)
-{
-    bt_peer_t* peer = pr;
-
-    return peer->conn_ctx;
-}
-
-/**
- * Scan over currently downloaded pieces */
 void bt_dm_check_pieces(bt_dm_t* me_)
 {
     bt_dm_private_t* me = (void*)me_;
@@ -879,3 +844,9 @@ void *bt_dm_new()
     return me;
 }
 
+void *bt_peer_get_conn_ctx(void* pr)
+{
+    bt_peer_t* peer = pr;
+
+    return peer->conn_ctx;
+}

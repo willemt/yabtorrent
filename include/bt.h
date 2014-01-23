@@ -119,7 +119,6 @@ typedef struct
 typedef struct
 {
     /* a string containing the 20 byte sha1 of every file, concatenated.
-     * (from protocol)
      * sha1 hash = 20 bytes */
     char *pieces_hash;
 
@@ -173,7 +172,7 @@ typedef struct
     /**
      * Connect to the peer
      * @param me 
-     * @param nethandle Pointer available for the callee to identify the peer
+     * @param conn_ctx Pointer available for the callee to identify the peer
      * @param udata Memory to be used for connection. Callee's responsibility to alloc memory.
      * @param host Hostname
      * @param port Host's port
@@ -182,7 +181,7 @@ typedef struct
      * @return 1 if successful; otherwise 0 */
     int (*peer_connect) (void* me,
                         void **udata,
-                        void **nethandle,
+                        void **conn_ctx,
                         const char *host, const int port,
 
        /**
@@ -190,12 +189,12 @@ typedef struct
         * Announce this to the cb_ctx.
         *
         * @param me The caller
-        * @param nethandle Peer ID 
+        * @param conn_ctx Peer ID 
         * @param buf Buffer containing data
         * @param len Bytes available in buffer
         */
         int (*func_process_data) (void *me,
-        void* nethandle,
+        void* conn_ctx,
         const unsigned char* buf,
         unsigned int len),
 
@@ -204,13 +203,13 @@ typedef struct
         * Announce the connection to the caller.
         *
         * @param me The caller
-        * @param nethandle Peer ID 
+        * @param conn_ctx Peer ID 
         * @param ip The IP that connected to us
         * @return 0 on failure
         */
         int (*func_process_connection) (
             void *me,
-            void *nethandle,
+            void *conn_ctx,
             char *ip,
             int port),
 
@@ -219,25 +218,25 @@ typedef struct
         * Announce the failed connection to the caller.
         *
         * @param me The caller
-        * @param nethandle Peer ID */
-        void (*func_connection_failed) (void *, void* nethandle));
+        * @param conn_ctx Peer ID */
+        void (*func_connection_failed) (void *, void* conn_ctx));
 
     /**
      * Send data to peer
      *
      * @param me 
-     * @param nethandle The peer's network ID
+     * @param conn_ctx The peer's network ID
      * @param send_data Data to be sent
      * @param len Length of data to be sent */
     int (*peer_send) (void* me,
                       void **udata,
-                      void* nethandle,
+                      void* conn_ctx,
                       const unsigned char *send_data, const int len);
 
     /**
      * Drop the connection for this peer
      * @return 1 on success, otherwise 0 */
-    int (*peer_disconnect) (void* me, void **udata, void* nethandle);
+    int (*peer_disconnect) (void* me, void **udata, void* conn_ctx);
 
     /**
      * Waits until lock is released, and then runs callback.
@@ -272,50 +271,86 @@ int bt_dm_release(bt_dm_t* me_);
  * @param ip IP that the peer is from
  * @param port Port that this peer is on
  * @return 0 on error */
-int bt_dm_peer_connect(void *bto, void* nethandle, char *ip, const int port);
+int bt_dm_peer_connect(void *bto, void* conn_ctx, char *ip, const int port);
+
+/**
+ * Called when a connection has failed.  */
+void bt_dm_peer_connect_fail(void *bto, void* conn_ctx);
 
 /**
  * Take this PWP message and process it on the Peer Connection side
  * @return 1 on sucess; 0 otherwise */
 int bt_dm_dispatch_from_buffer(
         void *bto,
-        void *peer_nethandle,
+        void *peer_conn_ctx,
         const unsigned char* buf,
         unsigned int len);
 
-void *bt_peer_get_nethandle(void* pr);
-
-void bt_dm_peer_connect_fail(void *bto, void* nethandle);
-
-
-void bt_dm_set_piece_db(bt_dm_t* me_, bt_piecedb_i* ipdb, void* piecedb);
-
-void *bt_dm_get_piecedb(bt_dm_t* me_);
-
-int bt_dm_get_num_peers(bt_dm_t* me_);
-
-int bt_dm_get_total_file_size(bt_dm_t* me_);
-
-char *bt_dm_get_fail_reason(bt_dm_t* me_);
-
-int bt_dm_get_nbytes_downloaded(bt_dm_t* me_);
-
-int bt_dm_is_failed(bt_dm_t* me_);
-
-void bt_dm_periodic(bt_dm_t* me_, bt_dm_stats_t *stats);
-
+/**
+ * Add a peer
+ * Initiate connection with the peer if conn_ctx is NULL
+ * @return the newly initialised peer */
 void *bt_dm_add_peer(bt_dm_t* me_,
                               const char *peer_id,
                               const int peer_id_len,
                               const char *ip, const int ip_len, const int port,
-                              void* nethandle);
+                              void* conn_ctx);
 
-void* bt_dm_get_config(bt_dm_t* me_);
+/**
+ * Remove the peer
+ * Disconnect the peer if needed
+ * @param peer The peer to delete
+ * @return 1 on sucess; otherwise 0 */
+int bt_dm_remove_peer(bt_dm_t* me_, void* peer);
 
-char *bt_generate_peer_id();
+/**
+ * Process events that are dependent on time passing
+ * @param stats Collect download/upload statistics. */
+void bt_dm_periodic(bt_dm_t* me_, bt_dm_stats_t *stats);
 
+/**
+ * Set callback functions
+ * @param funcs Structure containing callbacks
+ * @param cb_ctx Context included with each callback */
+void bt_dm_set_cbs(bt_dm_t* me_, bt_dm_cbs_t * funcs, void* cb_ctx);
+
+/**
+ * @return number of peers this client is involved with */
+int bt_dm_get_num_peers(bt_dm_t* me_);
+
+/**
+ * @return piece database object */
+void *bt_dm_get_piecedb(bt_dm_t* me_);
+
+/**
+ * Set piece database object
+ * @param ipdb Functions implemented by piece database
+ * @param piece_db The piece database passed to piece database functions */
+void bt_dm_set_piece_db(bt_dm_t* me_, bt_piecedb_i* ipdb, void* piece_db);
+
+/**
+ * Scan over currently downloaded pieces */
 void bt_dm_check_pieces(bt_dm_t* me_);
 
+/**
+ * @return current configuration */
+void* bt_dm_get_config(bt_dm_t* me_);
+
+/**
+ * Set the current piece selector
+ * This allows us to use dependency injection to de-couple the
+ * implementation of the piece selector from bt_dm
+ * @param ips Struct of function pointers for piece selector operation
+ * @param piece_selector Selector instance. If NULL we call the constructor. */
+void bt_dm_set_piece_selector(bt_dm_t* me_, bt_pieceselector_i* ips, void* piece_selector);
+
+void *bt_peer_get_conn_ctx(void* pr);
+
+/**
+ * @return random Peer ID */
+char *bt_generate_peer_id();
+
+#if 0
 int bt_piece_write_block(
     bt_piece_t *pceo,
     void *caller,
@@ -323,4 +358,5 @@ int bt_piece_write_block(
     const void *blkdata,
     void* peer
 );
+#endif
 
