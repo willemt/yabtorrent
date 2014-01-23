@@ -1,4 +1,14 @@
 
+/**
+ * Copyright (c) 2011, Willem-Hendrik Thiart
+ * Use of this source code is governed by a BSD-style license that can be
+ * found in the LICENSE file. 
+ *
+ * @file
+ * @author  Willem Thiart himself@willemthiart.com
+ * @version 0.1
+ */
+
 #ifndef HAVE_BT_BLOCK_T
 #define HAVE_BT_BLOCK_T
 typedef struct
@@ -8,64 +18,6 @@ typedef struct
     unsigned int len;
 } bt_block_t;
 #endif
-
-typedef struct
-{
-    void* in;
-} bt_diskcache_t;
-
-typedef void* bt_dm_t;
-
-typedef int (
-    *func_object_get_int_f
-)   (
-    void *
-);
-
-#ifndef HAVE_FUNC_GET_INT
-#define HAVE_FUNC_GET_INT
-typedef int (
-    *func_get_int_f
-)   (
-    void *,
-    void *pr
-);
-#endif
-
-typedef int (
-    *func_get_int_const_f
-)   (
-    const void *,
-    const void *pr
-);
-
-typedef void *(
-    *func_add_file_f
-)    (
-    void *caller,
-    const char *fname,
-    const int size
-);
-
-typedef struct {
-    int drate;
-    int urate;
-    int choked;
-    int choking;
-    int connected;
-    int failed_connection;
-} bt_dm_peer_stats_t;
-
-typedef struct {
-    /* individual peer stats */
-    bt_dm_peer_stats_t *peers;
-
-    /* number of peers in array */
-    int npeers;
-
-    /* size of array */
-    int npeers_size;
-} bt_dm_stats_t;
 
 #ifndef HAVE_FUNC_LOG
 #define HAVE_FUNC_LOG
@@ -106,6 +58,37 @@ typedef void *(
     const bt_block_t * blk
 );
 
+
+typedef struct
+{
+    void* in;
+} bt_diskcache_t;
+
+typedef void* bt_dm_t;
+
+/**
+ * Peer statistics */
+typedef struct {
+    int drate;
+    int urate;
+    int choked;
+    int choking;
+    int connected;
+    int failed_connection;
+} bt_dm_peer_stats_t;
+
+typedef struct {
+    /* individual peer stats */
+    bt_dm_peer_stats_t *peers;
+
+    /* number of peers in array */
+    int npeers;
+
+    /* size of array */
+    int npeers_size;
+} bt_dm_stats_t;
+
+
 typedef struct
 {
     func_write_block_f write_block;
@@ -129,42 +112,57 @@ typedef struct
     int npieces;
 } bt_piece_info_t;
 
-/*  bittorrent piece */
+/**
+ * Bittorrent piece */
 typedef struct
 {
     /* TODO: change to const? */
     int idx;
-
 } bt_piece_t;
 
 typedef struct {
-//    void* (*poll_best_from_bitfield)(void * db, void * bf_possibles);
     void* (*get_piece)(void *db, const unsigned int piece_idx);
     void* (*get_sparsecounter)(void *db);
 } bt_piecedb_i;
 
 typedef struct {
     void* (*new)(int npieces);
-    /* add a new peer to the selector */
+
+    /**
+     * Add a new peer to the selector */
     void (*add_peer)(void *r, void *peer);
-    /* remove a peer from the selector */
+
+    /**
+     * Remove a peer from the selector */
     void (*remove_peer)(void *r, void *peer);
-    /* register this piece as something we have */
+
+    /**
+     * Register this piece as something we have */
     void (*have_piece)(void *r, int piece_idx);
-    /* register this piece as being available from the peer */
+
+    /* 
+     * Register this piece as being available from the peer */
     void (*peer_have_piece)(void *r, void* peer, int piece_idx);
-    /* give this piece back to the selector */
+
+    /* 
+     * Give this piece back to the selector */
     void (*peer_giveback_piece)(void *r, void* peer, int piece_idx);
+
     /**
      * Poll best piece from peer
      * @param r random object
      * @param peer Best piece in context of this peer
      * @return idx of piece which is best; otherwise -1 */
     int (*poll_piece)(void* r, const void* peer);
-    /* get number of peers */
+
+    /**
+     * @return get number of peers */
     int (*get_npeers)(void* r);
-    /* get number of pieces */
+
+    /*
+     * Get number of pieces */
     int (*get_npieces)(void* r);
+
 } bt_pieceselector_i;
 
 typedef struct
@@ -349,14 +347,4 @@ void *bt_peer_get_conn_ctx(void* pr);
 /**
  * @return random Peer ID */
 char *bt_generate_peer_id();
-
-#if 0
-int bt_piece_write_block(
-    bt_piece_t *pceo,
-    void *caller,
-    const bt_block_t * blk,
-    const void *blkdata,
-    void* peer
-);
-#endif
 
