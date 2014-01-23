@@ -15,6 +15,10 @@ YABTorrent was spawned by:
 
 2. There are not that many lightweight torrent libraries which can be used for adding bittorrent-like download capability. 
 
+How does it work?
+-----------------
+See bt.h for documentation.
+
 Building
 --------
 
