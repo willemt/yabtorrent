@@ -750,7 +750,6 @@ void bt_dm_set_piece_selector(bt_dm_t* me_, bt_pieceselector_i* ips, void* piece
     bt_dm_private_t* me = (void*)me_;
 
     memcpy(&me->ips, ips, sizeof(bt_pieceselector_i));
-
     if (!piece_selector)
         me->pselector = me->ips.new(0);
     else
