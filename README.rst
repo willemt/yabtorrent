@@ -18,7 +18,7 @@ YABTorrent was spawned by:
 How does it work?
 -----------------
 
-.. image:: http://github.com/willemt/YABTorrent/doc/YABTorrent.png
+.. image:: http://github.com/willemt/YABTorrent/blob/master/doc/YABTorrent.png
 
 YABTorrent is event based.
 
