@@ -17,6 +17,9 @@ YABTorrent was spawned by:
 
 How does it work?
 -----------------
+
+.. image:: http://github.com/willemt/YABTorrent/doc/YABTorrent.png
+
 YABTorrent is event based.
 
 Networking is provided by the implementor. In this case yabtorrent.c, and networkworkfuncs_libuv.c are a libuv network implementation.
