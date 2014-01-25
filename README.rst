@@ -22,7 +22,7 @@ How does it work?
 
 YABTorrent is event based.
 
-Networking is provided by the implementor. In this case yabtorrent.c, and networkworkfuncs_libuv.c are a libuv network implementation.
+**Networkfuncs** is a set of networking functions that need to be implemented for the required plumbing. Currently networkworkfuncs_libuv.c is a libuv implementation.
 
 See bt.h for documentation.
 
