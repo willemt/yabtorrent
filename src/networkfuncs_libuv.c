@@ -229,7 +229,7 @@ int peer_listen(void* caller,
     struct sockaddr_in bind_addr;
     
     uv_ip4_addr("0.0.0.0", port, &bind_addr);
-    uv_tcp_bind(t, (const struct sockaddr*)&bind_addr, 0);
+    uv_tcp_bind(t, (const struct sockaddr*)&bind_addr);//, 0);
     if (0 != uv_listen((uv_stream_t*)t, 128, __on_new_connection))
     {
         printf("ERROR: listen error\n");

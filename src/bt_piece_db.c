@@ -34,7 +34,7 @@ typedef struct
     hashmap_t *pieces;
 
     /* default size of piece */
-    int pce_len_bytes;
+    //int pce_len_bytes;
     int tot_file_size_bytes;
 
     /*  reader and writer of blocks to disk */
@@ -76,13 +76,6 @@ bt_piecedb_t *bt_piecedb_new()
     return db;
 }
 
-#if 0
-int bt_piecedb_get_length(bt_piecedb_t * db)
-{
-    return priv(db)->tot_file_size_bytes;
-}
-#endif
-
 void bt_piecedb_set_piece_length(bt_piecedb_t * db, const int pce_len_bytes)
 {
     priv(db)->pce_len_bytes = pce_len_bytes;
@@ -117,10 +110,6 @@ void* bt_piecedb_get_diskstorage(bt_piecedb_t * db)
     return priv(db)->blockrw_data;
 }
 
-/**
- * Obtain this piece from the piece database
- * @return piece specified by piece_idx; otherwise NULL
- */
 void *bt_piecedb_get(void* dbo, const unsigned int idx)
 {
     bt_piecedb_t * db = dbo;
@@ -158,17 +147,11 @@ static int __figure_out_new_piece_size(bt_piecedb_t * db)
 }
 #endif
 
-/**
- * @return number of pieces */
 int bt_piecedb_count(bt_piecedb_t * db)
 {
     return hashmap_count(priv(db)->pieces);
 }
 
-/**
- * Add a piece with this sha1sum
- * @param length Piece's size in bytes
- * @return piece idx, otherwise -1 on error */
 int bt_piecedb_add(bt_piecedb_t * db, const char *sha1, unsigned int size)
 {
     bt_piece_t *pce;
@@ -206,8 +189,6 @@ int bt_piecedb_add(bt_piecedb_t * db, const char *sha1, unsigned int size)
     return pce->idx;
 }
 
-/**
- * Remove a piece with this idx */
 void bt_piecedb_remove(bt_piecedb_t * db, int idx)
 {
     // TODO memleak here?
@@ -235,8 +216,6 @@ void bt_piecedb_add_all(bt_piecedb_t * db, const char *pieces, const int len)
 }
 #endif
 
-/**
- * @return number of pieces downloaded */
 int bt_piecedb_get_num_downloaded(bt_piecedb_t * db)
 {
     int ii, downloaded = 0;
@@ -251,8 +230,6 @@ int bt_piecedb_get_num_downloaded(bt_piecedb_t * db)
     return downloaded;
 }
 
-/**
- * @return number of pieces downloaded */
 int bt_piecedb_get_num_completed(bt_piecedb_t * db)
 {
     int ii, cnt = 0;
@@ -268,15 +245,11 @@ int bt_piecedb_get_num_completed(bt_piecedb_t * db)
     return cnt;
 }
 
-/**
- * @return 1 if all complete, 0 otherwise */
 int bt_piecedb_get_length(bt_piecedb_t * db)
 {
     return hashmap_count(priv(db)->pieces);
 }
 
-/**
- * @return 1 if all complete, 0 otherwise */
 int bt_piecedb_all_pieces_are_complete(bt_piecedb_t* db)
 {
     int ii;
@@ -291,16 +264,12 @@ int bt_piecedb_all_pieces_are_complete(bt_piecedb_t* db)
     return 1;
 }
 
-/**
- * Increase total file size by this file's size */
 void bt_piecedb_increase_piece_space(bt_piecedb_t* db, const int size)
 {
     bt_piecedb_set_tot_file_size(db,
             bt_piecedb_get_tot_file_size(db) + size);
 }
 
-/**
- * print a string of all the downloaded pieces */
 void bt_piecedb_print_pieces_downloaded(bt_piecedb_t * db)
 {
     int ii, depth, is_complete = 1;
