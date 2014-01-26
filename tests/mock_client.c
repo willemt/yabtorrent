@@ -81,7 +81,7 @@ void mock_client_setup_disk_backend(void* bt, unsigned int piece_len)
     bt_diskmem_set_size(dc, piece_len);
     db = bt_piecedb_new();
     bt_piecedb_set_diskstorage(db, bt_diskmem_get_blockrw(dc), dc);
-    bt_piecedb_set_piece_length(db,piece_len);
+    //bt_piecedb_set_piece_length(db,piece_len);
     bt_dm_set_piece_db(bt, &((bt_piecedb_i){ .get_piece = bt_piecedb_get}),db);
 }
 

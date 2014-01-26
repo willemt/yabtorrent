@@ -33,8 +33,6 @@ typedef struct
 {
     hashmap_t *pieces;
 
-    /* default size of piece */
-    //int pce_len_bytes;
     int tot_file_size_bytes;
 
     /*  reader and writer of blocks to disk */
@@ -74,11 +72,6 @@ bt_piecedb_t *bt_piecedb_new()
     //priv(db)->pieces = malloc(sizeof(bt_piece_t *) * priv(db)->pieces_size);
     priv(db)->pieces = hashmap_new(__piece_hash, __piece_cmp, 11);
     return db;
-}
-
-void bt_piecedb_set_piece_length(bt_piecedb_t * db, const int pce_len_bytes)
-{
-    priv(db)->pce_len_bytes = pce_len_bytes;
 }
 
 void bt_piecedb_set_tot_file_size(bt_piecedb_t * db,

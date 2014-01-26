@@ -324,7 +324,7 @@ static int __tfr_event_int(void* udata, const char* key, int val)
     else if (!strcmp(key,"piece length"))
     {
         config_set_va(me->sys->cfg, "piece_length", "%d", val);
-        bt_piecedb_set_piece_length(me->sys->db, val);
+        //bt_piecedb_set_piece_length(me->sys->db, val);
         bt_diskcache_set_piece_length(me->sys->dc, val);
         bt_filedumper_set_piece_length(me->sys->fd, val);
     }
