@@ -810,10 +810,7 @@ void *bt_dm_new()
     //config_set_if_not_set(me->cfg,"max_cache_mem_bytes", "1000000");
     config_set_if_not_set(me->cfg,"shutdown_when_complete", "0");
 
-    /* need to be able to tell the time */
-    me->ticker = eventtimer_new();
 
-    /* peer manager */
     me->pm = bt_peermanager_new(me);
     bt_peermanager_set_config(me->pm, me->cfg);
 
@@ -825,13 +822,10 @@ void *bt_dm_new()
     bt_leeching_choker_set_choker_peer_iface(me->lchoke, me,
                                              &iface_choker_peer);
 
-    /* start reciprocation timer */
-    eventtimer_push_event(me->ticker, 10, me,
-            __leecher_peer_reciprocation);
-
-    /* start optimistic unchoker timer */
-    eventtimer_push_event(me->ticker, 30, me,
-            __leecher_peer_optimistic_unchoke);
+    /* timing */
+    me->ticker = eventtimer_new();
+    eventtimer_push_event(me->ticker, 10, me, __leecher_peer_reciprocation);
+    eventtimer_push_event(me->ticker, 30, me, __leecher_peer_optimistic_unchoke);
 
     /* job management */
     me->jobs = llqueue_new();

@@ -230,7 +230,7 @@ static void __on_tc_add_peer(void* callee,
     peer_nethandle = NULL;
     sprintf(ip_string,"%.*s", ip_len, ip);
 
-#if 0 /* debug */
+#if 1 /* debug */
     printf("adding peer: %s %d\n", ip_string, port);
 #endif
 

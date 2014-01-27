@@ -230,7 +230,6 @@ int bt_piecedb_get_num_completed(bt_piecedb_t * db)
     for (ii = 0; ii < bt_piecedb_get_length(db); ii++)
     {
         bt_piece_t *p = bt_piecedb_get(db, ii);
-
         if (bt_piece_is_complete(p))
             cnt += 1;
     }
