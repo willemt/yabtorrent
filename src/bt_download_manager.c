@@ -794,6 +794,11 @@ void *bt_dm_new()
     bt_dm_private_t *me;
 
     me = calloc(1, sizeof(bt_dm_private_t));
+    me->jobs = llqueue_new();
+    me->job_lock = NULL;
+    me->blacklist = bt_blacklist_new();
+    me->pm = bt_peermanager_new(me);
+    bt_peermanager_set_config(me->pm, me->cfg);
 
     /* default configuration */
     me->cfg = config_new();
@@ -810,12 +815,6 @@ void *bt_dm_new()
     //config_set_if_not_set(me->cfg,"max_cache_mem_bytes", "1000000");
     config_set_if_not_set(me->cfg,"shutdown_when_complete", "0");
 
-
-    me->pm = bt_peermanager_new(me);
-    bt_peermanager_set_config(me->pm, me->cfg);
-
-    me->blacklist = bt_blacklist_new();
-
     /*  set leeching choker */
     me->lchoke = bt_leeching_choker_new(
             atoi(config_get(me->cfg,"max_active_peers")));
@@ -826,10 +825,6 @@ void *bt_dm_new()
     me->ticker = eventtimer_new();
     eventtimer_push_event(me->ticker, 10, me, __leecher_peer_reciprocation);
     eventtimer_push_event(me->ticker, 30, me, __leecher_peer_optimistic_unchoke);
-
-    /* job management */
-    me->jobs = llqueue_new();
-    me->job_lock = NULL;
 
     /* we don't need to specify the amount of pieces we need */
     me->pieces_completed = sc_init(0);
