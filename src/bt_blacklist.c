@@ -123,8 +123,6 @@ void bt_blacklist_add_peer_as_potentially_blacklisted(
     llqueue_offer(p->peers_potential_invalid, peer);
 }
 
-/**
- * @return 1 if peer has been blacklisted */
 int bt_blacklist_peer_is_blacklisted(
     void* blacklist,
     void* piece,
@@ -144,8 +142,6 @@ int bt_blacklist_peer_is_blacklisted(
     return NULL != avltree_get(p->peers_blacklisted,peer);
 }
 
-/**
- * @return 1 if peer is in the running for becoming blacklisted */
 int bt_blacklist_peer_is_potentially_blacklisted(
     void* blacklist,
     void* piece,
