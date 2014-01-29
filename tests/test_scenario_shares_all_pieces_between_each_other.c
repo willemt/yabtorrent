@@ -120,6 +120,10 @@ void TestBT_Peer_shares_all_pieces_between_each_other(
                 bt_dm_peer_connect);
     }
 
+    /* empty jobs */
+    bt_dm_periodic(a->bt, NULL);
+    bt_dm_periodic(b->bt, NULL);
+
     CuAssertTrue(tc, 1 == bt_piecedb_all_pieces_are_complete(bt_dm_get_piecedb(a->bt)));
     CuAssertTrue(tc, 1 == bt_piecedb_all_pieces_are_complete(bt_dm_get_piecedb(b->bt)));
 }

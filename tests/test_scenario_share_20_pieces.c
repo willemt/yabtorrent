@@ -143,15 +143,11 @@ void TestBT_Peer_share_20_pieces(
     bt_dm_check_pieces(a->bt);
     bt_dm_check_pieces(b->bt);
 
-//    bt_piecedb_print_pieces_downloaded(bt_dm_get_piecedb(a->bt));
-//    bt_piecedb_print_pieces_downloaded(bt_dm_get_piecedb(b->bt));
-
     for (ii=0; ii<80; ii++)
     {
 #if 0 /* debugging */
         printf("\nStep %d:\n", ii+1);
 #endif
-
         bt_dm_periodic(a->bt, NULL);
         bt_dm_periodic(b->bt, NULL);
 
@@ -162,12 +158,11 @@ void TestBT_Peer_share_20_pieces(
         network_poll(b->bt, &b, 0,
                 bt_dm_dispatch_from_buffer,
                 bt_dm_peer_connect);
-//        __print_client_contents();
-//        bt_piecedb_print_pieces_downloaded(bt_dm_get_piecedb(b->bt));
+
     }
 
-//    bt_piecedb_print_pieces_downloaded(bt_dm_get_piecedb(a->bt));
-//    bt_piecedb_print_pieces_downloaded(bt_dm_get_piecedb(b->bt));
+    bt_dm_periodic(a->bt, NULL);
+    bt_dm_periodic(b->bt, NULL);
 
     CuAssertTrue(tc, 1 == bt_piecedb_all_pieces_are_complete(bt_dm_get_piecedb(a->bt)));
     CuAssertTrue(tc, 1 == bt_piecedb_all_pieces_are_complete(bt_dm_get_piecedb(b->bt)));

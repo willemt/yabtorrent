@@ -192,17 +192,13 @@ bt_piece_t *bt_piece_new(
     __piece_private_t *me;
 
     me = calloc(1,sizeof(__piece_private_t));
-    priv(me)->sha1 = malloc(20);
-    memcpy(priv(me)->sha1, sha1sum, 20);
     priv(me)->progress_downloaded = sc_init(piece_bytes_size);
     priv(me)->progress_requested = sc_init(piece_bytes_size);
     priv(me)->piece_length = piece_bytes_size;
     priv(me)->is_completed = FALSE;
     priv(me)->peers = avltree_new(__cmp_address);
-
-//    priv(me)->data = malloc(priv(me)->piece_length);
-//    memset(priv(me)->data, 0, piece_bytes_size);
-
+    priv(me)->sha1 = malloc(20);
+    memcpy(priv(me)->sha1, sha1sum, 20);
     return (bt_piece_t *) me;
 }
 
@@ -255,64 +251,20 @@ void bt_piece_set_disk_blockrw(
     priv(me)->disk_udata = udata;
 }
 
-void *bt_piece_get_data(
-    bt_piece_t * me
-)
+void *bt_piece_get_data(bt_piece_t * me)
 {
     return __get_data(me);
 }
 
 int bt_piece_is_valid(bt_piece_t * me)
 {
-    /* use a cached result */
-    if (priv(me)->validity == VALIDITY_VALID)
+    switch (priv(me)->validity)
     {
-        return 1;
+    case VALIDITY_VALID: return 1;
+    case VALIDITY_INVALID: return 0;
+    case VALIDITY_NOTCHECKED: return -1;
+    default: assert(0); break;
     }
-    else if (priv(me)->validity == VALIDITY_INVALID)
-    {
-        return 0;
-    }
-     /* else VALIDITY_NOTCHECKED... */
-
-    void *data;
-
-    if (!(data = __get_data(me)))
-    {
-        return 0;
-    }
-
-    char hash[21];
-    int ret;
-
-    bt_str2sha1hash(hash, data, priv(me)->piece_length);
-    ret = bt_sha1_equal(hash, priv(me)->sha1);
-
-    if (1 == ret)
-    {
-        priv(me)->validity = VALIDITY_VALID;
-    }
-    else
-    {
-        priv(me)->validity = VALIDITY_INVALID;
-    }
-
-#if 0 /* debugging */
-    {
-        int ii;
-
-        printf("(idx:%d) Expected: ", me->idx);
-        for (ii=0; ii<20; ii++)
-            printf("%02x ", ((unsigned char*)priv(me)->sha1)[ii]);
-        printf("\n");
-
-        printf("         File calc: ");
-        for (ii=0; ii<20; ii++)
-            printf("%02x ", ((unsigned char*)hash)[ii]);
-        printf("\n");
-    }
-#endif
-    return ret;
 }
 
 int bt_piece_is_downloaded(bt_piece_t * me)
@@ -337,7 +289,7 @@ int bt_piece_is_complete(bt_piece_t * me)
         if (0 == off && ln == priv(me)->piece_length)
         {
             /* if sha1 matches properly - then we are done */
-            if (bt_piece_is_valid(me))
+            if (1 == bt_piece_is_valid(me))
             {
                 priv(me)->is_completed = TRUE;
                 return TRUE;
@@ -368,20 +320,19 @@ void bt_piece_poll_block_request(bt_piece_t * me, bt_block_t * request)
         blk_size = BLOCK_SIZE;
     }
 
-    /* get an incomplete block */
+    /* create the request by getting an incomplete block */
     sc_get_incomplete(priv(me)->progress_requested, &offset, &len, blk_size);
-
-    /* create the request */
     request->piece_idx = me->idx;
     request->offset = offset;
     request->len = len;
 
-//    printf("polled: zpceidx: %d offset: %d len: %d\n",
-//           request->piece_idx, request->offset, request->len);
+#if 0 /* debugging */
+    printf("polled: pceidx: %d offset: %d len: %d\n",
+           request->piece_idx, request->offset, request->len);
+#endif
 
     /* mark requested counter */
     sc_mark_complete(priv(me)->progress_requested, offset, len);
-
 }
 
 void bt_piece_giveback_block(bt_piece_t * me, bt_block_t * b)
@@ -389,8 +340,7 @@ void bt_piece_giveback_block(bt_piece_t * me, bt_block_t * b)
 //    printf("giveback: %d %d\n", b->offset, b->offset + b->len);
 //    sc_print_contents(priv(me)->progress_requested);
 //    printf("\n");
-    sc_mark_incomplete(priv(me)->progress_requested,
-            b->offset, b->len);
+    sc_mark_incomplete(priv(me)->progress_requested, b->offset, b->len);
 //    sc_print_contents(priv(me)->progress_requested);
 //    printf("\n");
 //    printf("requested:\n");
@@ -476,24 +426,55 @@ void bt_piece_drop_download_progress(bt_piece_t *me)
     sc_mark_all_incomplete(priv(me)->progress_requested);
 }
 
-/**
- * Validate the piece
- * @return 1 if valid, -1 if invalid, otherwise 0 */
 int bt_piece_validate(bt_piece_t* me)
 {
-    /*  check the counter if it is fully downloaded */
+#if 0
     if (!sc_is_complete(priv(me)->progress_downloaded))
     {
         return 0;
     }
-    else if (bt_piece_is_valid(me))
+#endif
+
+    void *data;
+
+    if (!(data = __get_data(me)))
     {
+        return 0;
+    }
+
+    char hash[21];
+    int ret;
+
+    bt_str2sha1hash(hash, data, priv(me)->piece_length);
+    ret = bt_sha1_equal(hash, priv(me)->sha1);
+
+    if (1 == ret)
+    {
+        priv(me)->validity = VALIDITY_VALID;
         priv(me)->is_completed = TRUE;
-        return 1;
     }
     else
     {
-        return -1;
+        priv(me)->validity = VALIDITY_INVALID;
+        priv(me)->is_completed = FALSE;
+        return 0;
     }
+
+#if 0 /* debugging */
+    {
+        int ii;
+
+        printf("(idx:%d) Expected: ", me->idx);
+        for (ii=0; ii<20; ii++)
+            printf("%02x ", ((unsigned char*)priv(me)->sha1)[ii]);
+        printf("\n");
+
+        printf("         File calc: ");
+        for (ii=0; ii<20; ii++)
+            printf("%02x ", ((unsigned char*)hash)[ii]);
+        printf("\n");
+    }
+#endif
+    return ret;
 }
 

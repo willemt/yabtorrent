@@ -11,14 +11,6 @@ bt_piece_t *bt_piece_new(
 char *bt_piece_get_hash(bt_piece_t * me);
 
 /**
- * @return size of piece */
-int bt_piece_get_size(bt_piece_t * me);
-
-/**
- * @return data that the block represents */
-void *bt_piece_read_block(bt_piece_t *pceo, void *caller, const bt_block_t * b);
-
-/**
  * Determine if the piece is complete
  * A piece needs to be valid to be complete
  *
@@ -40,34 +32,11 @@ void* bt_piece_get_peers(bt_piece_t *me, int *iter);
 int bt_piece_num_peers(bt_piece_t *me);
 
 /**
- * Add this data to the piece
- * @return 1 on success, 2 if now completely downloaded, otherwise 0 */
-int bt_piece_write_block(
-    bt_piece_t *me,
-    void *caller,
-    const bt_block_t * b,
-    const void *b_data,
-    void* peer);
-
-/**
- * Read data and use sha1 to determine if valid
- * @return 1 if valid; 0 otherwise */
+ * Have we confirmed the validity of the download using sha1?
+ * @return 1 if valid; 0 if invalid; -1 if unchecked */
 int bt_piece_is_valid(bt_piece_t * me);
 
 void bt_piece_drop_download_progress(bt_piece_t *me);
-
-/**
- * Write the block to the byte stream
- * @return 1 on success, 0 otherwise */
-int bt_piece_write_block_to_stream(
-    bt_piece_t * me,
-    bt_block_t * blk,
-    unsigned char ** msg);
-
-int bt_piece_write_block_to_stream(
-    bt_piece_t * me,
-    bt_block_t * blk,
-    unsigned char ** msg);
 
 /**
  * Build the following request block for the peer, from this piece.
@@ -82,3 +51,55 @@ void bt_piece_set_complete(bt_piece_t * me, int yes);
 void bt_piece_set_idx(bt_piece_t * me, const int idx);
 
 int bt_piece_get_idx(bt_piece_t * me);
+
+/**
+ * I/O performed.
+ *
+ * @return data of piece */
+void *bt_piece_get_data(bt_piece_t * me);
+
+/**
+ * Validate the piece
+ * I/O performed.
+ *
+ * @return 1 if valid, -1 if invalid, otherwise 0 */
+int bt_piece_validate(bt_piece_t* me);
+
+/**
+ * I/O performed.
+ * @return size of piece */
+int bt_piece_get_size(bt_piece_t * me);
+
+/**
+ * I/O performed.
+ * @return data that the block represents */
+void *bt_piece_read_block(bt_piece_t *pceo, void *caller, const bt_block_t * b);
+
+/**
+ * Add this data to the piece
+ * I/O performed.
+ * @return 1 on success, 2 if now completely downloaded, otherwise 0 */
+int bt_piece_write_block(
+    bt_piece_t *me,
+    void *caller,
+    const bt_block_t * b,
+    const void *b_data,
+    void* peer);
+
+/**
+ * Write the block to the byte stream
+ * I/O performed.
+ * @return 1 on success, 0 otherwise */
+int bt_piece_write_block_to_stream(
+    bt_piece_t * me,
+    bt_block_t * blk,
+    unsigned char ** msg);
+
+/**
+ * I/O performed.
+ * @return 1 on success, 0 otherwise */
+int bt_piece_write_block_to_stream(
+    bt_piece_t * me,
+    bt_block_t * blk,
+    unsigned char ** msg);
+

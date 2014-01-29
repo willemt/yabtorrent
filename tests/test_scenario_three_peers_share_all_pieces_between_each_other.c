@@ -114,10 +114,6 @@ void TestBT_Peer_three_share_all_pieces_between_each_other(
     asprintf(&addr,"%p", c);
     client_add_peer(b,NULL,0,addr,strlen(addr),0);
 
-//    bt_piecedb_print_pieces_downloaded(bt_dm_get_piecedb(a->bt));
-//    bt_piecedb_print_pieces_downloaded(bt_dm_get_piecedb(b->bt));
-//    bt_piecedb_print_pieces_downloaded(bt_dm_get_piecedb(c->bt));
-
     for (ii=0; ii<10; ii++)
     {
 #if 0 /* debugging */
@@ -145,6 +141,11 @@ void TestBT_Peer_three_share_all_pieces_between_each_other(
 //    bt_piecedb_print_pieces_downloaded(bt_dm_get_piecedb(a->bt));
 //    bt_piecedb_print_pieces_downloaded(bt_dm_get_piecedb(b->bt));
 //    bt_piecedb_print_pieces_downloaded(bt_dm_get_piecedb(c->bt));
+
+    /* empty jobs */
+    bt_dm_periodic(a->bt, NULL);
+    bt_dm_periodic(b->bt, NULL);
+    bt_dm_periodic(c->bt, NULL);
 
     CuAssertTrue(tc, 1 == bt_piecedb_all_pieces_are_complete(bt_dm_get_piecedb(a->bt)));
     CuAssertTrue(tc, 1 == bt_piecedb_all_pieces_are_complete(bt_dm_get_piecedb(b->bt)));

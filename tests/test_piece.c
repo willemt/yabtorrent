@@ -52,7 +52,6 @@ void TxestBTPiece_IsDone(
     bt_piece_t *pce;
 
     pce = bt_piece_new("00000000000000000000", 40);
-//bt_piece_is_complete(
 }
 
 void TestBTPiece_full_request_means_piece_is_fully_requested(
@@ -235,6 +234,7 @@ void TestBTPiece_doneness_is_valid(
     blk.offset = 0;
     blk.len = 40;
     bt_piece_write_block(pce, NULL, &blk, msg, NULL);
+    bt_piece_validate(pce);
     CuAssertTrue(tc, 1 == bt_piece_is_complete(pce));
     CuAssertTrue(tc, 1 == bt_piece_is_valid(pce));
 }
@@ -316,6 +316,7 @@ void TestBTPiece_write_valid_block_results_in_valid_piece(
     blk.offset = 0;
     blk.len = 40;
     CuAssertTrue(tc, 2 == bt_piece_write_block(pce, NULL, &blk, msg, peer));
+    bt_piece_validate(pce);
     CuAssertTrue(tc, 1 == bt_piece_is_complete(pce));
     CuAssertTrue(tc, 1 == bt_piece_is_valid(pce));
 }

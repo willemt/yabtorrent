@@ -402,11 +402,9 @@ static void __job_dispatch_poll_piece(bt_dm_private_t* me, bt_job_t* j)
 static void __job_dispatch_validate_piece(bt_dm_private_t* me, bt_job_t* j)
 {
     bt_piece_t *p;
-    bt_peer_t* peer;
     int piece_idx;
 
     p = me->ipdb.get_piece(me->pdb, j->validate_piece.piece_idx);
-    peer = j->validate_piece.peer;
     piece_idx = bt_piece_get_idx(p);
 
     switch (bt_piece_validate(p))
@@ -421,16 +419,19 @@ static void __job_dispatch_validate_piece(bt_dm_private_t* me, bt_job_t* j)
     }
         break;
 
-    case 0: /* write error */
-        printf("error writing block\n");
+    case 0: /* error */
         break;
 
-    case -1: /* invalid piece created */
+    case -1: /* invalid piece */
     {
         /* only peer involved in piece download, therefore treat as
          * untrusted and blacklist */
         if (1 == bt_piece_num_peers(p))
         {
+            int i = 0;
+            void* peer;
+
+            peer = bt_piece_get_peers(p,&i);
             bt_blacklist_add_peer(me->blacklist,p,peer);
         }
         else 
@@ -470,6 +471,18 @@ static void __dispatch_job(bt_dm_private_t* me, bt_job_t* j)
     free(j);
 }
 
+static void* __call_exclusively(void* me_, void** lock, void *j, 
+    void* (*func)(void *me_, void* j_))
+{
+    bt_dm_private_t *me = me_;
+
+    assert(func);
+
+    if (me->cb.call_exclusively)
+        return me->cb.call_exclusively(me_, me->cb_ctx, lock, j, func);
+    else return func(me_,j);
+}
+
 static int __FUNC_peerconn_pollblock(void *me_, void* peer)
 {
     bt_dm_private_t *me = me_;
@@ -479,7 +492,7 @@ static int __FUNC_peerconn_pollblock(void *me_, void* peer)
     j = malloc(sizeof(bt_job_t));
     j->type = BT_JOB_POLLBLOCK;
     j->pollblock.peer = peer;
-    me->cb.call_exclusively(me, me->cb_ctx, &me->job_lock, j, __offer_job);
+    __call_exclusively(me, &me->job_lock, j, __offer_job);
     return 0;
 }
 
@@ -487,7 +500,11 @@ static int __FUNC_peerconn_pollblock(void *me_, void* peer)
  * Received a block from a peer
  * @param peer Peer received from
  * @param data Data to be pushed */
-int __FUNC_peerconn_pushblock(void *me_, void* pr, bt_block_t *b, const void *data)
+int __FUNC_peerconn_pushblock(
+        void *me_,
+        void* pr,
+        bt_block_t *b,
+        const void *data)
 {
     bt_peer_t * peer = pr;
     bt_dm_private_t *me = me_;
@@ -508,7 +525,7 @@ int __FUNC_peerconn_pushblock(void *me_, void* pr, bt_block_t *b, const void *da
         j->type = BT_JOB_VALIDATE_PIECE;
         j->validate_piece.peer = peer;
         j->validate_piece.piece_idx = b->piece_idx;
-        me->cb.call_exclusively(me, me->cb_ctx, &me->job_lock, j, __offer_job);
+        __call_exclusively(me, &me->job_lock, j, __offer_job);
     }
     break;
     
@@ -520,59 +537,7 @@ int __FUNC_peerconn_pushblock(void *me_, void* pr, bt_block_t *b, const void *da
         printf("error writing block\n");
         break;
 
-
     }
-
-#if 0
-    switch (bt_piece_write_block(p, NULL, b, data, peer))
-    {
-    case 2: /* complete piece */
-    {
-        __log(me, NULL, "client,piece downloaded,pieceidx=%d",
-              bt_piece_get_idx(p));
-
-        assert(me->ips.have_piece);
-        me->ips.have_piece(me->pselector, b->piece_idx);
-        sc_mark_complete(me->pieces_completed, b->piece_idx, 1);
-        bt_peermanager_forall(me->pm,me,p,__FUNC_peerconn_send_have);
-    }
-        break;
-
-    case 0: /* write error */
-        printf("error writing block\n");
-        break;
-
-    case -1: /* invalid piece created */
-    {
-        /* only peer involved in piece download, therefore treat as
-         * untrusted and blacklist */
-        if (1 == bt_piece_num_peers(p))
-        {
-            bt_blacklist_add_peer(me->blacklist,p,peer);
-        }
-        else 
-        {
-            int i = 0;
-            void* peer2;
-
-            for (peer2 = bt_piece_get_peers(p,&i);
-                 peer2;
-                 peer2 = bt_piece_get_peers(p,&i))
-            {
-                bt_blacklist_add_peer_as_potentially_blacklisted(
-                        me->blacklist,p,peer2);
-            }
-
-            bt_piece_drop_download_progress(p);
-            me->ips.peer_giveback_piece(me->pselector, NULL, p->idx);
-        }
-    }
-        break;
-    default:
-        break;
-    }
-#endif
-
 #if 0
         /* dump everything to disk if the whole download is complete */
         if (bt_piecedb_all_pieces_are_complete(me))
@@ -758,6 +723,12 @@ int bt_dm_remove_peer(bt_dm_t* me_, void* pr)
     return 1;
 }
 
+int bt_dm_get_jobs(bt_dm_t* me_)
+{
+    bt_dm_private_t *me = (void*)me_;
+    return llqueue_count(me->jobs);
+}
+
 void bt_dm_periodic(bt_dm_t* me_, bt_dm_stats_t *stats)
 {
     bt_dm_private_t *me = (void*)me_;
@@ -765,20 +736,18 @@ void bt_dm_periodic(bt_dm_t* me_, bt_dm_stats_t *stats)
 
     /* TODO: pump out keep alive message */
 
-    /*  shutdown if we are setup to not seed */
-    if (1 == me->am_seeding && 1 == config_get_int(me->cfg,"shutdown_when_complete"))
-    {
-        goto cleanup;
-    }
-
     /* process jobs */
     while (0 < llqueue_count(me->jobs))
     {
-        void * j;
-
-        j = me->cb.call_exclusively(me, me->cb_ctx, &me->job_lock, NULL, __poll_job);
-        assert(j);
+        void *j = __call_exclusively(me_, &me->job_lock, NULL, __poll_job);
         __dispatch_job(me,j);
+    }
+
+    /*  shutdown if we are setup to not seed */
+    if (1 == me->am_seeding
+            && 1 == config_get_int(me->cfg,"shutdown_when_complete"))
+    {
+        goto cleanup;
     }
 
     /* run each peer connection step */
@@ -831,7 +800,10 @@ void *bt_dm_get_piecedb(bt_dm_t* me_)
     return me->pdb;
 }
 
-void bt_dm_set_piece_selector(bt_dm_t* me_, bt_pieceselector_i* ips, void* piece_selector)
+void bt_dm_set_piece_selector(
+        bt_dm_t* me_,
+        bt_pieceselector_i* ips,
+        void* piece_selector)
 {
     bt_dm_private_t* me = (void*)me_;
 
@@ -861,10 +833,15 @@ void bt_dm_check_pieces(bt_dm_t* me_)
     {
         bt_piece_t* p = me->ipdb.get_piece(me->pdb, i);
 
-        if (p && bt_piece_is_complete(p))
+        if (!p) continue;
+        //if (!bt_piece_is_downloaded(p)) continue;
+        if (!bt_piece_is_complete(p))
         {
-            me->ips.have_piece(me->pselector, i);
-            sc_mark_complete(me->pieces_completed, i, 1);
+            bt_job_t * j = malloc(sizeof(bt_job_t));
+            j->type = BT_JOB_VALIDATE_PIECE;
+            j->validate_piece.peer = NULL;
+            j->validate_piece.piece_idx = bt_piece_get_idx(p);
+            __call_exclusively(me, &me->job_lock, j, __offer_job);
         }
     }
 }

@@ -327,7 +327,7 @@ void *bt_dm_get_piecedb(bt_dm_t* me_);
 void bt_dm_set_piece_db(bt_dm_t* me_, bt_piecedb_i* ipdb, void* piece_db);
 
 /**
- * Scan over currently downloaded pieces */
+ * Scan over downloaded pieces. Assess whether the pieces are complete. */
 void bt_dm_check_pieces(bt_dm_t* me_);
 
 /**
@@ -348,3 +348,6 @@ void *bt_peer_get_conn_ctx(void* pr);
  * @return random Peer ID */
 char *bt_generate_peer_id();
 
+/**
+ * @return number of jobs outstanding */
+int bt_dm_get_jobs(bt_dm_t* me_);
