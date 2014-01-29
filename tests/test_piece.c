@@ -23,9 +23,7 @@
 
 #define HASH_EXAMPLE "00000000000000000000"
 
-void TestBTPiece_new_has_set_size_and_hashsum(
-    CuTest * tc
-)
+void TestBTPiece_new_has_set_size_and_hashsum( CuTest * tc)
 {
     bt_piece_t *pce;
 
@@ -34,9 +32,7 @@ void TestBTPiece_new_has_set_size_and_hashsum(
     CuAssertTrue(tc, 40 == bt_piece_get_size(pce));
 }
 
-void TestBTPiece_set_idx(
-    CuTest * tc
-)
+void TestBTPiece_set_idx( CuTest * tc)
 {
     bt_piece_t *pce;
 
@@ -45,21 +41,9 @@ void TestBTPiece_set_idx(
     CuAssertTrue(tc, 10 == bt_piece_get_idx(pce));
 }
 
-void TxestBTPiece_IsDone(
-    CuTest * tc
-)
+void TestBTPiece_full_request_means_piece_is_fully_requested( CuTest * tc)
 {
     bt_piece_t *pce;
-
-    pce = bt_piece_new("00000000000000000000", 40);
-}
-
-void TestBTPiece_full_request_means_piece_is_fully_requested(
-    CuTest * tc
-)
-{
-    bt_piece_t *pce;
-
     bt_block_t req;
 
     pce = bt_piece_new("00000000000000000000", 40);
@@ -70,12 +54,9 @@ void TestBTPiece_full_request_means_piece_is_fully_requested(
     CuAssertTrue(tc, 1 == bt_piece_is_fully_requested(pce));
 }
 
-void TestBTPiece_unfull_request_means_piece_is_not_fully_requested(
-    CuTest * tc
-)
+void TestBTPiece_unfull_request_means_piece_is_not_fully_requested( CuTest * tc)
 {
     bt_piece_t *pce;
-
     bt_block_t req;
 
     pce = bt_piece_new("00000000000000000000", 400000);
@@ -84,12 +65,9 @@ void TestBTPiece_unfull_request_means_piece_is_not_fully_requested(
     CuAssertTrue(tc, 0 == bt_piece_is_fully_requested(pce));
 }
 
-void TestBTPiece_pollBlockRequest_has_default_blockSize(
-    CuTest * tc
-)
+void TestBTPiece_pollBlockRequest_has_default_blockSize( CuTest * tc)
 {
     bt_piece_t *pce;
-
     bt_block_t req;
 
     pce = bt_piece_new("00000000000000000000", 400000);
@@ -97,12 +75,9 @@ void TestBTPiece_pollBlockRequest_has_default_blockSize(
     CuAssertTrue(tc, req.len == BLOCK_SIZE);
 }
 
-void TestBTPiece_pollBlockRequest_sized_under_threshhold(
-    CuTest * tc
-)
-{/*----------------------------------------------------------------------------*/
+void TestBTPiece_pollBlockRequest_sized_under_threshhold( CuTest * tc)
+{
     bt_piece_t *pce;
-
     bt_block_t req;
 
     pce = bt_piece_new("00000000000000000000", 10);
@@ -110,14 +85,10 @@ void TestBTPiece_pollBlockRequest_sized_under_threshhold(
     CuAssertTrue(tc, req.len == 10);
 }
 
-void TestBTPiece_write_block_needs_disk_blockrw(
-    CuTest * tc
-)
+void TestBTPiece_write_block_needs_disk_blockrw( CuTest * tc)
 {
     bt_piece_t *pce;
-
     bt_block_t blk;
-
     char *msg = "this great message is 40 bytes in length";
 
     pce = bt_piece_new("00000000000000000000", 40);
@@ -167,14 +138,10 @@ bt_blockrw_i __mock_disk_rw = {.read_block =
 
 mockdisk_t __mockdisk;
 
-void TestBTPiece_cannot_read_block_we_dont_have(
-    CuTest * tc
-)
+void TestBTPiece_cannot_read_block_we_dont_have( CuTest * tc)
 {
     bt_piece_t *pce;
-
     bt_block_t blk;
-
     char *msg = "this great message is 40 bytes in length";
 
     pce = bt_piece_new("00000000000000000000", 40);
@@ -186,40 +153,50 @@ void TestBTPiece_cannot_read_block_we_dont_have(
     CuAssertTrue(tc, NULL == bt_piece_read_block(pce, NULL, &blk));
 }
 
-void TestBTPiece_write_block_means_block_can_be_read(
-    CuTest * tc
-)
+void TestBTPiece_write_block_means_block_can_be_read( CuTest * tc)
 {
     bt_piece_t *pce;
-
-    bt_block_t blk;
-
-    char *msg = "this great message is 40 bytes in length";
+    bt_block_t b;
+    char *m = "this great message is 40 bytes in length";
 
     pce = bt_piece_new("00000000000000000000", 40);
-    blk.piece_idx = 0;
-    blk.offset = 0;
-    blk.len = 10;
+    b.piece_idx = 0;
+    b.offset = 0;
+    b.len = 10;
     bt_piece_set_disk_blockrw(pce, &__mock_disk_rw, &__mockdisk);
-    bt_piece_write_block(pce, NULL, &blk, msg, NULL);
-    CuAssertTrue(tc,
-                 0 == strncmp(bt_piece_read_block(pce, NULL, &blk), msg, 10));
+    bt_piece_write_block(pce, NULL, &b, m, NULL);
+    CuAssertTrue(tc, 0 == strncmp(bt_piece_read_block(pce, NULL, &b), m, 10));
 }
 
-/*
- *
- * check if the piece is done and valid as per hash (sha1)
- */
-void TestBTPiece_doneness_is_valid(
-    CuTest * tc
-)
+void TestBTPiece_doneness_is_valid_only_when_validated( CuTest * tc)
 {
     bt_piece_t *pce;
-
     bt_block_t blk;
-
     char *msg = "this great message is 40 bytes in length";
+    char sha1[20] = {
+        0xc1, 0x20, 0xbe, 0x68, 0x96, 0x56, 0x82, 0xf8, 0xb1, 0xb0, 0x25,
+        0x88, 0x48, 0xa5, 0xfb, 0x04, 0x7f, 0x31, 0x96, 0x1e
+    };
 
+    pce = bt_piece_new(sha1, 40);
+    memset(&__mockdisk, 0, sizeof(mockdisk_t));
+    bt_piece_set_disk_blockrw(pce, &__mock_disk_rw, &__mockdisk);
+
+    CuAssertTrue(tc, 0 == bt_piece_is_complete(pce));
+    blk.piece_idx = 0;
+    blk.offset = 0;
+    blk.len = 40;
+    bt_piece_write_block(pce, NULL, &blk, msg, NULL);
+    /* fails because of missing bt_piece_validate(pce); */
+    CuAssertTrue(tc, 0 == bt_piece_is_complete(pce));
+    CuAssertTrue(tc, -1 == bt_piece_is_valid(pce));
+}
+
+void TestBTPiece_doneness_is_valid( CuTest * tc)
+{
+    bt_piece_t *pce;
+    bt_block_t blk;
+    char *msg = "this great message is 40 bytes in length";
     char sha1[20] = {
         0xc1, 0x20, 0xbe, 0x68, 0x96, 0x56, 0x82, 0xf8, 0xb1, 0xb0, 0x25,
         0x88, 0x48, 0xa5, 0xfb, 0x04, 0x7f, 0x31, 0x96, 0x1e
@@ -239,9 +216,7 @@ void TestBTPiece_doneness_is_valid(
     CuAssertTrue(tc, 1 == bt_piece_is_valid(pce));
 }
 
-void TestBTPiece_Write_Block_To_Stream(
-    CuTest * tc
-)
+void TestBTPiece_Write_Block_To_Stream( CuTest * tc)
 {
     bt_piece_t *pce;
     bt_block_t blk;
@@ -272,9 +247,7 @@ void TestBTPiece_Write_Block_To_Stream(
     bt_diskmem_free(dc);
 }
 
-void TestBTPiece_Write_Block_To_Str(
-    CuTest * tc
-)
+void TestBTPiece_Write_Block_To_Str( CuTest * tc)
 {
 #if 0
     bt_piece_t *pce;
@@ -294,9 +267,8 @@ void TestBTPiece_Write_Block_To_Str(
     CuAssertTrue(tc, 0 == strncmp(out, msg + 10, 10));
 #endif
 }
-void TestBTPiece_write_valid_block_results_in_valid_piece(
-    CuTest * tc
-)
+
+void TestBTPiece_write_valid_block_results_in_valid_piece( CuTest * tc)
 {
     void* peer;
     bt_piece_t *pce;
@@ -319,6 +291,32 @@ void TestBTPiece_write_valid_block_results_in_valid_piece(
     bt_piece_validate(pce);
     CuAssertTrue(tc, 1 == bt_piece_is_complete(pce));
     CuAssertTrue(tc, 1 == bt_piece_is_valid(pce));
+}
+
+void TestBTPiece_write_invalid_block_results_in_invalid_piece( CuTest * tc)
+{
+    void* peer;
+    bt_piece_t *pce;
+    bt_block_t blk;
+    char *msg = "this great message is 40 bytes in length", out[40];
+    char *bad_msg = "this great xxxxxxx is 40 bytes in length";
+    char hash[21];
+
+    peer = malloc(1);
+    bt_str2sha1hash(hash, msg, 40);
+    pce = bt_piece_new(hash, 40);
+    memset(&__mockdisk, 0, sizeof(mockdisk_t));
+    bt_piece_set_disk_blockrw(pce, &__mock_disk_rw, &__mockdisk);
+
+    CuAssertTrue(tc, 0 == bt_piece_is_complete(pce));
+
+    /* write valid block */
+    blk.offset = 0;
+    blk.len = 40;
+    CuAssertTrue(tc, 2 == bt_piece_write_block(pce, NULL, &blk, bad_msg, peer));
+    bt_piece_validate(pce);
+    CuAssertTrue(tc, 0 == bt_piece_is_complete(pce));
+    CuAssertTrue(tc, 0 == bt_piece_is_valid(pce));
 }
 
 #if 0
@@ -385,9 +383,7 @@ void TxestBTPiece_multi_peer_recognised_as_pontentially_invalidating_piece(
 }
 #endif
 
-void TestBTPiece_get_num_peers_from_write_block(
-    CuTest * tc
-)
+void TestBTPiece_get_num_peers_from_write_block( CuTest * tc)
 {
     void *p1, *p2;
     bt_piece_t *pce;
@@ -419,9 +415,7 @@ void TestBTPiece_get_num_peers_from_write_block(
     CuAssertTrue(tc, 2 == bt_piece_num_peers(pce));
 }
 
-void TestBTPiece_get_peers_from_write_block(
-    CuTest * tc
-)
+void TestBTPiece_get_peers_from_write_block( CuTest * tc)
 {
     void *p1, *p2;
     bt_piece_t *pce;

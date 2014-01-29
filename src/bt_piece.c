@@ -391,9 +391,7 @@ int bt_piece_write_block_to_stream(
 
     for (ii = 0; ii < blk->len; ii++)
     {
-        unsigned char val;
-
-        val = *(data + ii);
+        unsigned char val = *(data + ii);
         bitstream_write_ubyte(msg, val);
     }
 
@@ -413,7 +411,6 @@ int bt_piece_write_block_to_str(
     offset = blk->offset;
     len = blk->len;
     memcpy(out, (unsigned char *) data + offset, len);
-
     return 1;
 }
 
