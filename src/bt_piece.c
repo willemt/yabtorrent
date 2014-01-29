@@ -60,14 +60,7 @@ typedef struct
 
 #define priv(x) ((__piece_private_t*)(x))
 
-/**
- * Get peers based off iterator
- * @param iter Iterator that we use to obtain the next peer. Starts at 0
- * @return next peer */
-void* bt_piece_get_peers(
-    bt_piece_t *me,
-    int *iter
-)
+void* bt_piece_get_peers(bt_piece_t *me, int *iter)
 {
     for (;*iter < avltree_size(priv(me)->peers); (*iter)++)
     {
@@ -83,16 +76,11 @@ void* bt_piece_get_peers(
     return NULL;
 }
 
-/**
- * @return number of peers that were involved in downloading this piece */
 int bt_piece_num_peers(bt_piece_t *me)
 {
     return avltree_count(priv(me)->peers);
 }
 
-/**
- * Add this data to the piece
- * @return 1 on success, 2 if now complete, -1 if now invalid, otherwise 0 */
 int bt_piece_write_block(
     bt_piece_t *me,
     void *caller,
@@ -172,23 +160,17 @@ int bt_piece_write_block(
     return 1;
 }
 
-/**
- * @return data that the block represents */
-void *bt_piece_read_block(
-    bt_piece_t *me,
-    void *caller,
-    const bt_block_t * blk
-)
+void *bt_piece_read_block(bt_piece_t *me, void *caller, const bt_block_t * b)
 {
     assert(priv(me)->disk->read_block);
 
     if (!priv(me)->disk->read_block)
         return NULL;
 
-    if (!sc_have(priv(me)->progress_downloaded, blk->offset, blk->len))
+    if (!sc_have(priv(me)->progress_downloaded, b->offset, b->len))
         return NULL;
 
-    return priv(me)->disk->read_block(priv(me)->disk_udata, me, blk);
+    return priv(me)->disk->read_block(priv(me)->disk_udata, me, b);
 }
 
 static long __cmp_address(
@@ -277,9 +259,6 @@ void *bt_piece_get_data(
     return __get_data(me);
 }
 
-/**
- * Read data and use sha1 to determine if valid
- * @return 1 if valid; 0 otherwise */
 int bt_piece_is_valid(bt_piece_t * me)
 {
     if (priv(me)->validity == VALIDITY_VALID)
@@ -337,11 +316,6 @@ int bt_piece_is_downloaded(bt_piece_t * me)
     return sc_is_complete(priv(me)->progress_downloaded);
 }
 
-/**
- * Determine if the piece is complete
- * A piece needs to be valid to be complete
- *
- * @return 1 if complete; 0 otherwise */
 int bt_piece_is_complete(bt_piece_t * me)
 {
     if (priv(me)->is_completed)
@@ -375,14 +349,7 @@ int bt_piece_is_fully_requested(bt_piece_t * me)
     return sc_is_complete(priv(me)->progress_requested);
 }
 
-/**
- * Build the following request block for the peer, from this piece.
- * Assume that we want to complete the piece by going through the piece in 
- * sequential blocks. */
-void bt_piece_poll_block_request(
-    bt_piece_t * me,
-    bt_block_t * request
-)
+void bt_piece_poll_block_request(bt_piece_t * me, bt_block_t * request)
 {
     int offset, len, blk_size;
 
@@ -413,10 +380,7 @@ void bt_piece_poll_block_request(
 
 }
 
-void bt_piece_giveback_block(
-    bt_piece_t * me,
-    bt_block_t * b
-)
+void bt_piece_giveback_block(bt_piece_t * me, bt_block_t * b)
 {
 //    printf("giveback: %d %d\n", b->offset, b->offset + b->len);
 //    sc_print_contents(priv(me)->progress_requested);
@@ -431,32 +395,22 @@ void bt_piece_giveback_block(
 //    sc_print_contents(priv(me)->progress_downloaded);
 }
 
-void bt_piece_set_complete(
-    bt_piece_t * me,
-    int yes
-)
+void bt_piece_set_complete(bt_piece_t * me, int yes)
 {
     priv(me)->is_completed = yes;
 }
 
-void bt_piece_set_idx(
-    bt_piece_t * me,
-    const int idx
-)
+void bt_piece_set_idx(bt_piece_t * me, const int idx)
 {
     me->idx = idx;
 }
 
-int bt_piece_get_idx(
-    bt_piece_t * me
-)
+int bt_piece_get_idx(bt_piece_t * me)
 {
     return me->idx;
 }
 
-char *bt_piece_get_hash(
-    bt_piece_t * me
-)
+char *bt_piece_get_hash(bt_piece_t * me)
 {
     return priv(me)->sha1;
 }
@@ -467,9 +421,6 @@ int bt_piece_get_size(bt_piece_t * me)
     return priv(me)->piece_length;
 }
 
-/**
- * Write the block to the byte stream
- * @return 1 on success, 0 otherwise */
 int bt_piece_write_block_to_stream(
     bt_piece_t * me,
     bt_block_t * blk,
