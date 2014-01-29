@@ -30,7 +30,6 @@ enum {
     VALIDITY_INVALID
 };
 
-/*  bittorrent piece */
 typedef struct
 {
     /* idx must align with bt_piece_t */
@@ -89,7 +88,6 @@ int bt_piece_write_block(
     void* peer
 )
 {
-
     assert(me);
 
 #if 0 /*  debugging */
@@ -126,6 +124,7 @@ int bt_piece_write_block(
     sc_mark_complete(priv(me)->progress_requested, b->offset, b->len);
     sc_mark_complete(priv(me)->progress_downloaded, b->offset, b->len);
 
+#if 0
     /*  check the counter if it is fully downloaded */
     if (sc_is_complete(priv(me)->progress_downloaded))
     {
@@ -149,6 +148,7 @@ int bt_piece_write_block(
             return -1;
         }
     }
+#endif
  
 #if 0 /*  debugging */
     printf("%d left to go: %d/%d\n",
@@ -156,6 +156,9 @@ int bt_piece_write_block(
            sc_get_nbytes_completed(priv(me)->progress_downloaded),
            priv(me)->piece_length);
 #endif
+
+    if (sc_is_complete(priv(me)->progress_downloaded))
+        return 2;
 
     return 1;
 }
@@ -261,6 +264,7 @@ void *bt_piece_get_data(
 
 int bt_piece_is_valid(bt_piece_t * me)
 {
+    /* use a cached result */
     if (priv(me)->validity == VALIDITY_VALID)
     {
         return 1;
@@ -470,5 +474,26 @@ void bt_piece_drop_download_progress(bt_piece_t *me)
     priv(me)->validity = VALIDITY_NOTCHECKED;
     sc_mark_all_incomplete(priv(me)->progress_downloaded);
     sc_mark_all_incomplete(priv(me)->progress_requested);
+}
+
+/**
+ * Validate the piece
+ * @return 1 if valid, -1 if invalid, otherwise 0 */
+int bt_piece_validate(bt_piece_t* me)
+{
+    /*  check the counter if it is fully downloaded */
+    if (!sc_is_complete(priv(me)->progress_downloaded))
+    {
+        return 0;
+    }
+    else if (bt_piece_is_valid(me))
+    {
+        priv(me)->is_completed = TRUE;
+        return 1;
+    }
+    else
+    {
+        return -1;
+    }
 }
 

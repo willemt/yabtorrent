@@ -25,6 +25,8 @@ void *bt_piece_read_block(bt_piece_t *pceo, void *caller, const bt_block_t * b);
  * @return 1 if complete; 0 otherwise */
 int bt_piece_is_complete(bt_piece_t * me);
 
+/**
+ * @return 1 if piece completely downloaded, otherwise 0 */
 int bt_piece_is_downloaded(bt_piece_t * me);
 
 /**
@@ -39,7 +41,7 @@ int bt_piece_num_peers(bt_piece_t *me);
 
 /**
  * Add this data to the piece
- * @return 1 on success, 2 if now complete, -1 if now invalid, otherwise 0 */
+ * @return 1 on success, 2 if now completely downloaded, otherwise 0 */
 int bt_piece_write_block(
     bt_piece_t *me,
     void *caller,
