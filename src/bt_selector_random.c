@@ -21,7 +21,6 @@
 #include "linked_list_queue.h"
 #include "linked_list_hashmap.h"
 #include "bag.h"
-#include "heap.h"
 
 /*  random  */
 typedef struct
@@ -217,7 +216,6 @@ int bt_random_selector_poll_best_piece(
 )
 {
     random_t *rf = r;
-    heap_t *hp;
     peer_t *pr;
     int piece_idx;
 

@@ -99,13 +99,6 @@ int bt_piece_write_block(
         return 0;
     }
 
-#if 0
-    if (avltree_get(priv(me)->peers_blacklisted,peer))
-    {
-        return 0;
-    }
-#endif
-
     avltree_insert(priv(me)->peers, peer, peer);
 
     assert(priv(me)->disk->write_block);
@@ -124,32 +117,6 @@ int bt_piece_write_block(
     sc_mark_complete(priv(me)->progress_requested, b->offset, b->len);
     sc_mark_complete(priv(me)->progress_downloaded, b->offset, b->len);
 
-#if 0
-    /*  check the counter if it is fully downloaded */
-    if (sc_is_complete(priv(me)->progress_downloaded))
-    {
-        if (bt_piece_is_valid(me))
-        {
-            bt_block_t p = {
-                .piece_idx = b->piece_idx,
-                .len = priv(me)->piece_length,
-                .offset = 0
-            };
-
-            if (priv(me)->disk->flush_block)
-                priv(me)->disk->flush_block(priv(me)->disk_udata, me, &p);
-
-            priv(me)->is_completed = TRUE;
-
-            return 2;
-        }
-        else
-        {
-            return -1;
-        }
-    }
-#endif
- 
 #if 0 /*  debugging */
     printf("%d left to go: %d/%d\n",
            me->idx,
@@ -278,26 +245,23 @@ int bt_piece_is_complete(bt_piece_t * me)
     {
         return TRUE;
     }
-    else
+
+    int off, ln;
+
+    sc_get_incomplete(priv(me)->progress_downloaded, &off, &ln,
+                              priv(me)->piece_length);
+
+    /*  if we haven't downloaded any of the file */
+    if (0 == off && ln == priv(me)->piece_length)
     {
-        int off, ln;
-
-        sc_get_incomplete(priv(me)->progress_downloaded, &off, &ln,
-                                  priv(me)->piece_length);
-
-        /*  if we haven't downloaded any of the file */
-        if (0 == off && ln == priv(me)->piece_length)
+        if (1 == bt_piece_is_valid(me))
         {
-            /* if sha1 matches properly - then we are done */
-            if (1 == bt_piece_is_valid(me))
-            {
-                priv(me)->is_completed = TRUE;
-                return TRUE;
-            }
+            priv(me)->is_completed = TRUE;
+            return TRUE;
         }
-
-        return FALSE;
     }
+
+    return FALSE;
 }
 
 int bt_piece_is_fully_requested(bt_piece_t * me)
@@ -337,16 +301,7 @@ void bt_piece_poll_block_request(bt_piece_t * me, bt_block_t * request)
 
 void bt_piece_giveback_block(bt_piece_t * me, bt_block_t * b)
 {
-//    printf("giveback: %d %d\n", b->offset, b->offset + b->len);
-//    sc_print_contents(priv(me)->progress_requested);
-//    printf("\n");
     sc_mark_incomplete(priv(me)->progress_requested, b->offset, b->len);
-//    sc_print_contents(priv(me)->progress_requested);
-//    printf("\n");
-//    printf("requested:\n");
-//    sc_print_contents(priv(me)->progress_requested);
-//    printf("downloaded:\n");
-//    sc_print_contents(priv(me)->progress_downloaded);
 }
 
 void bt_piece_set_complete(bt_piece_t * me, int yes)
@@ -398,11 +353,7 @@ int bt_piece_write_block_to_stream(
     return 1;
 }
 
-int bt_piece_write_block_to_str(
-    bt_piece_t * me,
-    bt_block_t * blk,
-    char *out
-)
+int bt_piece_write_block_to_str(bt_piece_t * me, bt_block_t * blk, char *out)
 {
     int offset, len;
     void *data;
