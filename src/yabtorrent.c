@@ -553,6 +553,7 @@ int main(int argc, char **argv)
     /* open listening port */
     void* netdata;
     int listen_port = args.port ? atoi(args.port) : 0;
+    printf("Going to listen on port: %d\n", listen_port);
     if (0 == (listen_port = peer_listen(&me, &netdata, listen_port,
                 __dispatch_from_buffer,
                 __on_peer_connect,
