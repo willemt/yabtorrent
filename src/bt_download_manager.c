@@ -28,7 +28,6 @@
 #include "sparse_counter.h"
 
 #include "pwp_connection.h"
-#include "pwp_handshaker.h"
 #include "pwp_msghandler.h"
 
 #include "bt.h"
@@ -180,11 +179,11 @@ int bt_dm_dispatch_from_buffer(
     /* handle handshake */
     if (!pwp_conn_flag_is_set(p->pc, PC_HANDSHAKE_RECEIVED))
     {
-        switch (pwp_handshaker_dispatch_from_buffer(p->mh, &buf, &len))
+        switch (me->cb.handshaker_dispatch_from_buffer(p->mh, &buf, &len))
         {
         case 1:
             /* we're done with handshaking */
-            pwp_handshaker_release(p->mh);
+            me->cb.handshaker_release(p->mh);
             p->mh = pwp_msghandler_new(p->pc);
             pwp_conn_set_state(p->pc, PC_HANDSHAKE_RECEIVED);
             __log(me, NULL, "send,bitfield");
@@ -245,7 +244,7 @@ int bt_dm_peer_connect(void *me_, void* conn_ctx, char *ip, const int port)
         }
     }
 
-    pwp_handshaker_send_handshake(me_, peer,
+    me->cb.handshaker_send_handshake(me_, peer,
         __FUNC_peerconn_send_to_peer,
         config_get(me->cfg,"infohash"),
         config_get(me->cfg,"my_peerid"));
@@ -698,7 +697,7 @@ void *bt_dm_add_peer(bt_dm_t* me_,
         }
     }
 
-    p->mh = pwp_handshaker_new(
+    p->mh = me->cb.handshaker_new(
             config_get(me->cfg,"infohash"),
             config_get(me->cfg,"my_peerid"));
 

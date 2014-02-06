@@ -249,6 +249,35 @@ typedef struct
 
     func_log_f log;
 
+    /**
+     * @return newly initialised handshaker */
+    void* (*handshaker_new)(unsigned char* expected_info_hash, unsigned char* mypeerid);
+
+    /**
+     * deallocate handshaker */
+    void (*handshaker_release)(void* hs);
+
+    /**
+     *  Receive handshake from other end
+     *  Disconnect on any errors
+     *  @return 1 succesful handshake; 0 unfinished reading; -1 bad handshake */
+    int (*handshaker_dispatch_from_buffer)(void* me_,
+            const unsigned char** buf,
+            unsigned int* len);
+
+    /**
+     * Send the handshake
+     * @return 0 on failure; 1 otherwise */
+    int (*handshaker_send_handshake)(
+        void* callee,
+        void* udata,
+        int (*send)(void *callee,
+            const void *udata,
+            const void *send_data,
+            const int len),
+        char* expected_ih,
+        char* my_pi);
+
 } bt_dm_cbs_t;
 
 /**

@@ -519,6 +519,9 @@ int main(int argc, char **argv)
             .peer_disconnect = peer_disconnect, 
             .call_exclusively = on_call_exclusively,
             .log = __log
+            .handshaker_new = pwp_handshaker_new,
+            .handshaker_release = pwp_handshaker_release,
+            .handshaker_dispatch_from_buffer = pwp_handshaker_dispatch_from_buffer,
             }), NULL);
 
     if (args.info)
