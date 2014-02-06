@@ -120,7 +120,8 @@ def scenario_test(bld, src, ccflag=None):
             "src/mt19937ar.c",
             "tests/mock_torrent.c",
             "tests/mock_client.c",
-            bld.env.CONTRIB_PATH+"CBipBuffer/bipbuffer.c"
+            bld.env.CONTRIB_PATH+"CBipBuffer/bipbuffer.c",
+            bld.env.CONTRIB_PATH+"PeerWireProtocol/pwp_handshaker.c"
             ],
         stlibpath = ['libuv','.'],
         target=src[:-2],
@@ -135,6 +136,9 @@ def scenario_test(bld, src, ccflag=None):
         includes=[
             "./include",
             "./tests",
+            bld.env.CONTRIB_PATH+"CBitfield",
+            bld.env.CONTRIB_PATH+"CSimpleBitstream",
+            bld.env.CONTRIB_PATH+"PeerWireProtocol",
             bld.env.CONTRIB_PATH+"CConfig-re",
             bld.env.CONTRIB_PATH+"CBTTrackerClient",
             bld.env.CONTRIB_PATH+"CHeaplessBencodeReader",
@@ -304,5 +308,6 @@ def build(bld):
             cp+"CHashMapViaLinkedList",
             cp+"CHeaplessBencodeReader",
             cp+"CTrackerClient/http-parser",
+            cp+"PeerWireProtocol",
            ])
 

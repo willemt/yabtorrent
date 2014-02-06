@@ -23,6 +23,9 @@
 #include "mock_torrent.h"
 #include "mock_client.h"
 
+/* for handshaker funcs */
+#include "pwp_handshaker.h"
+
 #include "bt_piece_db.h"
 #include "bt_diskmem.h"
 #include "config.h"
@@ -136,7 +139,11 @@ client_t* mock_client_setup(int piecelen)
         .peer_send = peer_send,
         .peer_disconnect = peer_disconnect,
         .call_exclusively = call_exclusively_pass_through,
-        .log = __log
+        .log = __log,
+        .handshaker_new = pwp_handshaker_new,
+        .handshaker_release = pwp_handshaker_release,
+        .handshaker_dispatch_from_buffer = pwp_handshaker_dispatch_from_buffer,
+        .handshaker_send_handshake = pwp_handshaker_send_handshake
         }), cli);
     bt_dm_set_piece_selector(cli->bt, 
         &((bt_pieceselector_i) {
