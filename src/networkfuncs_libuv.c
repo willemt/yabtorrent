@@ -24,7 +24,9 @@ typedef struct {
                         unsigned int len);
     int (*func_process_connection) (void *, void* nethandle, char *ip, int iplen);
     void (*func_process_connection_fail) (void *, void* nethandle);
+
     void* callee;
+
     /*  socket for sending on */
     uv_stream_t* stream;
 } connection_attempt_t;
@@ -171,25 +173,44 @@ static void __on_new_connection(uv_stream_t *t, int status)
     uv_tcp_t *tc;
     connection_attempt_t *ca, *ca_me;
 
+    printf("connection!\n");
+
     tc = malloc(sizeof(uv_tcp_t));
     if (0 != uv_tcp_init(uv_default_loop(), tc))
     {
         printf("FAILED TCP socket creation\n");
         return;
     }
-    /* pass through callbacks */
+
     ca_me = t->data;
+
+    /* we need to create a new connection attempt for this peer */
     tc->data = ca = calloc(1,sizeof(connection_attempt_t));
     ca->func_process_data = ca_me->func_process_data;
     ca->func_process_connection = ca_me->func_process_connection;
     ca->func_process_connection_fail = ca_me->func_process_connection_fail;
     ca->callee = ca_me->callee;
+    ca->stream = (uv_stream_t*)tc;
 
     if (uv_accept(t, (uv_stream_t*)tc) == 0)
     {
         uv_read_start((uv_stream_t*)tc, __alloc_cb, __read_cb);
-        /* TODO: pass on IP:Port */
-        ca->func_process_connection(ca->callee, ca, "", 0);
+
+        /* get peer's ip and port */
+        int ip_len = 3 * 4 + 3 + 1;
+        char* ip = malloc(ip_len);
+        struct sockaddr_in peer_addr;
+        int namelen = sizeof(peer_addr);
+        if (0 != uv_tcp_getsockname((uv_tcp_t*)tc,
+                    (struct sockaddr*)&peer_addr,
+                    &namelen))
+        {
+        }
+
+        uv_ip4_name(&peer_addr, ip, ip_len);
+
+        ca->func_process_connection(ca->callee, ca,
+                ip, ntohs(peer_addr.sin_port));
     }
     else
     {
@@ -230,6 +251,7 @@ int peer_listen(void* caller,
     
     uv_ip4_addr("0.0.0.0", port, &bind_addr);
     uv_tcp_bind(t, (const struct sockaddr*)&bind_addr);//, 0);
+    t->data = ca;
     if (0 != uv_listen((uv_stream_t*)t, 128, __on_new_connection))
     {
         printf("ERROR: listen error\n");

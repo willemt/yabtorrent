@@ -278,6 +278,9 @@ typedef struct
         char* expected_ih,
         char* my_pi);
 
+    int (*msghandler_dispatch_from_buffer)(void *mh,
+        const unsigned char* buf,
+        unsigned int len);
 } bt_dm_cbs_t;
 
 /**
@@ -292,7 +295,7 @@ void *bt_dm_new();
 int bt_dm_release(bt_dm_t* me_);
 
 /**
- * Add the peer to the download manager
+ * Add this peer to the download manager, if we haven't come across them
  *
  * @pararm conn_ctx Context for this peer
  * @param ip IP that the peer is from
@@ -337,6 +340,11 @@ void bt_dm_periodic(bt_dm_t* me_, bt_dm_stats_t *stats);
 
 /**
  * Set callback functions
+ * 
+ * If funcs.handshaker_dispatch_from_buffer is not set:
+ *  No handshaking will occur. This is useful for client variants which
+ *  establish a handshake earlier at a higher level.
+ *
  * @param funcs Structure containing callbacks
  * @param cb_ctx Context included with each callback */
 void bt_dm_set_cbs(bt_dm_t* me_, bt_dm_cbs_t * funcs, void* cb_ctx);

@@ -90,7 +90,7 @@ static void __log(void *udata, void *src, const char *buf, ...)
 //    int fd = (unsigned long) udata;
     struct timeval tv;
 
-    //printf("%s\n", buf);
+//    printf("%s\n", buf);
     gettimeofday(&tv, NULL);
     sprintf(stamp, "%d,%0.2f,", (int) tv.tv_sec, (float) tv.tv_usec / 100000);
 //    write(fd, stamp, strlen(stamp));
@@ -231,7 +231,7 @@ static void __on_tc_add_peer(void* callee,
     peer_nethandle = NULL;
     sprintf(ip_string,"%.*s", ip_len, ip);
 
-#if 1 /* debug */
+#if 0 /* debug */
     printf("adding peer: %s %d\n", ip_string, port);
 #endif
 
@@ -548,7 +548,7 @@ int main(int argc, char **argv)
     periodic_req = malloc(sizeof(uv_timer_t));
     periodic_req->data = &me;
     uv_timer_init(loop, periodic_req);
-    uv_timer_start(periodic_req, __periodic, 0, 1000);
+    uv_timer_start(periodic_req, __periodic, 0, 500);
 
     /* open listening port */
     void* netdata;

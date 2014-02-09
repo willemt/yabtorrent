@@ -161,6 +161,57 @@ void __FUNC_peer_stats_visitor(void* cb_ctx, void* peer, void* udata)
     ps->urate = pwp_conn_get_upload_rate(p->pc);
 }
 
+/**
+ * @return 0 if handshake not complete, 1 otherwise */
+static int __handle_handshake(
+    bt_dm_private_t *me,
+    bt_peer_t* p,
+    const unsigned char** buf,
+    int *len)
+{
+    // TODO: needs test case
+    if (!me->cb.handshaker_dispatch_from_buffer)
+    {
+        /* If funcs.handshaker_dispatch_from_buffer is not set:
+         *  No handshaking will occur. This is useful for client variants which
+         *  establish a handshake earlier at a higher level. */
+        pwp_conn_set_state(p->pc, PC_HANDSHAKE_RECEIVED);
+        return 1;
+    }
+
+    switch (me->cb.handshaker_dispatch_from_buffer(p->mh, buf, len))
+    {
+    case 1:
+        /* we're done with handshaking */
+        me->cb.handshaker_release(p->mh);
+        p->mh = pwp_msghandler_new(p->pc,NULL,0,0);
+        pwp_conn_set_state(p->pc, PC_HANDSHAKE_RECEIVED);
+        __log(me, NULL, "handshake,successful, %lx", (unsigned long)p->pc);
+        if (0 == pwp_send_bitfield(config_get_int(me->cfg,"npieces"),
+                me->pieces_completed, __FUNC_peerconn_send_to_peer, me, p))
+        {
+            bt_dm_remove_peer((void*)me, p);
+        }
+        return 1;
+    case -1:
+        __log(me, NULL, "handshake,failed");
+        return 0;
+    default:
+        return 0;
+    }
+}
+
+static int __msghandler_dispatch_from_buffer(bt_dm_private_t *me,
+        void *peer_conn_ctx,
+        const unsigned char* buf,
+        unsigned int len)
+{
+    if (me->cb.msghandler_dispatch_from_buffer)
+        return me->cb.msghandler_dispatch_from_buffer(me->cb_ctx, buf, len);
+    return pwp_msghandler_dispatch_from_buffer(me->mh, buf, len);
+}
+
+// TODO: needs test cases
 int bt_dm_dispatch_from_buffer(
         void *me_,
         void *peer_conn_ctx,
@@ -176,37 +227,23 @@ int bt_dm_dispatch_from_buffer(
         return 0;
     }
 
-    /* handle handshake */
     if (!pwp_conn_flag_is_set(p->pc, PC_HANDSHAKE_RECEIVED))
-    {
-        switch (me->cb.handshaker_dispatch_from_buffer(p->mh, &buf, &len))
+        switch (__handle_handshake(me,p,&buf,&len))
         {
-        case 1:
-            /* we're done with handshaking */
-            me->cb.handshaker_release(p->mh);
-            p->mh = pwp_msghandler_new(p->pc);
-            pwp_conn_set_state(p->pc, PC_HANDSHAKE_RECEIVED);
-            __log(me, NULL, "send,bitfield");
-            if (0 == pwp_send_bitfield(config_get_int(me->cfg,"npieces"),
-                    me->pieces_completed, __FUNC_peerconn_send_to_peer, me, p))
-            {
-                bt_dm_remove_peer(me_,p);
-            }
-            break;
-        default:
-            return 0;
+            case 1: break;
+            case 0: /* error */ return 1;
         }
-    }
 
     /* handle regular PWP traffic */
-    switch (pwp_msghandler_dispatch_from_buffer(p->mh, buf, len))
+    switch (__msghandler_dispatch_from_buffer(me, buf, len))
     {
         case 1:
             /* successful */
             break;
         case 0:
             /* error, we need to disconnect */
-            __log(me_,NULL,"disconnecting,%s", "bad msg detected by PWP handler");
+            __log(me_,NULL,"disconnecting,%lx,%s",
+                    (unsigned long)p->pc, "bad msg detected by PWP handler");
             bt_dm_remove_peer(me_,p);
             break;
     }
@@ -249,7 +286,6 @@ int bt_dm_peer_connect(void *me_, void* conn_ctx, char *ip, const int port)
         config_get(me->cfg,"infohash"),
         config_get(me->cfg,"my_peerid"));
 
-//    pwp_conn_send_handshake(peer->pc);
 //    __log(me_,NULL,"CONNECTED: peerid:%d ip:%s", netpeerid, ip);
     return 1;
 }
@@ -674,6 +710,9 @@ void *bt_dm_add_peer(bt_dm_t* me_,
             config_get_int(me->cfg,"piece_length"));
     pwp_conn_set_peer(pc, p);
 
+    __log(me,NULL,"added peer %.*s:%d %lx",
+            ip_len, ip, port, (unsigned long)pc);
+
     /* the remote peer will have always send a handshake */
     if (NULL == me->cb.peer_connect)
     {
@@ -833,7 +872,6 @@ void bt_dm_check_pieces(bt_dm_t* me_)
         bt_piece_t* p = me->ipdb.get_piece(me->pdb, i);
 
         if (!p) continue;
-        //if (!bt_piece_is_downloaded(p)) continue;
         if (!bt_piece_is_complete(p))
         {
             bt_job_t * j = malloc(sizeof(bt_job_t));
