@@ -165,6 +165,10 @@ typedef struct {
 
 } bt_pieceselector_i;
 
+#define BT_HANDSHAKER_DISPATCH_SUCCESS 1
+#define BT_HANDSHAKER_DISPATCH_REMAINING 0
+#define BT_HANDSHAKER_DISPATCH_ERROR -1
+
 typedef struct
 {
     /**

@@ -181,28 +181,30 @@ static int __handle_handshake(
 
     switch (me->cb.handshaker_dispatch_from_buffer(p->mh, buf, len))
     {
-    case 1:
-        /* we're done with handshaking */
+    case BT_HANDSHAKER_DISPATCH_SUCCESS:
         me->cb.handshaker_release(p->mh);
+        pwp_conn_set_state(p->pc, PC_HANDSHAKE_RECEIVED);
+        __log(me, NULL, "handshake,successful, %lx", (unsigned long)p->pc);
 
+        /* use custom msghandler if possible */
         if (me->cb.msghandler_new)
             p->mh = me->cb.msghandler_new(me->cb_ctx, p->pc);
         else p->mh = pwp_msghandler_new(p->pc);
 
-        pwp_conn_set_state(p->pc, PC_HANDSHAKE_RECEIVED);
-        __log(me, NULL, "handshake,successful, %lx", (unsigned long)p->pc);
         if (0 == pwp_send_bitfield(config_get_int(me->cfg,"npieces"),
                 me->pieces_completed, __FUNC_peerconn_send_to_peer, me, p))
         {
-            bt_dm_remove_peer((void*)me, p);
+            __FUNC_peerconn_disconnect((void*)me, p, "couldn't send bitfield");
         }
         return 1;
-    case -1:
+    case BT_HANDSHAKER_DISPATCH_REMAINING:
+        return 0;
+    case BT_HANDSHAKER_DISPATCH_ERROR:
         __log(me, NULL, "handshake,failed");
         return 0;
-    default:
-        return 0;
     }
+
+    return 0;
 }
 
 // TODO: needs test cases
@@ -221,23 +223,21 @@ int bt_dm_dispatch_from_buffer(
     }
 
     if (!pwp_conn_flag_is_set(p->pc, PC_HANDSHAKE_RECEIVED))
+    {
         switch (__handle_handshake(me,p,&buf,&len))
         {
             case 1: break;
             case 0: /* error */ return 1;
         }
+    }
 
     switch (pwp_msghandler_dispatch_from_buffer(me, buf, len))
     {
-        case 1:
-            /* successful */
-            break;
-        case 0:
-            /* error, we need to disconnect */
-            __log(me_,NULL,"disconnecting,%lx,%s",
-                    (unsigned long)p->pc, "bad msg detected by PWP handler");
-            bt_dm_remove_peer(me_,p);
-            break;
+    case 1: /* successful */
+        break;
+    case 0: /* error, we need to disconnect */
+        __FUNC_peerconn_disconnect(me_, p, "bad msg detected by PWP handler");
+        break;
     }
 
     return 1;
@@ -284,14 +284,12 @@ int bt_dm_peer_connect(void *me_, void* conn_ctx, char *ip, const int port)
 
 static int __get_drate(const void *me_, const void *pc)
 {
-//    return pwp_conn_get_download_rate(pc);
-    return 0;
+    return pwp_conn_get_download_rate(pc);
 }
 
 static int __get_urate(const void *me_, const void *pc)
 {
-//    return pwp_conn_get_upload_rate(pc);
-    return 0;
+    return pwp_conn_get_upload_rate(pc);
 }
 
 static int __get_is_interested(void *me_, void *pc)
@@ -533,15 +531,13 @@ int __FUNC_peerconn_pushblock(
         bt_block_t *b,
         const void *data)
 {
-    bt_peer_t * peer = pr;
+    bt_peer_t *peer = pr;
     bt_dm_private_t *me = me_;
     bt_piece_t *p;
 
     assert(me->ipdb.get_piece);
 
     p = me->ipdb.get_piece(me->pdb, b->piece_idx);
-
-    assert(p);
 
     switch (bt_piece_write_block(p, NULL, b, data, peer))
     {
@@ -555,24 +551,11 @@ int __FUNC_peerconn_pushblock(
         __call_exclusively(me, &me->job_lock, j, __offer_job);
     }
     break;
-    
-    case BT_PIECE_WRITE_BLOCK_SUCCESS: 
-
-    break;
-
+    case BT_PIECE_WRITE_BLOCK_SUCCESS: break;
     case 0:
         printf("error writing block\n");
         break;
-
     }
-#if 0
-        /* dump everything to disk if the whole download is complete */
-        if (bt_piecedb_all_pieces_are_complete(me))
-        {
-            me->am_seeding = 1;
-//            bt_diskcache_disk_dump(me->dc);
-        }
-#endif
 
     return 1;
 }
@@ -587,8 +570,7 @@ void __FUNC_peerconn_log(void *me_, void *src_peer, const char *buf, ...)
     __FUNC_log(me_,NULL,buffer);
 }
 
-int __FUNC_peerconn_disconnect(void *me_,
-        void* pr, char *reason)
+int __FUNC_peerconn_disconnect(void *me_, void* pr, char *reason)
 {
     bt_dm_private_t *me = me_;
     bt_peer_t * peer = pr;
@@ -609,27 +591,20 @@ static void __FUNC_peerconn_peer_have_piece(
     me->ips.peer_have_piece(me->pselector, peer, idx);
 }
 
-static void __FUNC_peerconn_giveback_block(
-        void* bt,
-        void* peer,
-        bt_block_t* b
-        )
+static void __FUNC_peerconn_giveback_block(void* bt, void* peer, bt_block_t* b)
 {
     bt_dm_private_t *me = bt;
-    void* p;
+    void* pce;
 
     if (b->len < 0)
         return;
 
-    p = me->ipdb.get_piece(me->pdb, b->piece_idx);
-    assert(p);
-
-    bt_piece_giveback_block(p, b);
+    pce = me->ipdb.get_piece(me->pdb, b->piece_idx);
+    bt_piece_giveback_block(pce, b);
     me->ips.peer_giveback_piece(me->pselector, peer, b->piece_idx);
 }
 
-static void __FUNC_peerconn_write_block_to_stream(
-        void* cb_ctx,
+static void __FUNC_peerconn_write_block_to_stream(void* cb_ctx,
         bt_block_t * blk,
         unsigned char ** msg)
 {
@@ -899,7 +874,6 @@ void *bt_dm_new()
     config_set_if_not_set(me->cfg,"npieces", "0");
     config_set_if_not_set(me->cfg,"piece_length", "0");
     config_set_if_not_set(me->cfg,"download_path", ".");
-    //config_set_if_not_set(me->cfg,"max_cache_mem_bytes", "1000000");
     config_set_if_not_set(me->cfg,"shutdown_when_complete", "0");
 
     /*  set leeching choker */

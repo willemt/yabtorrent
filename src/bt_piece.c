@@ -20,6 +20,10 @@
 #include "bt_block.h"
 #include "bt.h"
 #include "bt_local.h"
+
+/* for bt_piece_write_block return codes */
+#include "bt_piece.h"
+
 #include "bt_sha1.h"
 #include "sparse_counter.h"
 #include "avl_tree.h"
