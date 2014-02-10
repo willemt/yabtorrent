@@ -133,7 +133,6 @@ static int __FUNC_peerconn_send_to_peer(void *me_,
                                         const void *data,
                                         const int len);
 
-
 void __FUNC_peer_periodic(void* cb_ctx, void* peer, void* udata)
 {
     bt_peer_t* p = peer;
@@ -144,7 +143,6 @@ void __FUNC_peer_periodic(void* cb_ctx, void* peer, void* udata)
 }
 
 /**
- * Peer stats visitor
  * Processes each peer connection retrieving stats */
 void __FUNC_peer_stats_visitor(void* cb_ctx, void* peer, void* udata)
 {
@@ -169,7 +167,7 @@ static int __handle_handshake(
     const unsigned char** buf,
     int *len)
 {
-    // TODO: needs test case
+    /* TODO: needs test case */
     if (!me->cb.handshaker_dispatch_from_buffer)
     {
         /* If funcs.handshaker_dispatch_from_buffer is not set:
@@ -207,7 +205,7 @@ static int __handle_handshake(
     return 0;
 }
 
-// TODO: needs test cases
+/* TODO: needs test cases */
 int bt_dm_dispatch_from_buffer(
         void *me_,
         void *peer_conn_ctx,
@@ -277,8 +275,6 @@ int bt_dm_peer_connect(void *me_, void* conn_ctx, char *ip, const int port)
         __FUNC_peerconn_send_to_peer,
         config_get(me->cfg,"infohash"),
         config_get(me->cfg,"my_peerid"));
-
-//    __log(me_,NULL,"CONNECTED: peerid:%d ip:%s", netpeerid, ip);
     return 1;
 }
 
@@ -318,7 +314,6 @@ static bt_choker_peer_i iface_choker_peer = {
 static void __leecher_peer_reciprocation(void *me_)
 {
     bt_dm_private_t *me = me_;
-
     bt_leeching_choker_decide_best_npeers(me->lchoke);
     eventtimer_push_event(me->ticker, 10, me, __leecher_peer_reciprocation);
 }
@@ -326,7 +321,6 @@ static void __leecher_peer_reciprocation(void *me_)
 static void __leecher_peer_optimistic_unchoke(void *me_)
 {
     bt_dm_private_t *me = me_;
-
     bt_leeching_choker_optimistically_unchoke(me->lchoke);
     eventtimer_push_event(me->ticker, 30, me, __leecher_peer_optimistic_unchoke);
 }
@@ -382,15 +376,15 @@ typedef struct {
 static void* __offer_job(void *me_, void* j_)
 {
     bt_dm_private_t* me = me_;
-
     llqueue_offer(me->jobs, j_);
-    return NULL;
+
+    /* unused */
+    return NULL; 
 }
 
 static void* __poll_job(void *me_, void* __unused)
 {
     bt_dm_private_t* me = me_;
-
     return llqueue_poll(me->jobs);
 }
 
@@ -434,7 +428,7 @@ static void __job_dispatch_validate_piece(bt_dm_private_t* me, bt_job_t* j)
 
     switch (bt_piece_validate(p))
     {
-    case 1: /* complete piece */
+    case BT_PIECE_VALIDATE_COMPLETE_PIECE:
     {
         __log(me, NULL, "client,piece completed,pieceidx=%d", piece_idx);
         assert(me->ips.have_piece);
@@ -444,10 +438,10 @@ static void __job_dispatch_validate_piece(bt_dm_private_t* me, bt_job_t* j)
     }
         break;
 
-    case 0: /* error */
+    case BT_PIECE_VALIDATE_ERROR: /* error */
         break;
 
-    case -1: /* invalid piece */
+    case BT_PIECE_VALIDATE_INVALID_PIECE: /* invalid piece */
     {
         /* only peer involved in piece download, therefore treat as
          * untrusted and blacklist */
@@ -462,14 +456,13 @@ static void __job_dispatch_validate_piece(bt_dm_private_t* me, bt_job_t* j)
         else 
         {
             int i = 0;
-            void* peer2;
+            void* p2;
 
-            for (peer2 = bt_piece_get_peers(p,&i);
-                 peer2;
-                 peer2 = bt_piece_get_peers(p,&i))
+            for (p2 = bt_piece_get_peers(p,&i); p2;
+                    p2 = bt_piece_get_peers(p,&i))
             {
                 bt_blacklist_add_peer_as_potentially_blacklisted(
-                        me->blacklist,p,peer2);
+                        me->blacklist, p, p2);
             }
 
             bt_piece_drop_download_progress(p);
@@ -478,7 +471,6 @@ static void __job_dispatch_validate_piece(bt_dm_private_t* me, bt_job_t* j)
     }
         break;
     }
-
 }
 
 static void __dispatch_job(bt_dm_private_t* me, bt_job_t* j)
@@ -492,7 +484,7 @@ static void __dispatch_job(bt_dm_private_t* me, bt_job_t* j)
     default: assert(0); break;
     }
 
-    // TODO: replace with mempool
+    /* TODO: replace with mempool */
     free(j);
 }
 
@@ -580,14 +572,9 @@ int __FUNC_peerconn_disconnect(void *me_, void* pr, char *reason)
     return 1;
 }
 
-static void __FUNC_peerconn_peer_have_piece(
-        void* bt,
-        void* peer,
-        int idx
-        )
+static void __FUNC_peerconn_peer_have_piece(void* bt, void* peer, int idx)
 {
     bt_dm_private_t *me = bt;
-
     me->ips.peer_have_piece(me->pselector, peer, idx);
 }
 
@@ -624,10 +611,10 @@ static void __FUNC_peerconn_write_block_to_stream(void* cb_ctx,
 }
 
 void *bt_dm_add_peer(bt_dm_t* me_,
-                              const char *peer_id,
-                              const int peer_id_len,
-                              const char *ip, const int ip_len, const int port,
-                              void* conn_ctx)
+                      const char *peer_id,
+                      const int peer_id_len,
+                      const char *ip, const int ip_len, const int port,
+                      void* conn_ctx)
 {
     bt_dm_private_t *me = (void*)me_;
     bt_peer_t* p;
@@ -678,12 +665,8 @@ void *bt_dm_add_peer(bt_dm_t* me_,
     __log(me,NULL,"added peer %.*s:%d %lx",
             ip_len, ip, port, (unsigned long)pc);
 
-    /* the remote peer will have always send a handshake */
     if (NULL == me->cb.peer_connect)
-    {
-        //fprintf(stderr, "cant add, peer_connect function not available\n");
         return NULL;
-    }
 
     if (!conn_ctx)
     {
@@ -720,9 +703,7 @@ int bt_dm_remove_peer(bt_dm_t* me_, void* pr)
         __log(me_,NULL,"ERROR,couldn't remove peer");
         return 0;
     }
-
     me->ips.remove_peer(me->pselector, peer);
-
     return 1;
 }
 
@@ -759,6 +740,7 @@ cleanup:
 
     if (stats)
     {
+        /* enlarge stats array */
         if (stats->npeers_size < bt_peermanager_count(me->pm))
         {
             stats->npeers_size = bt_peermanager_count(me->pm);
@@ -775,7 +757,6 @@ cleanup:
 void bt_dm_set_cbs(bt_dm_t* me_, bt_dm_cbs_t * func, void* cb_ctx)
 {
     bt_dm_private_t *me = (void*)me_;
-
     memcpy(&me->cb, func, sizeof(bt_dm_cbs_t));
     me->cb_ctx = cb_ctx;
 }
@@ -789,14 +770,12 @@ void* bt_dm_get_config(bt_dm_t* me_)
 int bt_dm_get_num_peers(bt_dm_t* me_)
 {
     bt_dm_private_t *me = (void*)me_;
-
     return bt_peermanager_count(me->pm);
 }
 
 void *bt_dm_get_piecedb(bt_dm_t* me_)
 {
     bt_dm_private_t *me = (void*)me_;
-
     return me->pdb;
 }
 
@@ -812,7 +791,6 @@ void bt_dm_set_piece_selector(
         me->pselector = me->ips.new(0);
     else
         me->pselector = piece_selector;
-
     bt_dm_check_pieces(me_);
 }
 
@@ -847,7 +825,7 @@ void bt_dm_check_pieces(bt_dm_t* me_)
 
 int bt_dm_release(bt_dm_t* me_)
 {
-    //TODO add destructors
+    /* TODO add destructors */
     return 1;
 }
 
@@ -889,13 +867,11 @@ void *bt_dm_new()
 
     /* we don't need to specify the amount of pieces we need */
     me->pieces_completed = sc_init(0);
-
     return me;
 }
 
 void *bt_peer_get_conn_ctx(void* pr)
 {
     bt_peer_t* peer = pr;
-
     return peer->conn_ctx;
 }

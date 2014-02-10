@@ -58,6 +58,10 @@ int bt_piece_get_idx(bt_piece_t * me);
  * @return data of piece */
 void *bt_piece_get_data(bt_piece_t * me);
 
+#define BT_PIECE_VALIDATE_COMPLETE_PIECE 1
+#define BT_PIECE_VALIDATE_ERROR 0
+#define BT_PIECE_VALIDATE_INVALID_PIECE -1
+
 /**
  * Validate the piece
  * I/O performed.
