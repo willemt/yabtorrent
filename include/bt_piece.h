@@ -75,6 +75,9 @@ int bt_piece_get_size(bt_piece_t * me);
  * @return data that the block represents */
 void *bt_piece_read_block(bt_piece_t *pceo, void *caller, const bt_block_t * b);
 
+#define BT_PIECE_WRITE_BLOCK_COMPLETELY_DOWNLOADED 2
+#define BT_PIECE_WRITE_BLOCK_SUCCESS 1
+
 /**
  * Add this data to the piece
  * I/O performed.

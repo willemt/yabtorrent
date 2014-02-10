@@ -125,9 +125,9 @@ int bt_piece_write_block(
 #endif
 
     if (sc_is_complete(priv(me)->progress_downloaded))
-        return 2;
+        return BT_PIECE_WRITE_BLOCK_COMPLETELY_DOWNLOADED;
 
-    return 1;
+    return BT_PIECE_WRITE_BLOCK_SUCCESS;
 }
 
 void *bt_piece_read_block(bt_piece_t *me, void *caller, const bt_block_t * b)

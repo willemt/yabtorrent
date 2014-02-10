@@ -184,7 +184,11 @@ static int __handle_handshake(
     case 1:
         /* we're done with handshaking */
         me->cb.handshaker_release(p->mh);
-        p->mh = pwp_msghandler_new(p->pc,NULL,0,0);
+
+        if (me->cb.msghandler_new)
+            p->mh = me->cb.msghandler_new(me->cb_ctx, p->pc);
+        else p->mh = pwp_msghandler_new(p->pc);
+
         pwp_conn_set_state(p->pc, PC_HANDSHAKE_RECEIVED);
         __log(me, NULL, "handshake,successful, %lx", (unsigned long)p->pc);
         if (0 == pwp_send_bitfield(config_get_int(me->cfg,"npieces"),
@@ -201,16 +205,6 @@ static int __handle_handshake(
     }
 }
 
-static int __msghandler_dispatch_from_buffer(bt_dm_private_t *me,
-        void *peer_conn_ctx,
-        const unsigned char* buf,
-        unsigned int len)
-{
-    if (me->cb.msghandler_dispatch_from_buffer)
-        return me->cb.msghandler_dispatch_from_buffer(me->cb_ctx, buf, len);
-    return pwp_msghandler_dispatch_from_buffer(me->mh, buf, len);
-}
-
 // TODO: needs test cases
 int bt_dm_dispatch_from_buffer(
         void *me_,
@@ -221,7 +215,6 @@ int bt_dm_dispatch_from_buffer(
     bt_dm_private_t *me = me_;
     bt_peer_t* p;
 
-    /* get the peer that this message is for via conn_ctx */
     if (!(p = bt_peermanager_conn_ctx_to_peer(me->pm, peer_conn_ctx)))
     {
         return 0;
@@ -234,8 +227,7 @@ int bt_dm_dispatch_from_buffer(
             case 0: /* error */ return 1;
         }
 
-    /* handle regular PWP traffic */
-    switch (__msghandler_dispatch_from_buffer(me, buf, len))
+    switch (pwp_msghandler_dispatch_from_buffer(me, buf, len))
     {
         case 1:
             /* successful */
@@ -553,7 +545,7 @@ int __FUNC_peerconn_pushblock(
 
     switch (bt_piece_write_block(p, NULL, b, data, peer))
     {
-    case 2: /* completely download */
+    case BT_PIECE_WRITE_BLOCK_COMPLETELY_DOWNLOADED:
     {
         /* TODO: replace malloc() with memory pool/arena */
         bt_job_t * j = malloc(sizeof(bt_job_t));
@@ -564,11 +556,11 @@ int __FUNC_peerconn_pushblock(
     }
     break;
     
-    case 1: /* no error */
+    case BT_PIECE_WRITE_BLOCK_SUCCESS: 
 
     break;
 
-    case 0: /* write error */
+    case 0:
         printf("error writing block\n");
         break;
 
@@ -593,7 +585,6 @@ void __FUNC_peerconn_log(void *me_, void *src_peer, const char *buf, ...)
 
     sprintf(buffer, "pwp,%s,%s", peer->peer_id, buf);
     __FUNC_log(me_,NULL,buffer);
-    //me->cb.log(me->cb_ctx, NULL, buffer);
 }
 
 int __FUNC_peerconn_disconnect(void *me_,
@@ -691,7 +682,6 @@ void *bt_dm_add_peer(bt_dm_t* me_,
     if (conn_ctx)
         p->conn_ctx = conn_ctx;
 
-    /* create a peer connection for this peer */
     void* pc = p->pc = pwp_conn_new();
     pwp_conn_set_cbs(pc, &((pwp_conn_cbs_t) {
         .log = __FUNC_peerconn_log,
@@ -774,21 +764,18 @@ void bt_dm_periodic(bt_dm_t* me_, bt_dm_stats_t *stats)
 
     /* TODO: pump out keep alive message */
 
-    /* process jobs */
     while (0 < llqueue_count(me->jobs))
     {
         void *j = __call_exclusively(me_, &me->job_lock, NULL, __poll_job);
         __dispatch_job(me,j);
     }
 
-    /*  shutdown if we are setup to not seed */
     if (1 == me->am_seeding
             && 1 == config_get_int(me->cfg,"shutdown_when_complete"))
     {
         goto cleanup;
     }
 
-    /* run each peer connection step */
     bt_peermanager_forall(me->pm,me,NULL,__FUNC_peer_periodic);
 
     /* TODO: dispatch eventtimer events */

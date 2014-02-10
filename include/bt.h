@@ -278,9 +278,13 @@ typedef struct
         char* expected_ih,
         char* my_pi);
 
+#if 0
     int (*msghandler_dispatch_from_buffer)(void *mh,
         const unsigned char* buf,
         unsigned int len);
+#endif
+
+    void* (*msghandler_new)(void* callee, void* pc);
 } bt_dm_cbs_t;
 
 /**
