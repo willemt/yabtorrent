@@ -39,6 +39,7 @@ typedef struct
     /* idx must align with bt_piece_t */
     int idx;
 
+    /* for marking peers as invalid piece givers */
     avltree_t* peers;
 
     int validity;
@@ -341,16 +342,16 @@ int bt_piece_write_block_to_stream(
 )
 {
     unsigned char *data;
-    int ii;
+    int i;
 
     if (!(data = __get_data(me)))
         return 0;
 
     data += blk->offset;
 
-    for (ii = 0; ii < blk->len; ii++)
+    for (i = 0; i < blk->len; i++)
     {
-        unsigned char val = *(data + ii);
+        unsigned char val = *(data + i);
         bitstream_write_ubyte(msg, val);
     }
 
@@ -380,13 +381,6 @@ void bt_piece_drop_download_progress(bt_piece_t *me)
 
 int bt_piece_validate(bt_piece_t* me)
 {
-#if 0
-    if (!sc_is_complete(priv(me)->progress_downloaded))
-    {
-        return 0;
-    }
-#endif
-
     void *data;
 
     if (!(data = __get_data(me)))
