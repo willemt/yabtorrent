@@ -45,18 +45,12 @@ typedef struct
 
 static unsigned long __piece_hash(const void *obj)
 {
-    //const bt_piece_t* p = obj;
-    //return p->idx;
-    //const unsigned int* p = (void*)obj;
     const unsigned long p = (unsigned long)obj;
     return p;
 }
 
 static long __piece_cmp(const void *obj, const void *other)
 {
-//    const bt_piece_t* p1 = obj;
-//    const bt_piece_t* p2 = other;
-//    return p1->idx - p2->idx;
     const unsigned long p1 = (unsigned long)obj;
     const unsigned long p2 = (unsigned long)other;
     return p2 - p1;
@@ -68,8 +62,6 @@ bt_piecedb_t *bt_piecedb_new()
 
     db = calloc(1, sizeof(bt_piecedb_private_t));
     priv(db)->tot_file_size_bytes = 0;
-    //priv(db)->pieces_size = 999;
-    //priv(db)->pieces = malloc(sizeof(bt_piece_t *) * priv(db)->pieces_size);
     priv(db)->pieces = hashmap_new(__piece_hash, __piece_cmp, 11);
     return db;
 }
@@ -110,36 +102,6 @@ void *bt_piecedb_get(void* dbo, const unsigned int idx)
     return hashmap_get(priv(db)->pieces, (void*)((unsigned long)idx+1));
 }
 
-#if 0
-/** 
- * Take care of the situation where the last piece is sized differently */
-static int __figure_out_new_piece_size(bt_piecedb_t * db)
-{
-    int tot_bytes_used, ii;
-
-    /* figure out current total size */
-    for (ii = 0, tot_bytes_used = 0;
-            ii < hashmap_count(priv(db)->pieces); ii++)
-    {
-        bt_piece_t *p;
-        
-        p = bt_piecedb_get(db,ii);
-        tot_bytes_used += bt_piece_get_size(p);
-    }
-
-    int tot_size = bt_piecedb_get_tot_file_size(db);
-    assert(tot_bytes_used <= tot_size);
-    if (tot_size - tot_bytes_used < priv(db)->pce_len_bytes)
-    {
-        return tot_size - tot_bytes_used;
-    }
-    else
-    {
-        return priv(db)->pce_len_bytes;
-    }
-}
-#endif
-
 int bt_piecedb_count(bt_piecedb_t * db)
 {
     return hashmap_count(priv(db)->pieces);
@@ -149,32 +111,8 @@ int bt_piecedb_add(bt_piecedb_t * db, const char *sha1, unsigned int size)
 {
     bt_piece_t *pce;
 
-#if 0
-    int size;
-
-    /* check if we have enough file space for this piece */
-    if (0 == (size = __figure_out_new_piece_size(db)))
-    {
-        printf("done\n");
-        return -1;
-    }
-#endif
-
-#if 0 /* debugging */
-    printf("adding piece: %d bytes %d piecelen:%d\n",
-            size, priv(db)->tot_file_size_bytes, priv(db)->pce_len_bytes);
-    {
-        int ii;
-
-        for (ii=0; ii<20; ii++)
-            printf("%02x ", ((unsigned char*)sha1)[ii]);
-        printf("\n");
-    }
-#endif
-
     assert(priv(db)->pieces);
 
-    /* create piece */
     pce = bt_piece_new((const unsigned char*)sha1, size);
     bt_piece_set_idx(pce, hashmap_count(priv(db)->pieces));
     bt_piece_set_disk_blockrw(pce, priv(db)->blockrw, priv(db)->blockrw_data);
@@ -187,27 +125,6 @@ void bt_piecedb_remove(bt_piecedb_t * db, int idx)
     // TODO memleak here?
     hashmap_remove(priv(db)->pieces, (void*)((unsigned long)idx+1));
 }
-
-/**
- * Mass add pieces to the piece database
- *
- * @param pieces A string of 20 byte sha1 hashes. Is always a multiple of 20 bytes in length. 
- * @param len: total length of combine hash string
- * */
-#if 0
-void bt_piecedb_add_all(bt_piecedb_t * db, const char *pieces, const int len)
-{
-    int prog;
-
-    for (prog = 1; prog <= len; prog++)
-    {
-        if (0 != prog % 20) continue;
-
-        bt_piecedb_add(db, pieces);
-        pieces += 20;
-    }
-}
-#endif
 
 int bt_piecedb_get_num_downloaded(bt_piecedb_t * db)
 {
@@ -291,20 +208,3 @@ void bt_piecedb_print_pieces_downloaded(bt_piecedb_t * db)
     }
     printf("\n");
 }
-
-#if 0
-static void __dumppiece(bt_client_t* bt)
-{
-    int fd;
-    fd = open("piecedump", O_CREAT | O_WRONLY);
-    for (ii = 0; ii < bt_piecedb_get_length(bt->db); ii++)
-    {
-        bt_piece_t *pce;
-        
-        pce = bt_piecedb_get(bt->db, ii);
-        write(fd, (void*)bt_piece_get_data(pce), bt_piece_get_size(pce));
-    }
-
-    close(fd);
-}
-#endif
