@@ -16,9 +16,7 @@
 #include "bt_piece.h"
 #include "bt_local.h"
 
-void TestBTpiecedb_new_is_empty(
-    CuTest * tc
-)
+void TestBTpiecedb_new_is_empty(CuTest * tc)
 {
     void *db;
 
@@ -27,24 +25,7 @@ void TestBTpiecedb_new_is_empty(
     CuAssertTrue(tc, NULL == bt_piecedb_get(db, 0));
 }
 
-#if 0
-void T_estBTPieceDB_add_piece_doesnt_work_without_available_filespace(
-    CuTest * tc
-)
-{
-    void *db;
-
-    db = bt_piecedb_new();
-    bt_piecedb_set_piece_length(db, 40);
-    bt_piecedb_add(db, "00000000000000000000", 40);
-    CuAssertTrue(tc, NULL == bt_piecedb_get(db, 0));
-    CuAssertTrue(tc, 0 == bt_piecedb_count(db));
-}
-#endif
-
-void TestBTPieceDB_add_piece(
-    CuTest * tc
-)
+void TestBTPieceDB_add_piece(CuTest * tc)
 {
     void *db;
 
@@ -52,14 +33,13 @@ void TestBTPieceDB_add_piece(
     //bt_piecedb_set_piece_length(db, 40);
     /* need to add a file so that we have a filespace to hold the added piece */
     bt_piecedb_increase_piece_space(db,40);
-    bt_piecedb_add(db, "00000000000000000000", 40);
+    //bt_piecedb_add(db, "00000000000000000000", 40);
+    bt_piecedb_add(db, 1);// "00000000000000000000", 40);
     CuAssertTrue(tc, 1 == bt_piecedb_count(db));
     CuAssertTrue(tc, NULL != bt_piecedb_get(db, 0));
 }
 
-void TestBTPieceDB_add_piece_twice(
-    CuTest * tc
-)
+void TestBTPieceDB_add_piece_twice(CuTest * tc)
 {
     void *db;
 
@@ -67,16 +47,14 @@ void TestBTPieceDB_add_piece_twice(
     //bt_piecedb_set_piece_length(db, 40);
     /* need to add a file so that we have a filespace to hold the added piece */
     bt_piecedb_increase_piece_space(db, 80);
-    CuAssertTrue(tc, 0 == bt_piecedb_add(db, "00000000000000000000", 40));
-    CuAssertTrue(tc, 1 == bt_piecedb_add(db, "00000000000000000000", 40));
+    CuAssertTrue(tc, 0 == bt_piecedb_add(db, 1));// "00000000000000000000", 40));
+    CuAssertTrue(tc, 1 == bt_piecedb_add(db, 1));//"00000000000000000000", 40));
     CuAssertTrue(tc, 2 == bt_piecedb_count(db));
     CuAssertTrue(tc, NULL != bt_piecedb_get(db, 0));
     CuAssertTrue(tc, NULL != bt_piecedb_get(db, 1));
 }
 
-void TestBTPieceDB_remove(
-    CuTest * tc
-)
+void TestBTPieceDB_remove(CuTest * tc)
 {
     void *db;
 
@@ -84,15 +62,13 @@ void TestBTPieceDB_remove(
     //bt_piecedb_set_piece_length(db, 40);
     /* need to add a file so that we have a filespace to hold the added piece */
     bt_piecedb_increase_piece_space(db, 40);
-    bt_piecedb_add(db, "00000000000000000000", 40);
+    bt_piecedb_add(db, 1);// "00000000000000000000", 40);
     bt_piecedb_remove(db, 0);
     CuAssertTrue(tc, 0 == bt_piecedb_count(db));
     CuAssertTrue(tc, NULL == bt_piecedb_get(db, 0));
 }
 
-void TestBTPieceDB_GetLength_returns_correct_length_of_db(
-    CuTest * tc
-)
+void TestBTPieceDB_GetLength_returns_correct_length_of_db(CuTest * tc)
 {
     void *db;
 
@@ -101,10 +77,10 @@ void TestBTPieceDB_GetLength_returns_correct_length_of_db(
     CuAssertTrue(tc, 0 == bt_piecedb_get_length(db));
     /* make sure we have enough file space */
     bt_piecedb_increase_piece_space(db,40 * 4);
-    bt_piecedb_add(db, "00000000000000000000", 40);
-    bt_piecedb_add(db, "00000000000000000000", 40);
-    bt_piecedb_add(db, "00000000000000000000", 40);
-    bt_piecedb_add(db, "00000000000000000000", 40);
+    bt_piece_set_size(bt_piecedb_get(db, bt_piecedb_add(db, 1)),40);// "00000000000000000000", 40);
+    bt_piece_set_size(bt_piecedb_get(db, bt_piecedb_add(db, 1)),40);// "00000000000000000000", 40);
+    bt_piece_set_size(bt_piecedb_get(db, bt_piecedb_add(db, 1)),40);// "00000000000000000000", 40);
+    bt_piece_set_size(bt_piecedb_get(db, bt_piecedb_add(db, 1)),40);// "00000000000000000000", 40);
     CuAssertTrue(tc, 4 == bt_piecedb_get_length(db));
 }
 

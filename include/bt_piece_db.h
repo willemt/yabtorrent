@@ -18,7 +18,8 @@ int bt_piecedb_count(bt_piecedb_t * db);
  * Add a piece with this sha1sum
  * @param length Piece's size in bytes
  * @return piece idx, otherwise -1 on error */
-int bt_piecedb_add(bt_piecedb_t * db, const char *sha1, unsigned int size);
+//int bt_piecedb_add(bt_piecedb_t * db, const char *sha1, unsigned int size, );
+int bt_piecedb_add(bt_piecedb_t * db, unsigned int npieces);
 
 /**
  * Remove a piece with this idx */
@@ -52,4 +53,8 @@ void bt_piecedb_set_diskstorage(bt_piecedb_t * db,
                                 bt_blockrw_i * irw, void *udata);
 
 void* bt_piecedb_get_diskstorage(bt_piecedb_t * db);
+
+
+int bt_piecedb_add_with_hash_and_size(bt_piecedb_t * db,
+    const unsigned char *sha1sum, const int piece_bytes_size);
 

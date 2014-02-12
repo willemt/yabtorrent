@@ -148,18 +148,14 @@ void *bt_piece_read_block(bt_piece_t *me, void *caller, const bt_block_t * b)
     return priv(me)->disk->read_block(priv(me)->disk_udata, me, b);
 }
 
-static long __cmp_address(
-    const void *e1,
-    const void *e2
-)
+static long __cmp_address(const void *e1, const void *e2)
 {
     return (unsigned long)e2 - (unsigned long)e1;
 }
 
 bt_piece_t *bt_piece_new(
-    const unsigned char *sha1sum,
-    const int piece_bytes_size
-)
+        const unsigned char *sha1sum,
+        const int piece_bytes_size)
 {
     __piece_private_t *me;
 
@@ -169,14 +165,12 @@ bt_piece_t *bt_piece_new(
     priv(me)->piece_length = piece_bytes_size;
     priv(me)->is_completed = FALSE;
     priv(me)->peers = avltree_new(__cmp_address);
-    priv(me)->sha1 = malloc(20);
-    memcpy(priv(me)->sha1, sha1sum, 20);
+    if (sha1sum)
+        bt_piece_set_hash((bt_piece_t*)me,sha1sum);
     return (bt_piece_t *) me;
 }
 
-void bt_piece_free(
-    bt_piece_t * me
-)
+void bt_piece_free(bt_piece_t * me)
 {
     free(priv(me)->sha1);
     sc_free(priv(me)->progress_downloaded);
@@ -186,9 +180,7 @@ void bt_piece_free(
 
 /** 
  * Get data via block read */
-static void *__get_data(
-    bt_piece_t * me
-)
+static void *__get_data(bt_piece_t * me)
 {
     bt_block_t tmp;
 
@@ -213,11 +205,7 @@ static void *__get_data(
     return priv(me)->disk->read_block(priv(me)->disk_udata, me, &tmp);
 }
 
-void bt_piece_set_disk_blockrw(
-    bt_piece_t * me,
-    bt_blockrw_i * irw,
-    void *udata
-)
+void bt_piece_set_disk_blockrw(bt_piece_t *me, bt_blockrw_i * irw, void *udata)
 {
     priv(me)->disk = irw;
     priv(me)->disk_udata = udata;
@@ -247,12 +235,9 @@ int bt_piece_is_downloaded(bt_piece_t * me)
 int bt_piece_is_complete(bt_piece_t * me)
 {
     if (priv(me)->is_completed)
-    {
         return TRUE;
-    }
 
     int off, ln;
-
     sc_get_incomplete(priv(me)->progress_downloaded, &off, &ln,
                               priv(me)->piece_length);
 
@@ -314,6 +299,20 @@ void bt_piece_set_complete(bt_piece_t * me, int yes)
     priv(me)->is_completed = yes;
 }
 
+void bt_piece_set_size(bt_piece_t * me, const unsigned int piece_bytes_size)
+{
+    sc_set_max(priv(me)->progress_downloaded, piece_bytes_size);
+    sc_set_max(priv(me)->progress_requested, piece_bytes_size);
+    priv(me)->piece_length = piece_bytes_size;
+}
+
+void bt_piece_set_hash(bt_piece_t * me, const unsigned char *sha1sum)
+{
+    assert(!priv(me)->sha1);
+    priv(me)->sha1 = malloc(20);
+    memcpy(priv(me)->sha1, sha1sum, 20);
+}
+
 void bt_piece_set_idx(bt_piece_t * me, const int idx)
 {
     me->idx = idx;
@@ -336,9 +335,9 @@ int bt_piece_get_size(bt_piece_t * me)
 }
 
 int bt_piece_write_block_to_stream(
-    bt_piece_t * me,
-    bt_block_t * blk,
-    unsigned char ** msg
+    bt_piece_t *me,
+    bt_block_t *blk,
+    unsigned char **msg
 )
 {
     unsigned char *data;
@@ -358,7 +357,7 @@ int bt_piece_write_block_to_stream(
     return 1;
 }
 
-int bt_piece_write_block_to_str(bt_piece_t * me, bt_block_t * blk, char *out)
+int bt_piece_write_block_to_str(bt_piece_t *me, bt_block_t *blk, char *out)
 {
     int offset, len;
     void *data;

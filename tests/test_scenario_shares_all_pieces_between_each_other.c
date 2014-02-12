@@ -68,10 +68,11 @@ void TestBT_Peer_shares_all_pieces_between_each_other(
         bt_piecedb_increase_piece_space(bt_dm_get_piecedb(bt),5);
         //bt_piecedb_add_file(bt_dm_get_piecedb(bt),"test2.txt",8,12);
         bt_piecedb_increase_piece_space(bt_dm_get_piecedb(bt),12);
-        bt_piecedb_add(bt_dm_get_piecedb(bt),
-                mocktorrent_get_piece_sha1(mt,hash,0), 5);
-        bt_piecedb_add(bt_dm_get_piecedb(bt),
-                mocktorrent_get_piece_sha1(mt,hash,1), 5);
+
+        bt_piecedb_add_with_hash_and_size(bt_dm_get_piecedb(bt),
+            mocktorrent_get_piece_sha1(mt,hash,0), 5);
+        bt_piecedb_add_with_hash_and_size(bt_dm_get_piecedb(bt),
+            mocktorrent_get_piece_sha1(mt,hash,1), 5);
     }
 
     /* write blocks to client A & B */

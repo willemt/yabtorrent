@@ -123,7 +123,7 @@ void TestBT_Peer_share_20_pieces(
             
             pd = bt_dm_get_piecedb(bt);
             mocktorrent_get_piece_sha1(mt,hash,ii);
-            bt_piecedb_add(pd,hash, 5);
+            bt_piecedb_add_with_hash_and_size(pd,hash,5);
         }
     }
 

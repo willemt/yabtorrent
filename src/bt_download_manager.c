@@ -195,14 +195,14 @@ static int __handle_handshake(
             __FUNC_peerconn_disconnect((void*)me, p, "couldn't send bitfield");
         }
         return 1;
+    default:
     case BT_HANDSHAKER_DISPATCH_REMAINING:
         return 0;
     case BT_HANDSHAKER_DISPATCH_ERROR:
+        assert(0);
         __log(me, NULL, "handshake,failed");
         return 0;
     }
-
-    return 0;
 }
 
 /* TODO: needs test cases */
@@ -229,7 +229,7 @@ int bt_dm_dispatch_from_buffer(
         }
     }
 
-    switch (pwp_msghandler_dispatch_from_buffer(me, buf, len))
+    switch (pwp_msghandler_dispatch_from_buffer(p->mh, buf, len))
     {
     case 1: /* successful */
         break;

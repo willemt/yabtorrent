@@ -283,17 +283,16 @@ static int __tfr_event_str(void* udata, const char* key, const char* val, int le
         /* do N-1 pieces */
         for (i=0; i < len - 20; i += 20)
         {
-            bt_piecedb_add(me->sys->db, val + i, piece_size);
+            bt_piecedb_add_with_hash_and_size(me->sys->db, val+i, piece_size);
             bytes_used += piece_size;
         }
 
-#if 1
         /* last piece probably has a different size... */
         int tot_size = bt_filedumper_get_total_size(me->sys->fd);
         assert(bytes_used < tot_size);
         assert(tot_size - bytes_used <= piece_size);
-        bt_piecedb_add(me->sys->db, val + i, tot_size - bytes_used);
-#endif
+        bt_piecedb_add_with_hash_and_size(me->sys->db,
+                val + i, tot_size - bytes_used);
 
         config_set_va(me->sys->cfg, "npieces", "%d",
                 bt_piecedb_get_length(me->sys->db));
@@ -524,6 +523,7 @@ int main(int argc, char **argv)
             .handshaker_release = pwp_handshaker_release,
             .handshaker_dispatch_from_buffer = pwp_handshaker_dispatch_from_buffer,
             .handshaker_send_handshake = pwp_handshaker_send_handshake,
+            .msghandler_new = NULL
             }), NULL);
 
     if (args.info)

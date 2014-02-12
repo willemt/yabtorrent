@@ -66,14 +66,12 @@ void TestBT_Peer_three_share_all_pieces_between_each_other(
         config_set(cfg, "piece_length", "5");
         config_set(cfg, "infohash", "00000000000000000000");
         /* add files/pieces */
-        //bt_piecedb_add_file(bt_dm_get_piecedb(bt),"test.txt",8,20);
         bt_piecedb_increase_piece_space(bt_dm_get_piecedb(bt),20);
-//        bt_piecedb_add_file(bt_dm_get_piecedb(bt),"test2.txt",8,12);
-        bt_piecedb_add(bt_dm_get_piecedb(bt),
+        bt_piecedb_add_with_hash_and_size(bt_dm_get_piecedb(bt),
                 mocktorrent_get_piece_sha1(mt,hash,0), 5);
-        bt_piecedb_add(bt_dm_get_piecedb(bt),
+        bt_piecedb_add_with_hash_and_size(bt_dm_get_piecedb(bt),
                 mocktorrent_get_piece_sha1(mt,hash,1), 5);
-        bt_piecedb_add(bt_dm_get_piecedb(bt),
+        bt_piecedb_add_with_hash_and_size(bt_dm_get_piecedb(bt),
                 mocktorrent_get_piece_sha1(mt,hash,2), 5);
     }
 
