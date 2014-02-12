@@ -122,9 +122,6 @@ void bt_sequential_selector_add_peer(
     hashmap_put(me->peers, peer, pr);
 }
 
-/**
- * Add this piece back to the selector.
- * This is usually when we want to make the piece a candidate again*/
 void bt_sequential_selector_giveback_piece(
     void *r,
     void *peer,
@@ -152,8 +149,6 @@ void bt_sequential_selector_giveback_piece(
 #endif
 }
 
-/**
- * Notify selector that we have this piece */
 void bt_sequential_selector_have_piece(
     void *r,
     int piece_idx
@@ -165,9 +160,6 @@ void bt_sequential_selector_have_piece(
     hashmap_put(me->p_polled, (void *) (long) piece_idx + 1, (void *) (long) piece_idx + 1);
 }
 
-/**
- * Let us know that there is a peer who has this piece
- */
 void bt_sequential_selector_peer_have_piece(
     void *r,
     void *peer,
@@ -203,11 +195,6 @@ int bt_sequential_selector_get_npieces(void *r)
     return me->npieces;
 }
 
-/**
- * Poll best piece from peer
- * @param r sequential object
- * @param peer Best piece in context of this peer
- * @return idx of piece which is best; otherwise -1 */
 int bt_sequential_selector_poll_best_piece(
     void *r,
     const void *peer

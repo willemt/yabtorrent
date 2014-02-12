@@ -154,8 +154,6 @@ void bt_rarestfirst_selector_add_peer(
     }
 }
 
-/**
- * Add this piece back to the selector */
 void bt_rarestfirst_selector_giveback_piece(
     void *r,
     void* peer,
@@ -185,9 +183,6 @@ void bt_rarestfirst_selector_have_piece(
     /*  possible memory leak here */
 }
 
-/**
- * Let us know that there is a peer who has this piece
- */
 void bt_rarestfirst_selector_peer_have_piece(
     void *r,
     void *peer,
@@ -232,11 +227,6 @@ int bt_rarestfirst_selector_get_npieces(void *r)
     return rf->npieces;
 }
 
-/**
- * Poll best piece from peer,
- * @param r Rarestfirst object
- * @param peer Best piece in context of this peer
- * @return idx of piece which is best; otherwise -1 */
 int bt_rarestfirst_selector_poll_best_piece(
     void *r,
     const void *peer
