@@ -378,7 +378,7 @@ void bt_piece_drop_download_progress(bt_piece_t *me)
     sc_mark_all_incomplete(priv(me)->progress_requested);
 }
 
-int bt_piece_validate(bt_piece_t* me)
+int bt_piece_calculate_hash(bt_piece_t* me, char *hash)
 {
     void *data;
 
@@ -387,10 +387,19 @@ int bt_piece_validate(bt_piece_t* me)
         return 0;
     }
 
-    char hash[21];
+    bt_str2sha1hash(hash, data, priv(me)->piece_length);
+    return 1;
+}
+
+int bt_piece_validate(bt_piece_t* me)
+{
+
+    char hash[20];
     int ret;
 
-    bt_str2sha1hash(hash, data, priv(me)->piece_length);
+    if (0 == bt_piece_calculate_hash(me, hash))
+        return 0;
+
     ret = bt_sha1_equal(hash, priv(me)->sha1);
 
     if (1 == ret)

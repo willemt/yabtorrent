@@ -13,6 +13,11 @@ void bt_piece_set_hash(bt_piece_t * me, const unsigned char *sha1sum);
 void bt_piece_set_size(bt_piece_t * me, const unsigned int piece_bytes_size);
 
 /**
+ * @param hash is expected to be 20 chars long
+ * @return 0 on error */
+int bt_piece_calculate_hash(bt_piece_t* me, char *hash);
+
+/**
  * @return hash of piece */
 char *bt_piece_get_hash(bt_piece_t * me);
 
