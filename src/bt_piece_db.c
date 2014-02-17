@@ -19,8 +19,6 @@
 /* for uint32_t */
 #include <stdint.h>
 
-#include "bt_block.h"
-
 #include "bitfield.h"
 #include "bt.h"
 #include "bt_piece_db.h"

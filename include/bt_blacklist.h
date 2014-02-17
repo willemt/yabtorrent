@@ -1,4 +1,7 @@
 
+#ifndef BT_BLACKLIST_H_
+#define BT_BLACKLIST_H_
+
 /**
  * @return newly initialised blacklist */
 void *bt_blacklist_new();
@@ -34,3 +37,5 @@ int bt_blacklist_peer_is_potentially_blacklisted(
 /**
  * @return number pieces within blacklist */
 int bt_blacklist_get_npieces(void* blacklist);
+
+#endif /* BT_BLACKLIST_H_ */

@@ -21,7 +21,6 @@
 #include <fcntl.h>
 #include <unistd.h>
 
-#include "bt_block.h"
 #include "bt.h"
 #include "sparsefile_allocator.h"
 

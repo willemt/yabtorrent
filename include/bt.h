@@ -9,6 +9,9 @@
  * @version 0.1
  */
 
+#ifndef BT_H_
+#define BT_H_
+
 #ifndef HAVE_BT_BLOCK_T
 #define HAVE_BT_BLOCK_T
 typedef struct
@@ -396,3 +399,5 @@ char *bt_generate_peer_id();
 /**
  * @return number of jobs outstanding */
 int bt_dm_get_jobs(bt_dm_t* me_);
+
+#endif /* BT_H_ */

@@ -27,7 +27,6 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "bt_block.h"
 #include "bt.h"
 
 typedef struct
