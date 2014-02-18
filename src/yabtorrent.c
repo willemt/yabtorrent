@@ -523,7 +523,8 @@ int main(int argc, char **argv)
             .handshaker_release = pwp_handshaker_release,
             .handshaker_dispatch_from_buffer = pwp_handshaker_dispatch_from_buffer,
             .handshaker_send_handshake = pwp_handshaker_send_handshake,
-            .msghandler_new = NULL
+            .msghandler_new = NULL,
+            .handshake_success = NULL,
             }), NULL);
 
     if (args.info)

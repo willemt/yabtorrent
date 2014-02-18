@@ -55,6 +55,8 @@ static void __read_cb(uv_stream_t* tcp, ssize_t nread, const uv_buf_t* buf)
 
 static void __write_cb(uv_write_t *req, int status)
 {
+    if (0 != status)
+        uv_fatal_error(status,NULL);
 //    free(req);
 }
 
@@ -66,7 +68,14 @@ static void __on_connect(uv_connect_t *req, int status)
 
     ca->stream = req->handle;
 
+#if 0 /* debugging */
+    printf("connected: 0x%lx %d\n", (unsigned long)ca, status);
+#endif
+
     assert(req->data);
+
+    if (0 != status)
+        uv_fatal_error(status,NULL);
 
     if (status == -1)
     {
@@ -106,7 +115,8 @@ int peer_connect(void* caller,
     ca->callee = caller;
 
 #if 0 /* debugging */
-    printf("connecting to: %lx %s:%d\n", ca, host, port);
+    printf("connecting to: %lx %s:%d 0x%lx\n",
+            ca, host, port, (unsigned long)ca);
 #endif
     
     t = malloc(sizeof(uv_tcp_t));
@@ -167,13 +177,18 @@ int peer_disconnect(void* caller, void **udata, void* nethandle)
     return 1;
 }
 
-static void __on_new_connection(uv_stream_t *t, int status)
+static void __on_new_connection_from_listen(uv_stream_t *t, int status)
 {
     /* TCP client socket */
     uv_tcp_t *tc;
     connection_attempt_t *ca, *ca_me;
 
-    printf("connection!\n");
+    if (0 != status)
+        uv_fatal_error(status,NULL);
+
+#if 1 /* debug */
+    printf("new connection from listen\n");
+#endif
 
     tc = malloc(sizeof(uv_tcp_t));
     if (0 != uv_tcp_init(uv_default_loop(), tc))
@@ -252,7 +267,7 @@ int peer_listen(void* caller,
     uv_ip4_addr("0.0.0.0", port, &bind_addr);
     uv_tcp_bind(t, (const struct sockaddr*)&bind_addr);//, 0);
     t->data = ca;
-    if (0 != uv_listen((uv_stream_t*)t, 128, __on_new_connection))
+    if (0 != uv_listen((uv_stream_t*)t, 128, __on_new_connection_from_listen))
     {
         printf("ERROR: listen error\n");
         return 0;

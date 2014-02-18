@@ -285,6 +285,11 @@ typedef struct
         char* expected_ih,
         char* my_pi);
 
+    /**
+     * Called when a handshake is sucessful
+     * @return newly initialised handshaker */
+    void (*handshake_success)(void* callee, void* udata, void* pc, void* pnethandle);
+
 #if 0
     int (*msghandler_dispatch_from_buffer)(void *mh,
         const unsigned char* buf,

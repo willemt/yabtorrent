@@ -180,16 +180,20 @@ static int __handle_handshake(
     switch (me->cb.handshaker_dispatch_from_buffer(p->mh, buf, len))
     {
     case BT_HANDSHAKER_DISPATCH_SUCCESS:
+        __log(me, NULL, "handshake,successful, 0x%lx", (unsigned long)p->pc);
         me->cb.handshaker_release(p->mh);
-        pwp_conn_set_state(p->pc, PC_HANDSHAKE_RECEIVED);
-        __log(me, NULL, "handshake,successful, %lx", (unsigned long)p->pc);
 
         /* use custom msghandler if possible */
         if (me->cb.msghandler_new)
             p->mh = me->cb.msghandler_new(me->cb_ctx, p->pc);
         else p->mh = pwp_msghandler_new(p->pc);
 
-        if (0 == pwp_send_bitfield(config_get_int(me->cfg,"npieces"),
+        pwp_conn_set_state(p->pc, PC_HANDSHAKE_RECEIVED);
+
+        if (me->cb.handshake_success)
+            me->cb.handshake_success((void*)me, me->cb_ctx, p->pc, p->conn_ctx);
+
+        if (0 == pwp_send_bitfield(config_get_int(me->cfg, "npieces"),
                 me->pieces_completed, __FUNC_peerconn_send_to_peer, me, p))
         {
             __FUNC_peerconn_disconnect((void*)me, p, "couldn't send bitfield");
@@ -644,7 +648,7 @@ void *bt_dm_add_peer(bt_dm_t* me_,
     if (conn_ctx)
         p->conn_ctx = conn_ctx;
 
-    void* pc = p->pc = pwp_conn_new();
+    void* pc = p->pc = pwp_conn_new(NULL);
     pwp_conn_set_cbs(pc, &((pwp_conn_cbs_t) {
         .log = __FUNC_peerconn_log,
         .send = __FUNC_peerconn_send_to_peer,
@@ -662,7 +666,7 @@ void *bt_dm_add_peer(bt_dm_t* me_,
             config_get_int(me->cfg,"piece_length"));
     pwp_conn_set_peer(pc, p);
 
-    __log(me,NULL,"added peer %.*s:%d %lx",
+    __log(me,NULL,"added peer %.*s:%d 0x%lx",
             ip_len, ip, port, (unsigned long)pc);
 
     if (NULL == me->cb.peer_connect)
