@@ -1,4 +1,7 @@
 
+#ifndef BT_CHOKER_PEER_H_
+#define BT_CHOKER_PEER_H_
+
 /*  commands that chokers use for querying/modifiying peers */
 typedef struct
 {
@@ -14,3 +17,4 @@ typedef struct
 
 } bt_choker_peer_i;
 
+#endif /* BT_CHOKER_PEER_H_ */

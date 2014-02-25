@@ -61,7 +61,6 @@ static long __peer_compare(const void *obj, const void *other)
 
 void bt_seeding_choker_unchoke_peer(void *ckr, void *peer);
 
-/* @param size : the most number of unchoked peers we can have */
 void *bt_seeding_choker_new(const int size)
 {
     choker_t *ch;

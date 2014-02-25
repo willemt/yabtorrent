@@ -60,10 +60,6 @@ static long __peer_compare(const void *obj, const void *other)
     return obj - other;
 }
 
-/**
- * Create a new leeching choker
- * @param size: the maximum number of unchoked peers
- */
 void *bt_leeching_choker_new(const int size)
 {
     choker_t *ch;
@@ -77,8 +73,6 @@ void *bt_leeching_choker_new(const int size)
     return ch;
 }
 
-/**
- * Start managing a new peer */
 void bt_leeching_choker_add_peer(void *ckr, void *peer)
 {
     choker_t *ch = ckr;
@@ -95,8 +89,6 @@ void bt_leeching_choker_add_peer(void *ckr, void *peer)
     llqueue_offer(ch->peers_waiting_for_optimistic_unchoke, peer);
 }
 
-/**
- * Stop managing this peer */
 void bt_leeching_choker_remove_peer(void *ckr, void *peer)
 {
     choker_t *ch = ckr;
@@ -271,8 +263,6 @@ void bt_leeching_choker_unchoke_peer(void *ckr, void *peer)
     llqueue_offer(ch->peers_unchoked, peer);
 }
 
-/**
- * Get number of peers */
 int bt_leeching_choker_get_npeers(void *ckr)
 {
     choker_t *ch = ckr;
@@ -290,9 +280,6 @@ void bt_leeching_choker_set_choker_peer_iface(void *ckr,
     ch->iface = iface;
 }
 
-/**
- * Get choker interface
- */
 void bt_leeching_choker_get_iface(bt_choker_i * iface)
 {
     iface->new = bt_leeching_choker_new;

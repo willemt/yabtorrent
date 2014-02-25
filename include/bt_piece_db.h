@@ -10,6 +10,14 @@ bt_piecedb_t *bt_piecedb_new();
  * @return piece specified by piece_idx; otherwise NULL */
 void *bt_piecedb_get(void* dbo, const unsigned int idx);
 
+#if 0 /* planned for future */
+/**
+ * @return 1 if we have npieces pieces from idx */
+int bt_piecedb_contains_piecerange(void* dbo, 
+    const unsigned int idx,
+    const unsigned int pieces);
+#endif
+
 /**
  * @return number of pieces */
 int bt_piecedb_count(bt_piecedb_t * db);
