@@ -99,15 +99,6 @@ void *bt_filedumper_new(
     return me;
 }
 
-/**
- * Add this file to the bittorrent client
- * This is used for adding new files.
- *
- * @param fname file name
- * @param fname_len length of fname
- * @param flen length in bytes of the file
- * @return 1 on sucess; otherwise 0
- */
 void bt_filedumper_add_file(
     void* fl,
     const char *fname,
@@ -149,8 +140,6 @@ bt_blockrw_i *bt_filedumper_get_blockrw(
     return &me->irw;
 }
 
-/**
- * Piece_length is required for figuring out where we are writing blocks */
 void bt_filedumper_set_piece_length(
     void * fl,
     const int piece_length
@@ -171,8 +160,6 @@ void bt_filedumper_set_cwd(
     sfa_set_cwd(me->sfa, path);
 }
 
-/**
- * @return total file size in bytes */
 unsigned int bt_filedumper_get_total_size(void * fl)
 {
     bt_filedumper_t* me = fl;

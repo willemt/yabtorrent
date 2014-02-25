@@ -8,6 +8,9 @@
  * @author  Willem Thiart himself@willemthiart.com
  */
 
+#ifndef BT_LOCAL_H_
+#define BT_LOCAL_H_
+
 #define TRUE 1
 #define FALSE 0
 
@@ -39,3 +42,4 @@ typedef struct
     void* mh;
 } bt_peer_t;
 
+#endif /* BT_LOCAL_H_ */

@@ -1,3 +1,5 @@
+#ifndef BT_SELECTOR_RANDOM_H
+#define BT_SELECTOR_RANDOM_H
 
 void *bt_random_selector_new(int npieces);
 
@@ -37,3 +39,4 @@ int bt_random_selector_get_npieces(void *r);
  * @return idx of piece which is best; otherwise -1 */
 int bt_random_selector_poll_best_piece(void *r, const void *peer);
 
+#endif /* BT_SELECTOR_RANDOM_H */

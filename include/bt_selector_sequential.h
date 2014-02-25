@@ -1,3 +1,5 @@
+#ifndef BT_SELECTOR_SEQUENTIAL_H
+#define BT_SELECTOR_SEQUENTIAL_H
 
 void *bt_sequential_selector_new(int npieces);
 
@@ -30,3 +32,4 @@ int bt_sequential_selector_get_npieces(void *r);
  * @return idx of piece which is best; otherwise -1 */
 int bt_sequential_selector_poll_best_piece(void *r, const void *peer);
 
+#endif /* BT_SELECTOR_SEQUENTIAL_H */

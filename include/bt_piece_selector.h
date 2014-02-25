@@ -1,3 +1,5 @@
+#ifndef BT_PIECE_SELECTOR_H
+#define BT_PIECE_SELECTOR_H
 
 typedef void *(
     *func_piece_selector_new_f
@@ -53,3 +55,4 @@ typedef struct
 } bt_pieceselector_i;
 #endif
 
+#endif /* BT_PIECE_SELECTOR_H */

@@ -1,3 +1,7 @@
+
+#ifndef BT_DISKMEM_H_
+#define BT_DISKMEM_H_
+
 void *bt_diskmem_new();
 
 void bt_diskmem_free( void *dco);
@@ -13,3 +17,4 @@ int bt_diskmem_write_block(
     const void *blkdata
 );
 
+#endif /* BT_DISKMEM_H_ */

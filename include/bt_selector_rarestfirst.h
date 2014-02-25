@@ -1,3 +1,6 @@
+#ifndef BT_SELECTOR_RARESTFIRST_H
+#define BT_SELECTOR_RARESTFIRST_H
+
 void *bt_rarestfirst_selector_new(int npieces);
 
 /**
@@ -28,4 +31,4 @@ int bt_rarestfirst_selector_get_npieces(void *r);
  * @return idx of piece which is best; otherwise -1 */
 int bt_rarestfirst_selector_poll_best_piece(void *r, const void *peer);
 
-
+#endif /* BT_SELECTOR_RARESTFIRST_H */

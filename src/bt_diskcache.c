@@ -132,10 +132,7 @@ void bt_diskcache_set_func_log(
 
 /**
  * Dump this piece_idx to the disk */
-static void __diskdump_piece(
-    bt_diskcache_t * me,
-    const int piece_idx
-)
+static void __diskdump_piece(bt_diskcache_t * me, const int piece_idx)
 {
     bt_block_t blk;
     mpiece_t *mpce;
@@ -209,11 +206,7 @@ static int __write_block(
     return 1;
 }
 
-static int __flush_block(
-    void *udata,
-    void *caller,
-    const bt_block_t * blk
-)
+static int __flush_block(void *udata, void *caller, const bt_block_t * blk)
 {
     bt_diskcache_t *me = udata;
     mpiece_t *mpce;
@@ -251,11 +244,7 @@ static void *__get_piece_data_from_disk(
  * @todo we should let the caller know if pagefaults occur
  * @return pointer to data; otherwise NULL
  * */
-static void *__read_block(
-    void *udata,
-    void *caller,
-    const bt_block_t * blk
-)
+static void *__read_block(void *udata, void *caller, const bt_block_t * blk)
 {
     bt_diskcache_t *me = udata;
 
@@ -291,8 +280,7 @@ static void *__read_block(
     return mpce->data + blk->offset;
 }
 
-void *bt_diskcache_new(
-)
+void *bt_diskcache_new()
 {
     bt_diskcache_t *me;
 
@@ -305,10 +293,7 @@ void *bt_diskcache_new(
     return me;
 }
 
-void bt_diskcache_set_size(
-    void *dco,
-    const int piece_bytes_size
-)
+void bt_diskcache_set_size(void *dco, const int piece_bytes_size)
 {
     bt_diskcache_t *me = dco;
 
@@ -316,8 +301,6 @@ void bt_diskcache_set_size(
     priv(me)->piece_length = piece_bytes_size;
 }
 
-/**
- * Set the blockrw that we want to use to write to disk */
 void bt_diskcache_set_disk_blockrw(
     void *dco,
     bt_blockrw_i * irw,
@@ -332,9 +315,7 @@ void bt_diskcache_set_disk_blockrw(
     priv(me)->disk_udata = irw_data;
 }
 
-bt_blockrw_i *bt_diskcache_get_blockrw(
-    void *dco
-)
+bt_blockrw_i *bt_diskcache_get_blockrw(void *dco)
 {
     bt_diskcache_t *me = dco;
 
@@ -348,11 +329,7 @@ void bt_diskcache_set_piece_length(void* dco, int piece_length)
     priv(me)->piece_length = piece_length;
 }
 
-/**
- * put all pieces onto disk */
-void bt_diskcache_disk_dump(
-    void *dco
-)
+void bt_diskcache_disk_dump(void *dco)
 {
     bt_diskcache_t *me = dco;
 

@@ -1,3 +1,5 @@
+#ifndef BT_PIECE_H
+#define BT_PIECE_H
 
 /**
  * @return newly initialised piece */
@@ -121,3 +123,4 @@ int bt_piece_write_block_to_stream(
     bt_block_t * blk,
     unsigned char ** msg);
 
+#endif /* BT_PIECE_H */
