@@ -17,6 +17,12 @@
 
 #include "bt.h"
 
+static void __fatal(int status)
+{
+    printf("ERROR: %s %s\n", uv_err_name(status), uv_strerror(status));
+    assert(0);
+}
+
 typedef struct {
     int (*func_process_data) (void *caller,
                         void* nethandle,
@@ -56,7 +62,7 @@ static void __read_cb(uv_stream_t* tcp, ssize_t nread, const uv_buf_t* buf)
 static void __write_cb(uv_write_t *req, int status)
 {
     if (0 != status)
-        uv_fatal_error(status,NULL);
+        __fatal(status);
 //    free(req);
 }
 
@@ -75,7 +81,7 @@ static void __on_connect(uv_connect_t *req, int status)
     assert(req->data);
 
     if (0 != status)
-        uv_fatal_error(status,NULL);
+        __fatal(status);
 
     if (status == -1)
     {
@@ -184,7 +190,7 @@ static void __on_new_connection_from_listen(uv_stream_t *t, int status)
     connection_attempt_t *ca, *ca_me;
 
     if (0 != status)
-        uv_fatal_error(status,NULL);
+        __fatal(status);
 
 #if 1 /* debug */
     printf("new connection from listen\n");
