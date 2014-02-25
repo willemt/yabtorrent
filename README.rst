@@ -43,9 +43,11 @@ Usage
 
 $./yabtorrent torrentfile.torrent
 
-TODO
-----------------
-- BEP 5 - DHT Protocol
+Help/Todo
+---------
+If you want to help out with development, please look into the following:
+
+- BEP 5 - DHT Protocol - github.com/willemt/CTrackerClient simply needs to handle the "dht://" schema. github.com/jech/dht can be used to add this functionality.
+- BEP 2 - uTorrent transport protocol - you need to create a "networkfuncs_utp.c" source file which implements all the network callbacks. "networkfuncs_utp.c" would simply be a wrapper of github.com/bittorrent/libutp.
 - BEP 9 - Extension for Peers to Send Metadata Files
-- BEP 2 - uTorrent transport protocol
 - uTorrent Peer Exchange
