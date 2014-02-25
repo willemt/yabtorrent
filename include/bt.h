@@ -91,7 +91,6 @@ typedef struct {
     int npeers_size;
 } bt_dm_stats_t;
 
-
 typedef struct
 {
     func_write_block_f write_block;
@@ -333,14 +332,17 @@ int bt_dm_dispatch_from_buffer(
         unsigned int len);
 
 /**
- * Add a peer
- * Initiate connection with the peer if conn_ctx is NULL
+ * Add a peer. Initiate connection with the peer if conn_ctx is NULL
+ *
+ * @param conn_mem Memory that is used for the peer connection. If NULL the
+ *                 connection will allocate it's own memory
  * @return the newly initialised peer */
 void *bt_dm_add_peer(bt_dm_t* me_,
                               const char *peer_id,
                               const int peer_id_len,
                               const char *ip, const int ip_len, const int port,
-                              void* conn_ctx);
+                              void* conn_ctx,
+                              void* conn_mem);
 
 /**
  * Remove the peer

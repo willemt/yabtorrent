@@ -266,8 +266,8 @@ int bt_dm_peer_connect(void *me_, void* conn_ctx, char *ip, const int port)
     /* this is the first time we have come across this peer */
     if (!(peer = bt_peermanager_conn_ctx_to_peer(me->pm, conn_ctx)))
     {
-        if (!(peer = bt_dm_add_peer((bt_dm_t*)me, "", 0,
-                        ip, strlen(ip), port, conn_ctx)))
+        if (!(peer = bt_dm_add_peer(me_, "", 0, ip, strlen(ip),
+                        port, conn_ctx, NULL)))
         {
             __log(me_,NULL,"cant add peer %s:%d %lx\n",
                 ip, port, (unsigned long int)conn_ctx);
@@ -618,7 +618,8 @@ void *bt_dm_add_peer(bt_dm_t* me_,
                       const char *peer_id,
                       const int peer_id_len,
                       const char *ip, const int ip_len, const int port,
-                      void* conn_ctx)
+                      void* conn_ctx,
+                      void* conn_mem)
 {
     bt_dm_private_t *me = (void*)me_;
     bt_peer_t* p;
@@ -648,7 +649,7 @@ void *bt_dm_add_peer(bt_dm_t* me_,
     if (conn_ctx)
         p->conn_ctx = conn_ctx;
 
-    void* pc = p->pc = pwp_conn_new(NULL);
+    void* pc = p->pc = pwp_conn_new(conn_mem);
     pwp_conn_set_cbs(pc, &((pwp_conn_cbs_t) {
         .log = __FUNC_peerconn_log,
         .send = __FUNC_peerconn_send_to_peer,

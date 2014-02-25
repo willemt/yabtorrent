@@ -243,7 +243,9 @@ static void __on_tc_add_peer(void* callee,
     {
 
     }
-    peer = bt_dm_add_peer(me->bc, peer_id, peer_id_len, ip, ip_len, port, peer_nethandle);
+    peer = bt_dm_add_peer(me->bc,
+            peer_id, peer_id_len, ip, ip_len, port,
+            peer_nethandle, NULL);
     uv_mutex_unlock(&me->mutex);
 }
 
