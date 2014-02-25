@@ -79,9 +79,7 @@ static void __add_random_piece_subset_of_mocktorrent(void* db, void* mt, int npi
     }
 }
 
-void TestBT_Peer_share_20_pieces(
-    CuTest * tc
-)
+void TestBT_Peer_share_20_pieces(CuTest * tc)
 {
     int num_pieces;
     int ii;
@@ -130,6 +128,8 @@ void TestBT_Peer_share_20_pieces(
     /* B will initiate the connection */
     asprintf(&addr,"%p", b);
     client_add_peer(a,NULL,0,addr,strlen(addr),0);
+    asprintf(&addr,"%p", a);
+    client_add_peer(b,NULL,0,addr,strlen(addr),0);
 
     __add_random_piece_subset_of_mocktorrent(
             bt_dm_get_piecedb(a->bt),

@@ -32,9 +32,7 @@
 #include <sys/time.h>
 
 /** a have message has to be sent by client B, for client A and C to finish */
-void TestBT_Peer_three_share_all_pieces_between_each_other(
-    CuTest * tc
-)
+void TestBT_Peer_three_share_all_pieces_between_each_other(CuTest * tc)
 {
     int ii;
     client_t* a, *b, *c;
@@ -106,11 +104,18 @@ void TestBT_Peer_three_share_all_pieces_between_each_other(
     bt_dm_check_pieces(b->bt);
     bt_dm_check_pieces(c->bt);
 
-    /* B will initiate the connection */
+    /* A connects to B */
     asprintf(&addr,"%p", b);
     client_add_peer(a,NULL,0,addr,strlen(addr),0);
+    /* B connects to A */
+    asprintf(&addr,"%p", a);
+    client_add_peer(b,NULL,0,addr,strlen(addr),0);
+    /* B connects to C */
     asprintf(&addr,"%p", c);
     client_add_peer(b,NULL,0,addr,strlen(addr),0);
+    /* C connects to B */
+    asprintf(&addr,"%p", b);
+    client_add_peer(c,NULL,0,addr,strlen(addr),0);
 
     for (ii=0; ii<10; ii++)
     {

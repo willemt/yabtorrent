@@ -266,6 +266,8 @@ int bt_dm_peer_connect(void *me_, void* conn_ctx, char *ip, const int port)
     /* this is the first time we have come across this peer */
     if (!(peer = bt_peermanager_conn_ctx_to_peer(me->pm, conn_ctx)))
     {
+        assert(0);
+#if 0
         if (!(peer = bt_dm_add_peer(me_, "", 0, ip, strlen(ip),
                         port, conn_ctx, NULL)))
         {
@@ -273,6 +275,7 @@ int bt_dm_peer_connect(void *me_, void* conn_ctx, char *ip, const int port)
                 ip, port, (unsigned long int)conn_ctx);
             return 0;
         }
+#endif
     }
 
     me->cb.handshaker_send_handshake(me_, peer,

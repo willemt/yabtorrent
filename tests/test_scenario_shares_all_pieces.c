@@ -91,9 +91,11 @@ void TestBT_Peer_shares_all_pieces(
     CuAssertTrue(tc, 1 ==
             bt_piecedb_all_pieces_are_complete(bt_dm_get_piecedb(a->bt)));
 
-    /* B will initiate the connection */
+    /* connect clients */
     asprintf(&addr,"%p", a);
     client_add_peer(b,NULL,0,addr,strlen(addr),0);
+    asprintf(&addr,"%p", b);
+    client_add_peer(a,NULL,0,addr,strlen(addr),0);
 
     for (ii=0; ii<10; ii++)
     {
