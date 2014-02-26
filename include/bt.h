@@ -310,6 +310,10 @@ void *bt_dm_new();
 int bt_dm_release(bt_dm_t* me_);
 
 /**
+ * Connect a peer to the torrent
+ *
+ * Don't connect a peer if it hasn't been added 
+ *
  * @pararm conn_ctx Context for this peer
  * @param ip IP that the peer is from
  * @param port Port that this peer is on

@@ -266,13 +266,14 @@ int bt_dm_peer_connect(void *me_, void* conn_ctx, char *ip, const int port)
     /* this is the first time we have come across this peer */
     if (!(peer = bt_peermanager_conn_ctx_to_peer(me->pm, conn_ctx)))
     {
-        assert(0);
+        return 0;
     }
 
-    me->cb.handshaker_send_handshake(me_, peer,
-        __FUNC_peerconn_send_to_peer,
-        config_get(me->cfg,"infohash"),
-        config_get(me->cfg,"my_peerid"));
+    if (me->cb.handshaker_send_handshake)
+        me->cb.handshaker_send_handshake(me_, peer,
+            __FUNC_peerconn_send_to_peer,
+            config_get(me->cfg,"infohash"),
+            config_get(me->cfg,"my_peerid"));
     return 1;
 }
 
@@ -634,11 +635,9 @@ void *bt_dm_add_peer(bt_dm_t* me_,
 #endif
         return NULL;
     }
-    else
-    {
-        if (me->pselector)
-            me->ips.add_peer(me->pselector, p);
-    }
+
+    if (me->pselector)
+        me->ips.add_peer(me->pselector, p);
 
     if (conn_ctx)
         p->conn_ctx = conn_ctx;
@@ -664,10 +663,7 @@ void *bt_dm_add_peer(bt_dm_t* me_,
     __log(me,NULL,"added peer %.*s:%d 0x%lx",
             ip_len, ip, port, (unsigned long)pc);
 
-    if (NULL == me->cb.peer_connect)
-        return NULL;
-
-    if (!conn_ctx)
+    if (!conn_ctx && me->cb.peer_connect)
     {
         if (0 == me->cb.peer_connect(me,
                     &me->cb_ctx,
@@ -679,13 +675,14 @@ void *bt_dm_add_peer(bt_dm_t* me_,
                     bt_dm_peer_connect_fail))
         {
             __log(me,NULL,"failed connection to peer");
-            return 0;
+            return NULL;
         }
     }
 
-    p->mh = me->cb.handshaker_new(
-            config_get(me->cfg,"infohash"),
-            config_get(me->cfg,"my_peerid"));
+    if (me->cb.handshaker_new)
+        p->mh = me->cb.handshaker_new(
+                config_get(me->cfg,"infohash"),
+                config_get(me->cfg,"my_peerid"));
 
     bt_leeching_choker_add_peer(me->lchoke, p->pc);
 
