@@ -336,9 +336,12 @@ int bt_dm_dispatch_from_buffer(
 /**
  * Add a peer. Initiate connection with the peer if conn_ctx is NULL
  *
+ * Don't add peer twice
+ * Don't add myself as peer
+ *
  * @param conn_mem Memory that is used for the peer connection. If NULL the
  *                 connection will allocate it's own memory
- * @return the newly initialised peer */
+ * @return the newly initialised peer; NULL on errors */
 void *bt_dm_add_peer(bt_dm_t* me_,
                               const char *peer_id,
                               const int peer_id_len,
