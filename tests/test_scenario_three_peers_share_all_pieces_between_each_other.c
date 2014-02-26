@@ -107,15 +107,9 @@ void TestBT_Peer_three_share_all_pieces_between_each_other(CuTest * tc)
     /* A connects to B */
     asprintf(&addr,"%p", b);
     client_add_peer(a,NULL,0,addr,strlen(addr),0);
-    /* B connects to A */
-    asprintf(&addr,"%p", a);
-    client_add_peer(b,NULL,0,addr,strlen(addr),0);
     /* B connects to C */
     asprintf(&addr,"%p", c);
     client_add_peer(b,NULL,0,addr,strlen(addr),0);
-    /* C connects to B */
-    asprintf(&addr,"%p", b);
-    client_add_peer(c,NULL,0,addr,strlen(addr),0);
 
     for (ii=0; ii<10; ii++)
     {
@@ -129,15 +123,16 @@ void TestBT_Peer_three_share_all_pieces_between_each_other(CuTest * tc)
 
         network_poll(a->bt, &a, 0,
                 bt_dm_dispatch_from_buffer,
-                bt_dm_peer_connect);
+                mock_on_connect);
 
         network_poll(b->bt, &b, 0,
                 bt_dm_dispatch_from_buffer,
-                bt_dm_peer_connect);
+                mock_on_connect);
 
         network_poll(c->bt, &c, 0,
                 bt_dm_dispatch_from_buffer,
-                bt_dm_peer_connect);
+                mock_on_connect);
+
 //        __print_client_contents();
     }
 

@@ -196,9 +196,9 @@ static int __on_peer_connect(
     sys_t* me = callee;
 
     uv_mutex_lock(&me->mutex);
-    bt_dm_peer_connect(me->bc,peer_nethandle,ip,port);
+    bt_dm_add_peer(me->bc, "", 0, ip, strlen(ip), port, peer_nethandle, NULL);
+    bt_dm_peer_connect(me->bc, peer_nethandle, ip, port);
     uv_mutex_unlock(&me->mutex);
-
     return 1;
 }
 

@@ -121,6 +121,7 @@ void client_add_peer(
 
     peer = bt_dm_add_peer(me->bt, peer_id, peer_id_len, ip, ip_len, port,
             peer_nethandle, NULL);
+
 }
 
 client_t* mock_client_setup(int piecelen)
@@ -165,3 +166,10 @@ client_t* mock_client_setup(int piecelen)
 
     return cli;
 }
+
+void mock_on_connect(void *bt, void* nethandle, char *ip, int port)
+{
+    bt_dm_add_peer(bt, "", 0, ip, strlen(ip), port, nethandle, NULL);
+    bt_dm_peer_connect(bt, nethandle, ip, port);
+}
+

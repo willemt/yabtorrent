@@ -310,8 +310,6 @@ void *bt_dm_new();
 int bt_dm_release(bt_dm_t* me_);
 
 /**
- * Add this peer to the download manager, if we haven't come across them
- *
  * @pararm conn_ctx Context for this peer
  * @param ip IP that the peer is from
  * @param port Port that this peer is on

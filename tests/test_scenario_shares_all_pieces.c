@@ -94,8 +94,6 @@ void TestBT_Peer_shares_all_pieces(
     /* connect clients */
     asprintf(&addr,"%p", a);
     client_add_peer(b,NULL,0,addr,strlen(addr),0);
-    asprintf(&addr,"%p", b);
-    client_add_peer(a,NULL,0,addr,strlen(addr),0);
 
     for (ii=0; ii<10; ii++)
     {
@@ -108,11 +106,11 @@ void TestBT_Peer_shares_all_pieces(
 
         network_poll(a->bt, &a, 0,
                 bt_dm_dispatch_from_buffer,
-                bt_dm_peer_connect);
+                mock_on_connect);
 
         network_poll(b->bt, &b, 0,
                 bt_dm_dispatch_from_buffer,
-                bt_dm_peer_connect);
+                mock_on_connect);
 
 //        __print_client_contents();
     }

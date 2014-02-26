@@ -128,8 +128,6 @@ void TestBT_Peer_share_20_pieces(CuTest * tc)
     /* B will initiate the connection */
     asprintf(&addr,"%p", b);
     client_add_peer(a,NULL,0,addr,strlen(addr),0);
-    asprintf(&addr,"%p", a);
-    client_add_peer(b,NULL,0,addr,strlen(addr),0);
 
     __add_random_piece_subset_of_mocktorrent(
             bt_dm_get_piecedb(a->bt),
@@ -153,11 +151,11 @@ void TestBT_Peer_share_20_pieces(CuTest * tc)
 
         network_poll(a->bt, &a, 0,
                 bt_dm_dispatch_from_buffer,
-                bt_dm_peer_connect);
+                mock_on_connect);
 
         network_poll(b->bt, &b, 0,
                 bt_dm_dispatch_from_buffer,
-                bt_dm_peer_connect);
+                mock_on_connect);
 
     }
 

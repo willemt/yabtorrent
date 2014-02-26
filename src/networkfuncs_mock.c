@@ -239,7 +239,6 @@ int network_poll(void* caller, void **udata,
                     me->nethandle, cn->nethandle);
 #endif
 
-            //func_process_connection(me->bt, cn->nethandle, ip, strlen(ip));
             func_process_connection(me->bt, cn->nethandle, ip, 4000);
             cn->connect_status = CS_CONNECTED;
         }
