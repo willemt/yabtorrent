@@ -289,12 +289,6 @@ typedef struct
      * @return newly initialised handshaker */
     void (*handshake_success)(void* callee, void* udata, void* pc, void* pnethandle);
 
-#if 0
-    int (*msghandler_dispatch_from_buffer)(void *mh,
-        const unsigned char* buf,
-        unsigned int len);
-#endif
-
     void* (*msghandler_new)(void* callee, void* pc);
 } bt_dm_cbs_t;
 

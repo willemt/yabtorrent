@@ -139,6 +139,9 @@ void __FUNC_peer_periodic(void* cb_ctx, void* peer, void* udata)
 {
     bt_peer_t* p = peer;
 
+    printf("periodic peer %p\n", p);
+    printf("periodic peer pc: %p\n", p->pc);
+
     if (pwp_conn_flag_is_set(p->pc, PC_FAILED_CONNECTION)) return;
     if (!pwp_conn_flag_is_set(p->pc, PC_HANDSHAKE_RECEIVED)) return;
     pwp_conn_periodic(p->pc);
@@ -183,15 +186,10 @@ static int __handle_handshake(
     {
     case BT_HANDSHAKER_DISPATCH_SUCCESS:
         __log(me, NULL, "handshake,successful, 0x%lx", (unsigned long)p->pc);
+
         me->cb.handshaker_release(p->mh);
-
-        /* use custom msghandler if possible */
-        if (me->cb.msghandler_new)
-            p->mh = me->cb.msghandler_new(me->cb_ctx, p->pc);
-        else p->mh = pwp_msghandler_new(p->pc);
-
+        p->mh = me->cb.msghandler_new(me->cb_ctx, p->pc);
         pwp_conn_set_state(p->pc, PC_HANDSHAKE_RECEIVED);
-
         if (me->cb.handshake_success)
             me->cb.handshake_success((void*)me, me->cb_ctx, p->pc, p->conn_ctx);
 
@@ -676,15 +674,15 @@ void *bt_dm_add_peer(bt_dm_t* me_,
                     bt_dm_peer_connect,
                     bt_dm_peer_connect_fail))
         {
-            __log(me,NULL,"failed connection to peer");
+            __log(me, NULL, "failed connection to peer");
             return NULL;
         }
     }
 
     if (me->cb.handshaker_new)
         p->mh = me->cb.handshaker_new(
-                config_get(me->cfg,"infohash"),
-                config_get(me->cfg,"my_peerid"));
+                config_get(me->cfg, "infohash"),
+                config_get(me->cfg, "my_peerid"));
 
     bt_leeching_choker_add_peer(me->lchoke, p->pc);
 
@@ -714,7 +712,8 @@ int bt_dm_get_jobs(bt_dm_t* me_)
 void bt_dm_periodic(bt_dm_t* me_, bt_dm_stats_t *stats)
 {
     bt_dm_private_t *me = (void*)me_;
-    int ii;
+
+    bt_peermanager_forall(me->pm, me, NULL, __FUNC_peer_periodic);
 
     /* TODO: pump out keep alive message */
 
@@ -725,12 +724,10 @@ void bt_dm_periodic(bt_dm_t* me_, bt_dm_stats_t *stats)
     }
 
     if (1 == me->am_seeding
-            && 1 == config_get_int(me->cfg,"shutdown_when_complete"))
+            && 1 == config_get_int(me->cfg, "shutdown_when_complete"))
     {
         goto cleanup;
     }
-
-    bt_peermanager_forall(me->pm,me,NULL,__FUNC_peer_periodic);
 
     /* TODO: dispatch eventtimer events */
 
@@ -757,6 +754,10 @@ void bt_dm_set_cbs(bt_dm_t* me_, bt_dm_cbs_t * func, void* cb_ctx)
     bt_dm_private_t *me = (void*)me_;
     memcpy(&me->cb, func, sizeof(bt_dm_cbs_t));
     me->cb_ctx = cb_ctx;
+
+    /* provide default message handler */
+    if (!me->cb.msghandler_new)
+        me->cb.msghandler_new = pwp_msghandler_new;
 }
 
 void* bt_dm_get_config(bt_dm_t* me_)
