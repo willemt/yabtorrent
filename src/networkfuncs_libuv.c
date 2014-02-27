@@ -80,10 +80,10 @@ static void __on_connect(uv_connect_t *req, int status)
 
     assert(req->data);
 
-    if (0 != status)
-        __fatal(status);
+//    if (0 != status)
+//        __fatal(status);
 
-    if (status == -1)
+    if (status != 0)
     {
 //        fprintf(stderr, "connect callback error %s\n",
 //                uv_err_name(uv_last_error(uv_default_loop())));
