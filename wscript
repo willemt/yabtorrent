@@ -85,7 +85,7 @@ def unit_test(bld, src, ccflag=None):
         target=src[:-2],
         cflags=[
             '-g',
-            '-Werror'
+            '-Werror',
         ],
         use='yabbt',
         lib = libs,
@@ -129,7 +129,7 @@ def scenario_test(bld, src, ccflag=None):
             '-g',
             '-Werror',
             '-Werror=uninitialized',
-            '-Werror=return-type'
+            '-Werror=return-type',
             ],
         lib = libs,
         unit_test='yes',

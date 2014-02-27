@@ -138,7 +138,8 @@ int bt_piecedb_add(bt_piecedb_t * db, unsigned int npieces)
     for (i=0; i<npieces; i++)
     {
         pce = bt_piece_new(NULL, 0);
-        bt_piece_set_disk_blockrw(pce, priv(db)->blockrw, priv(db)->blockrw_data);
+        bt_piece_set_disk_blockrw(pce,
+                priv(db)->blockrw, priv(db)->blockrw_data);
         bt_piece_set_idx(pce, hashmap_count(priv(db)->pmap));
         //bt_piece_set_idx(pce, idx + i);
         hashmap_put(priv(db)->pmap, (void*)((unsigned long)pce->idx+1), pce);

@@ -48,7 +48,7 @@
 
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <fcntl.h>
+//#include <fcntl.h>
 
 #include <time.h>
 
@@ -132,6 +132,8 @@ static int __FUNC_peerconn_send_to_peer(void *me_,
                                         const void* pc_peer,
                                         const void *data,
                                         const int len);
+
+int __FUNC_peerconn_disconnect(void *me_, void* pr, char *reason);
 
 void __FUNC_peer_periodic(void* cb_ctx, void* peer, void* udata)
 {

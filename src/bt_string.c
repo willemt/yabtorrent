@@ -23,10 +23,10 @@ int asprintf(char **resultp, const char *format, ...)
     char buf[1024];
     va_list args;
 
-    va_start (args, format);
+    va_start(args, format);
     vsprintf(buf, format, args);
     *resultp = strdup(buf);
-    va_end (args);
+    va_end(args);
     return 1;
 }
 

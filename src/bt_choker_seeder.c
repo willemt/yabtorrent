@@ -97,6 +97,13 @@ static void __choke_peer(choker_t * ch, void *peer)
     ch->iface->choke_peer(ch->udata, peer);
 }
 
+int bt_seeding_choker_get_npeers(void *ckr)
+{
+    choker_t *ch = ckr;
+
+    return hashmap_count(ch->peers);
+}
+
 void bt_seeding_choker_decide_best_npeers(void *ckr)
 {
     choker_t *ch = ckr;
@@ -161,13 +168,6 @@ void bt_seeding_choker_set_choker_peer_iface(void *ckr,
 
     ch->udata = udata;
     ch->iface = iface;
-}
-
-int bt_seeding_choker_get_npeers(void *ckr)
-{
-    choker_t *ch = ckr;
-
-    return hashmap_count(ch->peers);
 }
 
 void bt_seeding_choker_get_iface(bt_choker_i * iface)

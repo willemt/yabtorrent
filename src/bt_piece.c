@@ -27,6 +27,9 @@
 #include "sparse_counter.h"
 #include "avl_tree.h"
 
+/* for bitstream_write() */
+#include "bitstream.h"
+
 enum {
     VALIDITY_NOTCHECKED,
     VALIDITY_VALID,

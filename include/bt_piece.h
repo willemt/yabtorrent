@@ -34,6 +34,8 @@ int bt_piece_is_complete(bt_piece_t * me);
  * @return 1 if piece completely downloaded, otherwise 0 */
 int bt_piece_is_downloaded(bt_piece_t * me);
 
+int bt_piece_is_fully_requested(bt_piece_t * me);
+
 /**
  * Get peers based off iterator
  * @param iter Iterator that we use to obtain the next peer. Starts at 0
@@ -122,5 +124,11 @@ int bt_piece_write_block_to_stream(
     bt_piece_t * me,
     bt_block_t * blk,
     unsigned char ** msg);
+
+void bt_piece_set_disk_blockrw(
+        bt_piece_t *me,
+        bt_blockrw_i * irw,
+        void *udata);
+
 
 #endif /* BT_PIECE_H */
