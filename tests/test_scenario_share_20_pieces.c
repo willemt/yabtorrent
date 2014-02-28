@@ -156,7 +156,6 @@ void TestBT_Peer_share_20_pieces(CuTest * tc)
         network_poll(b->bt, &b, 0,
                 bt_dm_dispatch_from_buffer,
                 mock_on_connect);
-
     }
 
     bt_dm_periodic(a->bt, NULL);

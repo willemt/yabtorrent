@@ -139,9 +139,6 @@ void __FUNC_peer_periodic(void* cb_ctx, void* peer, void* udata)
 {
     bt_peer_t* p = peer;
 
-    printf("periodic peer %p\n", p);
-    printf("periodic peer pc: %p\n", p->pc);
-
     if (pwp_conn_flag_is_set(p->pc, PC_FAILED_CONNECTION)) return;
     if (!pwp_conn_flag_is_set(p->pc, PC_HANDSHAKE_RECEIVED)) return;
     pwp_conn_periodic(p->pc);
@@ -749,6 +746,11 @@ cleanup:
     return;
 }
 
+static void* __msghandler_new(void* callee, void* pc)
+{
+    return pwp_msghandler_new(pc);
+}
+
 void bt_dm_set_cbs(bt_dm_t* me_, bt_dm_cbs_t * func, void* cb_ctx)
 {
     bt_dm_private_t *me = (void*)me_;
@@ -757,7 +759,7 @@ void bt_dm_set_cbs(bt_dm_t* me_, bt_dm_cbs_t * func, void* cb_ctx)
 
     /* provide default message handler */
     if (!me->cb.msghandler_new)
-        me->cb.msghandler_new = pwp_msghandler_new;
+        me->cb.msghandler_new = __msghandler_new;
 }
 
 void* bt_dm_get_config(bt_dm_t* me_)
