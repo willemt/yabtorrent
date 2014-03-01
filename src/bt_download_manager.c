@@ -183,18 +183,11 @@ static int __handle_handshake(
     {
     case BT_HANDSHAKER_DISPATCH_SUCCESS:
         __log(me, NULL, "handshake,successful, 0x%lx", (unsigned long)p->pc);
-
         me->cb.handshaker_release(p->mh);
         p->mh = me->cb.msghandler_new(me->cb_ctx, p->pc);
         pwp_conn_set_state(p->pc, PC_HANDSHAKE_RECEIVED);
         if (me->cb.handshake_success)
             me->cb.handshake_success((void*)me, me->cb_ctx, p->pc, p->conn_ctx);
-
-        if (0 == pwp_send_bitfield(config_get_int(me->cfg, "npieces"),
-                me->pieces_completed, __FUNC_peerconn_send_to_peer, me, p))
-        {
-            __FUNC_peerconn_disconnect((void*)me, p, "couldn't send bitfield");
-        }
         return 1;
     default:
     case BT_HANDSHAKER_DISPATCH_REMAINING:
@@ -746,9 +739,25 @@ cleanup:
     return;
 }
 
-static void* __msghandler_new(void* callee, void* pc)
+static void* __default_msghandler_new(void* callee, void* pc)
 {
     return pwp_msghandler_new(pc);
+}
+
+static void __default_handshake_success(
+        void* me_,
+        void* udata,
+        void* pc,
+        void* p_conn_ctx)
+{
+    bt_dm_private_t *me = (void*)me_;
+    bt_peer_t* p = bt_peermanager_conn_ctx_to_peer(me->pm, p_conn_ctx);
+
+    if (0 == pwp_send_bitfield(config_get_int(me->cfg, "npieces"),
+            me->pieces_completed, __FUNC_peerconn_send_to_peer, me, p))
+    {
+        __FUNC_peerconn_disconnect((void*)me, p, "couldn't send bitfield");
+    }
 }
 
 void bt_dm_set_cbs(bt_dm_t* me_, bt_dm_cbs_t * func, void* cb_ctx)
@@ -756,10 +765,10 @@ void bt_dm_set_cbs(bt_dm_t* me_, bt_dm_cbs_t * func, void* cb_ctx)
     bt_dm_private_t *me = (void*)me_;
     memcpy(&me->cb, func, sizeof(bt_dm_cbs_t));
     me->cb_ctx = cb_ctx;
-
-    /* provide default message handler */
     if (!me->cb.msghandler_new)
-        me->cb.msghandler_new = __msghandler_new;
+        me->cb.msghandler_new = __default_msghandler_new;
+    if (!me->cb.handshake_success)
+        me->cb.handshake_success = __default_handshake_success;
 }
 
 void* bt_dm_get_config(bt_dm_t* me_)
@@ -798,7 +807,6 @@ void bt_dm_set_piece_selector(
 void bt_dm_set_piece_db(bt_dm_t* me_, bt_piecedb_i* ipdb, void* piece_db)
 {
     bt_dm_private_t* me = (void*)me_;
-
     memcpy(&me->ipdb,ipdb,sizeof(bt_piecedb_i));
     me->pdb = piece_db;
 }
