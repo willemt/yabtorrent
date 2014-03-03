@@ -274,7 +274,7 @@ typedef struct
     /**
      * Send the handshake
      * @return 0 on failure; 1 otherwise */
-    int (*handshaker_send_handshake)(
+    int (*send_handshake)(
         void* callee,
         void* udata,
         int (*send)(void *callee,

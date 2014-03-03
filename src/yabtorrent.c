@@ -524,7 +524,7 @@ int main(int argc, char **argv)
             .handshaker_new = pwp_handshaker_new,
             .handshaker_release = pwp_handshaker_release,
             .handshaker_dispatch_from_buffer = pwp_handshaker_dispatch_from_buffer,
-            .handshaker_send_handshake = pwp_handshaker_send_handshake,
+            .send_handshake = pwp_send_handshake,
             .msghandler_new = NULL,
             .handshake_success = NULL,
             }), NULL);

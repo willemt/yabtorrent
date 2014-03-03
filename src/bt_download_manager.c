@@ -259,8 +259,8 @@ int bt_dm_peer_connect(void *me_, void* conn_ctx, char *ip, const int port)
         return 0;
     }
 
-    if (me->cb.handshaker_send_handshake)
-        me->cb.handshaker_send_handshake(me_, peer,
+    if (me->cb.send_handshake)
+        me->cb.send_handshake(me_, peer,
             __FUNC_peerconn_send_to_peer,
             config_get(me->cfg,"infohash"),
             config_get(me->cfg,"my_peerid"));

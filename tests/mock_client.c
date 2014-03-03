@@ -145,7 +145,7 @@ client_t* mock_client_setup(int piecelen)
         .handshaker_new = pwp_handshaker_new,
         .handshaker_release = pwp_handshaker_release,
         .handshaker_dispatch_from_buffer = pwp_handshaker_dispatch_from_buffer,
-        .handshaker_send_handshake = pwp_handshaker_send_handshake,
+        .send_handshake = pwp_send_handshake,
         .msghandler_new = NULL
         }), cli);
     bt_dm_set_piece_selector(cli->bt, 
