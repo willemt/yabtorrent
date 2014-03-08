@@ -23,7 +23,6 @@
 #include "bt.h"
 #include "bt_piece_db.h"
 #include "bt_piece.h"
-#include "bt_local.h"
 
 #include "linked_list_hashmap.h"
 

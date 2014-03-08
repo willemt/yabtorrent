@@ -9,8 +9,8 @@
  */
 
 #include <stdlib.h>
-#include <string.h>
 #include <stdio.h>
+#include <string.h>
 #include <assert.h>
 
 /* for uint32_t */
@@ -23,15 +23,14 @@
 
 #include "sha1.h"
 
-char *bt_generate_peer_id(
-)
+char *bt_generate_peer_id()
 {
     char *str;
     int rand_num;
 
     rand_num = rand();
-    asprintf(&str, "AAAAA%d%011d", VERSION_NUM, rand_num);
-    assert(strlen(str) == PEER_ID_LEN);
+    asprintf(&str, "AAAAA%d%011d", BT_VERSION_NUM, rand_num);
+    assert(strlen(str) == BT_PEER_ID_LEN);
     return str;
 }
 

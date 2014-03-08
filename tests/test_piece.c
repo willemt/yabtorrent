@@ -61,7 +61,7 @@ void TestBTPiece_unfull_request_means_piece_is_not_fully_requested( CuTest * tc)
 
     pce = bt_piece_new("00000000000000000000", 400000);
     bt_piece_poll_block_request(pce, &req);
-    CuAssertTrue(tc, req.len == BLOCK_SIZE);
+    CuAssertTrue(tc, req.len == BT_BLOCK_SIZE);
     CuAssertTrue(tc, 0 == bt_piece_is_fully_requested(pce));
 }
 
@@ -72,7 +72,7 @@ void TestBTPiece_pollBlockRequest_has_default_blockSize( CuTest * tc)
 
     pce = bt_piece_new("00000000000000000000", 400000);
     bt_piece_poll_block_request(pce, &req);
-    CuAssertTrue(tc, req.len == BLOCK_SIZE);
+    CuAssertTrue(tc, req.len == BT_BLOCK_SIZE);
 }
 
 void TestBTPiece_pollBlockRequest_sized_under_threshhold( CuTest * tc)

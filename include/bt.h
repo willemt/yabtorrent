@@ -167,9 +167,29 @@ typedef struct {
 
 } bt_pieceselector_i;
 
+#define BT_PEER_ID_LEN 20
+#define BT_VERSION_NUM 1000
+#define BT_BLOCK_SIZE 1 << 14 // 16kb
 #define BT_HANDSHAKER_DISPATCH_SUCCESS 1
 #define BT_HANDSHAKER_DISPATCH_REMAINING 0
 #define BT_HANDSHAKER_DISPATCH_ERROR -1
+
+typedef struct
+{
+    /* for network api */
+    void* conn_ctx;
+
+    /* 20 byte sha1 string */
+    char *peer_id;
+    char *ip;
+    unsigned int port;
+
+    /* peer connection */
+    void* pc;
+
+    /* message handler */
+    void* mh;
+} bt_peer_t;
 
 typedef struct
 {

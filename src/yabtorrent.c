@@ -57,7 +57,7 @@ typedef struct {
     void* cfg;
 
     /* queue of announces to try */
-    void* announces;
+    void* try_announces;
 
     /* tracker client */
     void* tc;
@@ -106,18 +106,17 @@ static int __trackerclient_try_announces(sys_t* me)
     char* a; /* announcement */
     int waiting_for_response_from_connection = 0;
 
-    if (0 == llqueue_count(me->announces))
+    if (0 == llqueue_count(me->try_announces))
         return 0;
 
     me->tc = tc = trackerclient_new(__on_tc_done, __on_tc_add_peer, me);
     trackerclient_set_cfg(tc, me->cfg);
 
-    while ((a = llqueue_poll(me->announces)))
+    while ((a = llqueue_poll(me->try_announces)))
     {
         if (1 == trackerclient_supports_uri(tc, a))
         {
             printf("Trying: %s\n", a);
-
             if (0 == trackerclient_connect_to_uri(tc, a))
             {
                 printf("ERROR: connecting to %s\n", a);
@@ -136,10 +135,7 @@ skip:
     }
 
     if (0 == waiting_for_response_from_connection)
-    {
         return 0;
-    }
-
     return 1;
 }
 
@@ -264,8 +260,7 @@ static int __tfr_event_str(void* udata, const char* key, const char* val, int le
 
     if (!strcmp(key,"announce"))
     {
-        /* add to queue. We'll try them out by polling the queue elsewhere */
-        llqueue_offer(me->sys->announces, strndup(val,len));
+        llqueue_offer(me->sys->try_announces, strndup(val,len));
     }
     else if (!strcmp(key,"infohash"))
     {
@@ -466,30 +461,11 @@ int main(int argc, char **argv)
 
     me.bc = bt_dm_new();
     me.cfg = bt_dm_get_config(me.bc);
-    me.announces = llqueue_new();
+    me.try_announces = llqueue_new();
     memset(&me.stat, 0, sizeof(bt_dm_stats_t));
 
-#if 0
-    status = config_read(cfg, "yabtc", "config");
-    setlocale(LC_ALL, " ");
-    atexit (close_stdin);
-    bt_dm_set_logging(bc,
-            open("dump_log", O_CREAT | O_TRUNC | O_RDWR, 0666), __log);
-#endif
-
-    if (args.torrent_file)
-        config_set_va(me.cfg,"torrent_file","%s", args.torrent_file);
-    config_set(me.cfg, "my_peerid", bt_generate_peer_id());
-    assert(config_get(me.cfg, "my_peerid"));
-    //if (o_show_config)
-    //    config_print(cfg);
-
-    /* database for dumping pieces to disk */
     me.fd = bt_filedumper_new();
-
-    /* Disk Cache */
     me.dc = bt_diskcache_new();
-    /* point diskcache to filedumper */
     bt_diskcache_set_disk_blockrw(me.dc,
             bt_filedumper_get_blockrw(me.fd), me.fd);
 
@@ -516,7 +492,7 @@ int main(int argc, char **argv)
     bt_dm_check_pieces(me.bc);
     bt_piecedb_print_pieces_downloaded(me.db);
 
-    /* set network functions */
+    /* Network functions */
     bt_dm_set_cbs(me.bc, &((bt_dm_cbs_t) {
             .peer_connect = peer_connect,
             .peer_send = peer_send,
@@ -530,6 +506,22 @@ int main(int argc, char **argv)
             .msghandler_new = NULL,
             .handshake_success = NULL,
             }), NULL);
+
+#if 0
+    status = config_read(cfg, "yabtc", "config");
+    setlocale(LC_ALL, " ");
+    atexit (close_stdin);
+    bt_dm_set_logging(bc,
+            open("dump_log", O_CREAT | O_TRUNC | O_RDWR, 0666), __log);
+#endif
+
+    if (args.torrent_file)
+        config_set_va(me.cfg,"torrent_file","%s", args.torrent_file);
+    config_set(me.cfg, "my_peerid", bt_generate_peer_id());
+    assert(config_get(me.cfg, "my_peerid"));
+    //if (o_show_config)
+    //    config_print(cfg);
+
 
     if (args.info)
         __read_torrent_file(&me, config_get(me.cfg,"torrent_file"));

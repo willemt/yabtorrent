@@ -11,8 +11,8 @@
  */
 
 #include <stdlib.h>
-#include <string.h>
 #include <stdio.h>
+#include <string.h>
 #include <assert.h>
 
 /* for uint32_t */
@@ -45,10 +45,6 @@
 #include "bt_selector_random.h"
 #include "bt_selector_rarestfirst.h"
 #include "bt_selector_sequential.h"
-
-#include <sys/types.h>
-#include <sys/stat.h>
-//#include <fcntl.h>
 
 #include <time.h>
 

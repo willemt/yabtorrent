@@ -18,7 +18,6 @@
 #include <stdint.h>
 
 #include "bt.h"
-#include "bt_local.h"
 
 /* for bt_piece_write_block return codes */
 #include "bt_piece.h"
@@ -29,6 +28,8 @@
 
 /* for bitstream_write() */
 #include "bitstream.h"
+
+enum { FALSE, TRUE };
 
 enum {
     VALIDITY_NOTCHECKED,
@@ -267,13 +268,13 @@ void bt_piece_poll_block_request(bt_piece_t * me, bt_block_t * request)
 
     /*  very rare that the standard block size is greater than the piece size
      *  this should relate to testing only */
-    if (priv(me)->piece_length < BLOCK_SIZE)
+    if (priv(me)->piece_length < BT_BLOCK_SIZE)
     {
         blk_size = priv(me)->piece_length;
     }
     else
     {
-        blk_size = BLOCK_SIZE;
+        blk_size = BT_BLOCK_SIZE;
     }
 
     /* create the request by getting an incomplete block */
