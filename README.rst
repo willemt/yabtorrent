@@ -26,6 +26,25 @@ YABTorrent is event based.
 
 See bt.h for documentation.
 
+Below is a description of the key source files:
+
+- yabtorrent.c: main()
+- networkfuncs_libuv.c: Implementation of network stack
+- bt_download_manager.c: Key functions for orchestrating the download
+- bt_peer_manager.c: Collection of peers
+- bt_piece.c: Manage piece data (ie. write/read and progress)
+- bt_piece_db.c: Collection of pieces
+- bt_blacklist.c: Block peers from sending invalid pieces
+- bt_choker_leecher.c: Choker algorithm for leechers
+- bt_choker_seeder.c: Choker algorithm for seeders
+- bt_diskcache.c: In-memory file layer that manages a LRU cache over another file layer
+- bt_diskmem.c: In-memory file layer (for testing only)
+- bt_filedumper.c: File layer that writes/reads to disk
+- bt_selector_endgame.c: End game piece selection alogrithm
+- bt_selector_random.c: Random piece selection alogrithm
+- bt_selector_rarestfirst.c: Rarest first piece selection alogrithm
+- bt_selector_sequential.c: Sequential piece selection alogrithm
+
 Building
 --------
 
