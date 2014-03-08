@@ -13,7 +13,6 @@
 #include <strings.h>
 #include <string.h>
 #include <assert.h>
-#include <fcntl.h>
 #include <getopt.h>
 #include <sys/time.h>
 #include <uv.h>
@@ -26,7 +25,6 @@
 #include "bt_diskcache.h"
 #include "bt_filedumper.h"
 #include "bt_string.h"
-#include "bt_sha1.h"
 #include "bt_selector_random.h"
 #include "tracker_client.h"
 #include "torrentfile_reader.h"
@@ -37,8 +35,6 @@
 #include "pwp_handshaker.h"
 
 #include "docopt.c"
-
-#define PROGRAM_NAME "bt"
 
 typedef struct {
     /* bitorrent client */
@@ -519,9 +515,6 @@ int main(int argc, char **argv)
         config_set_va(me.cfg,"torrent_file","%s", args.torrent_file);
     config_set(me.cfg, "my_peerid", bt_generate_peer_id());
     assert(config_get(me.cfg, "my_peerid"));
-    //if (o_show_config)
-    //    config_print(cfg);
-
 
     if (args.info)
         __read_torrent_file(&me, config_get(me.cfg,"torrent_file"));
@@ -536,7 +529,6 @@ int main(int argc, char **argv)
         exit(EXIT_FAILURE);
     }
 
-    /* start uv */
     loop = uv_default_loop();
     uv_mutex_init(&me.mutex);
 
@@ -563,10 +555,9 @@ int main(int argc, char **argv)
     config_set_va(me.cfg, "pwp_listen_port", "%d", listen_port);
     printf("Listening on port: %d\n", listen_port);
 
-    /* try to connect to tracker */
     if (0 == __trackerclient_try_announces(&me))
     {
-        printf("No connections made, quitting\n");
+        printf("No connections could be made, quitting\n");
         exit(0);
     }
 
