@@ -88,6 +88,31 @@ typedef struct
 
 } bt_dm_private_t;
 
+typedef struct {
+    bt_peer_t* peer;
+    bt_block_t blk;
+} bt_job_pollblock_t;
+
+typedef struct {
+    bt_peer_t* peer;
+    int piece_idx;
+} bt_job_validate_piece_t;
+
+enum {
+    BT_JOB_NONE,
+    BT_JOB_POLLBLOCK,
+    BT_JOB_VALIDATE_PIECE
+};
+
+typedef struct {
+    int type;
+    union {
+        bt_job_pollblock_t pollblock;
+        bt_job_validate_piece_t validate_piece;
+    };
+} bt_job_t;
+
+
 void *bt_dm_get_piecedb(bt_dm_t* me_);
 
 static void __log(void *me_, void *src, const char *fmt, ...)
@@ -100,29 +125,14 @@ static void __log(void *me_, void *src, const char *fmt, ...)
         return;
 
     p = buf;
-    sprintf(p, "%s,", config_get(me->cfg,"my_peerid"));
-    p += strlen(buf);
+    if (config_get(me->cfg,"my_peerid"))
+        sprintf(p, "%s,", config_get(me->cfg,"my_peerid"));
+        p += strlen(buf);
 
     va_start(args, fmt);
     vsprintf(p, fmt, args);
     me->cb.log(me->cb_ctx, NULL, buf);
 }
-
-#if 0
-static void __log(void *me_, void *src, const char *fmt, ...)
-{
-    bt_dm_private_t *me = me_;
-    char buf[1024];
-    va_list args;
-
-    if (!me->cb.log)
-        return;
-
-    va_start(args, fmt);
-    vsprintf(buf, fmt, args);
-    __FUNC_log(me_,src,buf);
-}
-#endif
 
 static int __FUNC_peerconn_send_to_peer(void *me_,
                                         const void* pc_peer,
@@ -140,8 +150,6 @@ void __FUNC_peer_periodic(void* cb_ctx, void* peer, void* udata)
     pwp_conn_periodic(p->pc);
 }
 
-/**
- * Processes each peer connection retrieving stats */
 void __FUNC_peer_stats_visitor(void* cb_ctx, void* peer, void* udata)
 {
     bt_dm_stats_t *s = udata;
@@ -333,30 +341,6 @@ static void __FUNC_peerconn_send_have(void* cb_ctx, void* peer, void* udata)
     if (!pwp_conn_flag_is_set(p->pc, PC_HANDSHAKE_RECEIVED)) return;
     pwp_conn_send_have(p->pc, bt_piece_get_idx(udata));
 }
-
-typedef struct {
-    bt_peer_t* peer;
-    bt_block_t blk;
-} bt_job_pollblock_t;
-
-typedef struct {
-    bt_peer_t* peer;
-    int piece_idx;
-} bt_job_validate_piece_t;
-
-enum {
-    BT_JOB_NONE,
-    BT_JOB_POLLBLOCK,
-    BT_JOB_VALIDATE_PIECE
-};
-
-typedef struct {
-    int type;
-    union {
-        bt_job_pollblock_t pollblock;
-        bt_job_validate_piece_t validate_piece;
-    };
-} bt_job_t;
 
 static void* __offer_job(void *me_, void* j_)
 {
@@ -759,8 +743,9 @@ static void __default_handshake_success(
 void bt_dm_set_cbs(bt_dm_t* me_, bt_dm_cbs_t * func, void* cb_ctx)
 {
     bt_dm_private_t *me = (void*)me_;
-    memcpy(&me->cb, func, sizeof(bt_dm_cbs_t));
+
     me->cb_ctx = cb_ctx;
+    memcpy(&me->cb, func, sizeof(bt_dm_cbs_t));
     if (!me->cb.msghandler_new)
         me->cb.msghandler_new = __default_msghandler_new;
     if (!me->cb.handshake_success)
@@ -863,7 +848,7 @@ void *bt_dm_new()
     me->lchoke = bt_leeching_choker_new(
             atoi(config_get(me->cfg,"max_active_peers")));
     bt_leeching_choker_set_choker_peer_iface(me->lchoke, me,
-                                             &iface_choker_peer);
+            &iface_choker_peer);
 
     /* timing */
     me->ticker = eventtimer_new();
