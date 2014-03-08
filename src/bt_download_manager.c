@@ -90,7 +90,7 @@ typedef struct
 
 void *bt_dm_get_piecedb(bt_dm_t* me_);
 
-static void __FUNC_log(void *me_, void *src, const char *fmt, ...)
+static void __log(void *me_, void *src, const char *fmt, ...)
 {
     bt_dm_private_t *me = me_;
     char buf[1024], *p;
@@ -108,6 +108,7 @@ static void __FUNC_log(void *me_, void *src, const char *fmt, ...)
     me->cb.log(me->cb_ctx, NULL, buf);
 }
 
+#if 0
 static void __log(void *me_, void *src, const char *fmt, ...)
 {
     bt_dm_private_t *me = me_;
@@ -121,6 +122,7 @@ static void __log(void *me_, void *src, const char *fmt, ...)
     vsprintf(buf, fmt, args);
     __FUNC_log(me_,src,buf);
 }
+#endif
 
 static int __FUNC_peerconn_send_to_peer(void *me_,
                                         const void* pc_peer,
@@ -542,7 +544,7 @@ void __FUNC_peerconn_log(void *me_, void *src_peer, const char *buf, ...)
     char buffer[1000];
 
     sprintf(buffer, "pwp,%s,%s", peer->peer_id, buf);
-    __FUNC_log(me_,NULL,buffer);
+    __log(me_,NULL,buffer);
 }
 
 int __FUNC_peerconn_disconnect(void *me_, void* pr, char *reason)
