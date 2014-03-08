@@ -18,7 +18,6 @@
 
 #include "bt.h"
 #include "bt_string.h"
-#include "bt_local.h"
 #include "bt_util.h"
 
 #include "sha1.h"

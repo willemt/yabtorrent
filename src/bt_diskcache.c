@@ -18,15 +18,7 @@
 /* for uint32_t */
 #include <stdint.h>
 
-#include <stdbool.h>
-#include <assert.h>
-#include <setjmp.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
-
 #include "bt.h"
-#include "bt_local.h"
 
 #include "pseudolru.h"
 

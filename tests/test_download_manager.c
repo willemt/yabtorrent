@@ -9,7 +9,6 @@
 #include <stdint.h>
 
 #include "bt.h"
-#include "bt_local.h"
 
 #if 0
 /*

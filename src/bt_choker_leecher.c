@@ -20,7 +20,6 @@
 #include <stdint.h>
 
 #include "bt.h"
-#include "bt_local.h"
 #include "bt_choker_peer.h"
 #include "bt_choker.h"
 

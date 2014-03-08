@@ -14,7 +14,6 @@
 #include "bt.h"
 #include "bt_piece_db.h"
 #include "bt_piece.h"
-#include "bt_local.h"
 
 void TestBTpiecedb_new_is_empty(CuTest * tc)
 {

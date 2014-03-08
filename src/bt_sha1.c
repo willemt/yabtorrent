@@ -17,12 +17,8 @@
 #include "sha1.h"
 
 #include "bt.h"
-#include "bt_local.h"
 
-int bt_sha1_equal(
-    char * s1,
-    char * s2
-)
+int bt_sha1_equal(char * s1, char * s2)
 {
     return 0 == memcmp(s1, s2, 20);
 #if 0
@@ -34,11 +30,7 @@ int bt_sha1_equal(
 #endif
 }
 
-void bt_str2sha1hash(
-    char *hash_out,
-    const char *str,
-    int len
-)
+void bt_str2sha1hash(char *hash_out, const char *str, int len)
 {
     SHA1_CTX ctx;
     int ii;

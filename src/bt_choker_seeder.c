@@ -11,7 +11,6 @@
 
 #include <stdlib.h>
 #include <string.h>
-#include <stdarg.h>
 #include <stdio.h>
 #include <assert.h>
 
@@ -19,9 +18,9 @@
 #include <stdint.h>
 
 #include "bt.h"
-#include "bt_local.h"
 #include "bt_choker_peer.h"
 #include "bt_choker.h"
+
 #include "linked_list_queue.h"
 #include "linked_list_hashmap.h"
 

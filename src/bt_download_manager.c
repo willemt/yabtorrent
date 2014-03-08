@@ -31,13 +31,11 @@
 #include "pwp_msghandler.h"
 
 #include "bt.h"
-#include "bt_local.h"
 #include "bt_peermanager.h"
 #include "bt_string.h"
 #include "bt_piece_db.h"
 #include "bt_piece.h"
 #include "bt_blacklist.h"
-#include "bt_download_manager_private.h"
 #include "bt_choker_peer.h"
 #include "bt_choker.h"
 #include "bt_choker_leecher.h"

@@ -19,7 +19,6 @@
 
 #include "bt_piece_db.h"
 #include "bt_piece.h"
-#include "bt_local.h"
 
 #define HASH_EXAMPLE "00000000000000000000"
 

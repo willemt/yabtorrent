@@ -9,7 +9,6 @@
 #include <stdint.h>
 
 #include "bt.h"
-#include "bt_local.h"
 #include "bt_blacklist.h"
 
 void TestBT_blacklist_after_new_is_empty(

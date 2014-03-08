@@ -10,7 +10,6 @@
 #include <stdint.h>
 
 #include "bt.h"
-#include "bt_local.h"
 #include "bt_selector_rarestfirst.h"
 
 static bt_pieceselector_i iface = {

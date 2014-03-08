@@ -9,7 +9,6 @@
 #include <stdint.h>
 
 #include "bt.h"
-#include "bt_local.h"
 
 /*
  * bt_sha1_equal tells if a sha1 hash is equal or not

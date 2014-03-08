@@ -8,7 +8,6 @@
 #include "mock_torrent.h"
 #include "mt19937ar.h"
 #include "bt.h"
-#include "bt_local.h"
 
 typedef struct {
     unsigned char *data;

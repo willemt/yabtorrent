@@ -16,7 +16,6 @@
 
 #include "block.h"
 #include "bt.h"
-#include "bt_local.h"
 
 #include "linked_list_queue.h"
 #include "linked_list_hashmap.h"
