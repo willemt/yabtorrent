@@ -87,12 +87,12 @@ static void __on_tc_add_peer(void* callee,
 static void __log(void *udata, void *src, const char *buf, ...)
 {
     char stamp[32];
-//    int fd = (unsigned long) udata;
     struct timeval tv;
 
 //    printf("%s\n", buf);
     gettimeofday(&tv, NULL);
     sprintf(stamp, "%d,%0.2f,", (int) tv.tv_sec, (float) tv.tv_usec / 100000);
+//    int fd = (unsigned long) udata;
 //    write(fd, stamp, strlen(stamp));
 //    write(fd, buf, strlen(buf));
 }
@@ -385,25 +385,12 @@ static int __cmp_peer_stats(const void * a, const void *b)
     return ((bt_dm_peer_stats_t*)b)->drate - ((bt_dm_peer_stats_t*)a)->drate;
 }
 
-static void __periodic(uv_timer_t* handle, int status)
+static void __display_progress(sys_t *me)
 {
-    sys_t* me = handle->data;
-    int i;
-
-    if (me->bc)
-    {
-        uv_mutex_lock(&me->mutex);
-        bt_dm_periodic(me->bc, &me->stat);
-        uv_mutex_unlock(&me->mutex);
-    }
-
-    __log_process_info();
-
-    // bt_piecedb_print_pieces_downloaded(bt_dm_get_piecedb(me));
-
     // TODO: show inactive peers
     // TODO: show number of invalid pieces
 
+    int i;
     int connected = 0, choked = 0, choking = 0, failed_connection = 0;
     int drate = 0, urate = 0, downloading = 0;
     int min=INT_MAX, max=0, avg=0;
@@ -455,6 +442,21 @@ static void __periodic(uv_timer_t* handle, int status)
         me->stat.npeers, connected, downloading, choked, choking,
         failed_connection);
     printf("\t\t\t\t\r");
+}
+
+static void __periodic(uv_timer_t* handle, int status)
+{
+    sys_t* me = handle->data;
+
+    if (me->bc)
+    {
+        uv_mutex_lock(&me->mutex);
+        bt_dm_periodic(me->bc, &me->stat);
+        uv_mutex_unlock(&me->mutex);
+    }
+
+    __log_process_info();
+    __display_progress(me);
 }
 
 int main(int argc, char **argv)
