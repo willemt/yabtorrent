@@ -161,7 +161,6 @@ static int __write_block(
 
     mpce = __get_piece(me, blk->piece_idx);
 
-    /*  malloc memory if we haven't */
     if (!mpce->data)
     {
         mpce->data = calloc(1, priv(me)->piece_length);
@@ -183,7 +182,7 @@ static int __write_block(
     /*  touch piece to show how recent it is */
     pseudolru_put(priv(me)->lru_piece, (void *) mpce, (void *) mpce);
 
-#if 0
+#if 1
     /* check if we have enough pieces to write out to disk */
     if (20 < pseudolru_count(priv(me)->lru_piece))
     {
