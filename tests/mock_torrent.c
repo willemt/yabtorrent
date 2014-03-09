@@ -8,6 +8,7 @@
 #include "mock_torrent.h"
 #include "mt19937ar.h"
 #include "bt.h"
+#include "bt_sha1.h"
 
 typedef struct {
     unsigned char *data;
@@ -19,7 +20,7 @@ typedef struct {
 void *mocktorrent_new(int size, int piece_len)
 {
     mock_torrent_t* me;
-    int ii, *ptr;
+    int ii;
 
     me = malloc(sizeof(mock_torrent_t));
     me->data = malloc(size * piece_len);
@@ -47,6 +48,7 @@ void *mocktorrent_get_piece_sha1(void* _me, char* hash, unsigned int piece)
 {
     mock_torrent_t* me = _me;
 
-    bt_str2sha1hash(hash, me->data + piece * me->piece_len, me->piece_len);
+    bt_str2sha1hash(hash, (unsigned char*)me->data + piece * me->piece_len,
+            me->piece_len);
     return hash;
 }

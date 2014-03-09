@@ -97,7 +97,6 @@ void client_add_peer(
     unsigned int port)
 {
     void* peer;
-    void* netdata;
     void* peer_nethandle;
     char ip_string[32];
 

@@ -129,7 +129,6 @@ void bt_sequential_selector_giveback_piece(
 {
     sequential_t *me = r;
     peer_t *pr;
-    void* p;
 
     hashmap_remove(me->p_polled, (void *) (long) piece_idx + 1);
 
@@ -200,7 +199,6 @@ int bt_sequential_selector_poll_best_piece(
 )
 {
     sequential_t *me = r;
-    heap_t *hp;
     peer_t *pr;
     int piece_idx;
 

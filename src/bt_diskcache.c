@@ -11,15 +11,18 @@
 
 #include <stdlib.h>
 #include <string.h>
-#include <stdarg.h>
 #include <stdio.h>
 #include <assert.h>
+
+/* for log() vaargs */
+#include <stdarg.h>
 
 /* for uint32_t */
 #include <stdint.h>
 
 #include "bt.h"
 
+/* for LRU cache */
 #include "pseudolru.h"
 
 typedef struct
@@ -46,6 +49,7 @@ typedef struct
     /* logger */
     func_log_f func_log;
     void *logger_data;
+
 } diskcache_private_t;
 
 #define priv(x) ((diskcache_private_t*)(x))
@@ -288,7 +292,6 @@ void *bt_diskcache_new()
 void bt_diskcache_set_size(void *dco, const int piece_bytes_size)
 {
     bt_diskcache_t *me = dco;
-
     assert(0 < piece_bytes_size);
     priv(me)->piece_length = piece_bytes_size;
 }
@@ -300,7 +303,6 @@ void bt_diskcache_set_disk_blockrw(
 )
 {
     bt_diskcache_t *me = dco;
-
     assert(irw->write_block);
     assert(irw->read_block);
     priv(me)->disk = irw;
@@ -310,14 +312,12 @@ void bt_diskcache_set_disk_blockrw(
 bt_blockrw_i *bt_diskcache_get_blockrw(void *dco)
 {
     bt_diskcache_t *me = dco;
-
     return &priv(me)->irw;
 }
 
 void bt_diskcache_set_piece_length(void* dco, int piece_length)
 {
     bt_diskcache_t *me = dco;
-
     priv(me)->piece_length = piece_length;
 }
 
@@ -329,11 +329,9 @@ void bt_diskcache_disk_dump(void *dco)
 
     for (ii = 0; ii < priv(me)->npieces; ii++)
     {
-        mpiece_t *pce;
+        mpiece_t *p = __get_piece(me, ii);
 
-        pce = __get_piece(me, ii);
-
-        if (pce->data)
+        if (p->data)
         {
             __diskdump_piece(me, ii);
         }

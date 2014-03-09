@@ -86,7 +86,6 @@ void TestBT_Peer_share_20_pieces(CuTest * tc)
     client_t* a, *b;
     hashmap_iterator_t iter;
     void* mt;
-    void* clients;
     char *addr;
 
     num_pieces = 50;
@@ -149,11 +148,11 @@ void TestBT_Peer_share_20_pieces(CuTest * tc)
         bt_dm_periodic(a->bt, NULL);
         bt_dm_periodic(b->bt, NULL);
 
-        network_poll(a->bt, &a, 0,
+        network_poll(a->bt, (void*)&a, 0,
                 bt_dm_dispatch_from_buffer,
                 mock_on_connect);
 
-        network_poll(b->bt, &b, 0,
+        network_poll(b->bt, (void*)&b, 0,
                 bt_dm_dispatch_from_buffer,
                 mock_on_connect);
     }

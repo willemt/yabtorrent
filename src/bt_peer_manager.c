@@ -118,7 +118,6 @@ bt_peer_t *bt_peermanager_add_peer(void *pm,
                               const char *ip, const int ip_len, const int port)
 {
     bt_peermanager_t *me = pm;
-    void *pc;
     bt_peer_t *peer;
 
     /* prevent dupes.. */

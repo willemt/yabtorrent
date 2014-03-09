@@ -17,6 +17,7 @@
 #include <assert.h>
 
 #include "bt.h"
+#include "bt_string.h"
 #include "networkfuncs.h"
 #include "networkfuncs_mock.h"
 #include "mock_torrent.h"
@@ -39,7 +40,6 @@ void TestBT_Peer_shares_all_pieces(
     client_t* a, *b;
     hashmap_iterator_t iter;
     void* mt;
-    void* clients;
     char *addr;
 
     clients_setup();
@@ -104,11 +104,11 @@ void TestBT_Peer_shares_all_pieces(
         bt_dm_periodic(a->bt, NULL);
         bt_dm_periodic(b->bt, NULL);
 
-        network_poll(a->bt, &a, 0,
+        network_poll(a->bt, (void*)&a, 0,
                 bt_dm_dispatch_from_buffer,
                 mock_on_connect);
 
-        network_poll(b->bt, &b, 0,
+        network_poll(b->bt, (void*)&b, 0,
                 bt_dm_dispatch_from_buffer,
                 mock_on_connect);
 

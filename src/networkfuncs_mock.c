@@ -195,7 +195,6 @@ int peer_send(void* caller, void **udata,
 
 int peer_disconnect(void* caller, void **udata, void* nethandle)
 {
-    client_t* me = *udata;
     return 1;
 }
 

@@ -17,3 +17,13 @@ int peer_send(void* caller, void **udata,
 
 int peer_disconnect(void* caller, void **udata, void* nethandle);
 
+int network_poll(void* caller, void **udata,
+               const int msec_timeout,
+               int (*func_process) (void *caller,
+                                    void* nethandle,
+                                    const unsigned char* buf,
+                                    unsigned int len),
+               void (*func_process_connection) (void *,
+                                                void* nethandle,
+                                                char *ip,
+                                                int port));

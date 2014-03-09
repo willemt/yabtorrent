@@ -84,7 +84,6 @@ void bt_random_selector_free(
     void *r
 )
 {
-    random_t *rf = r;
 
 //    hashmap_free(rf->peers);
 //    bag_free(rf->p_candidates);
@@ -133,7 +132,6 @@ void bt_random_selector_giveback_piece(
 {
     random_t *rf = r;
     peer_t *pr;
-    void* p;
 
     hashmap_remove(rf->p_polled, (void *) (long) piece_idx + 1);
 

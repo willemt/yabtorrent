@@ -523,7 +523,6 @@ int __FUNC_peerconn_pushblock(
 
 void __FUNC_peerconn_log(void *me_, void *src_peer, const char *buf, ...)
 {
-    bt_dm_private_t *me = me_;
     bt_peer_t *peer = src_peer;
     char buffer[1000];
 
@@ -533,7 +532,6 @@ void __FUNC_peerconn_log(void *me_, void *src_peer, const char *buf, ...)
 
 int __FUNC_peerconn_disconnect(void *me_, void* pr, char *reason)
 {
-    bt_dm_private_t *me = me_;
     bt_peer_t * peer = pr;
 
     __log(me_,NULL,"disconnecting,%s", reason);

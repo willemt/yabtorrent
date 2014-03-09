@@ -128,6 +128,7 @@ def scenario_test(bld, src, ccflag=None):
         cflags=[
             '-g',
             '-Werror',
+            '-Werror=unused-variable',
             '-Werror=uninitialized',
             '-Werror=return-type',
             ],
@@ -243,6 +244,7 @@ def build(bld):
             '-Werror=int-to-pointer-cast',
             '-g',
             platform,
+            '-Werror=unused-variable',
             '-Werror=return-type',
             '-Werror=uninitialized',
             '-Werror=pointer-to-int-cast',
