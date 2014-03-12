@@ -1,3 +1,6 @@
+#ifndef SHA1_H
+#define SHA1_H
+
 /* ================ sha1.h ================ */
 /*
 SHA-1 in C
@@ -34,3 +37,5 @@ void SHA1Final(
 
 
 /* ================ end of sha1.h ================ */
+
+#endif /* SHA1_H */
