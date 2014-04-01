@@ -83,6 +83,21 @@ void TestBTPieceDB_GetLength_returns_correct_length_of_db(CuTest * tc)
     CuAssertTrue(tc, 4 == bt_piecedb_get_length(db));
 }
 
+void TestBTPieceDB_add_pieces(CuTest * tc)
+{
+    void *db;
+
+    db = bt_piecedb_new();
+    //bt_piecedb_set_piece_length(db, 40);
+    /* need to add a file so that we have a filespace to hold the added piece */
+    bt_piecedb_increase_piece_space(db,40);
+    //bt_piecedb_add(db, "00000000000000000000", 40);
+    bt_piecedb_add(db, 2);// "00000000000000000000", 40);
+    CuAssertTrue(tc, 2 == bt_piecedb_count(db));
+    CuAssertTrue(tc, NULL != bt_piecedb_get(db, 0));
+    CuAssertTrue(tc, NULL != bt_piecedb_get(db, 1));
+}
+
 #if 0
 void T_estBTPieceDB_AddingPiece_LastPieceFitsTotalSize(
     CuTest * tc
