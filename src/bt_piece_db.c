@@ -133,6 +133,8 @@ int bt_piecedb_add(bt_piecedb_t * db, unsigned int npieces)
     sc_mark_complete(priv(db)->space, idx, len);
     assert(len == npieces);
 
+    int ret = idx;
+
     int i;
     for (i=0; i<npieces; i++)
     {
@@ -143,7 +145,8 @@ int bt_piecedb_add(bt_piecedb_t * db, unsigned int npieces)
         //bt_piece_set_idx(pce, idx + i);
         hashmap_put(priv(db)->pmap, (void*)((unsigned long)pce->idx+1), pce);
     }
-    return pce->idx;
+
+    return ret;
 }
 
 void bt_piecedb_remove(bt_piecedb_t * db, int idx)
