@@ -123,30 +123,31 @@ int bt_piecedb_add_with_hash_and_size(bt_piecedb_t * db,
 
 int bt_piecedb_add(bt_piecedb_t * db, unsigned int npieces)
 {
-    bt_piece_t *pce;
-
-    assert(priv(db)->pmap);
-
     /* get space for this block of pieces */
     int idx, len;
     sc_get_incomplete(priv(db)->space, &idx, &len, npieces);
-    sc_mark_complete(priv(db)->space, idx, len);
     assert(len == npieces);
+    return bt_piecedb_add_at_idx(db, npieces, idx);
+}
 
-    int ret = idx;
+int bt_piecedb_add_at_idx(bt_piecedb_t * db, unsigned int npieces, int idx)
+{
+
+    if (sc_have(priv(db)->space,idx, npieces))
+        return -1;
+
+    sc_mark_complete(priv(db)->space, idx, npieces);
 
     int i;
     for (i=0; i<npieces; i++)
     {
-        pce = bt_piece_new(NULL, 0);
-        bt_piece_set_disk_blockrw(pce,
-                priv(db)->blockrw, priv(db)->blockrw_data);
-        bt_piece_set_idx(pce, hashmap_count(priv(db)->pmap));
-        //bt_piece_set_idx(pce, idx + i);
-        hashmap_put(priv(db)->pmap, (void*)((unsigned long)pce->idx+1), pce);
+        bt_piece_t *p = bt_piece_new(NULL, 0);
+        bt_piece_set_disk_blockrw(p, priv(db)->blockrw, priv(db)->blockrw_data);
+        bt_piece_set_idx(p, idx + i);
+        hashmap_put(priv(db)->pmap, (void*)((unsigned long)p->idx+1), p);
     }
 
-    return ret;
+    return idx;
 }
 
 void bt_piecedb_remove(bt_piecedb_t * db, int idx)

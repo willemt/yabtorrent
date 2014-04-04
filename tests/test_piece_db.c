@@ -53,6 +53,24 @@ void TestBTPieceDB_add_piece_twice(CuTest * tc)
     CuAssertTrue(tc, NULL != bt_piecedb_get(db, 1));
 }
 
+void TestBTPieceDB_add_piece_at_idx(CuTest * tc)
+{
+    void *db;
+
+    db = bt_piecedb_new();
+    bt_piecedb_increase_piece_space(db,40);
+    CuAssertTrue(tc, 0 == bt_piecedb_add_at_idx(db, 1, 0));
+    CuAssertTrue(tc, 1 == bt_piecedb_count(db));
+    CuAssertTrue(tc, NULL != bt_piecedb_get(db, 0));
+
+    db = bt_piecedb_new();
+    bt_piecedb_increase_piece_space(db,40);
+    CuAssertTrue(tc, 1 == bt_piecedb_add_at_idx(db, 1, 1));
+    CuAssertTrue(tc, 1 == bt_piecedb_count(db));
+    CuAssertTrue(tc, NULL == bt_piecedb_get(db, 0));
+    CuAssertTrue(tc, NULL != bt_piecedb_get(db, 1));
+}
+
 void TestBTPieceDB_remove(CuTest * tc)
 {
     void *db;
