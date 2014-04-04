@@ -153,6 +153,7 @@ void bt_piecedb_remove(bt_piecedb_t * db, int idx)
 {
     // TODO memleak here?
     hashmap_remove(priv(db)->pmap, (void*)((unsigned long)idx+1));
+    sc_mark_incomplete(priv(db)->space, idx, 1);
 }
 
 int bt_piecedb_get_num_downloaded(bt_piecedb_t * db)
