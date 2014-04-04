@@ -67,6 +67,20 @@ void TestBTPieceDB_remove(CuTest * tc)
     CuAssertTrue(tc, NULL == bt_piecedb_get(db, 0));
 }
 
+void TestBTPieceDB_remove_allows_space_to_be_taken(CuTest * tc)
+{
+    void *db;
+
+    db = bt_piecedb_new();
+    /* need to add a file so that we have a filespace to hold the added piece */
+    bt_piecedb_increase_piece_space(db, 40);
+    CuAssertTrue(tc, 0 == bt_piecedb_add(db, 1));
+    bt_piecedb_remove(db, 0);
+    CuAssertTrue(tc, 0 == bt_piecedb_add(db, 1));
+    CuAssertTrue(tc, 1 == bt_piecedb_count(db));
+    CuAssertTrue(tc, NULL != bt_piecedb_get(db, 0));
+}
+
 void TestBTPieceDB_GetLength_returns_correct_length_of_db(CuTest * tc)
 {
     void *db;
