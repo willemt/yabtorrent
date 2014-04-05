@@ -126,13 +126,13 @@ int bt_piecedb_add(bt_piecedb_t * db, unsigned int npieces)
     /* get space for this block of pieces */
     int idx, len;
     sc_get_incomplete(priv(db)->space, &idx, &len, npieces);
+    //printf("len %d npieces %d\n", len, npieces);
     assert(len == npieces);
     return bt_piecedb_add_at_idx(db, npieces, idx);
 }
 
 int bt_piecedb_add_at_idx(bt_piecedb_t * db, unsigned int npieces, int idx)
 {
-
     if (sc_have(priv(db)->space,idx, npieces))
         return -1;
 
