@@ -57,6 +57,9 @@ typedef struct
 
     char *sha1;
 
+    /* modification time */
+    unsigned int mtime;
+
     /* if we calculate that we are completed, cache this result */
     int is_completed;
 
@@ -433,5 +436,15 @@ int bt_piece_validate(bt_piece_t* me)
     }
 #endif
     return ret;
+}
+
+void bt_piece_set_mtime(bt_piece_t * me, unsigned int mtime)
+{
+    priv(me)->mtime = mtime;
+}
+
+unsigned int bt_piece_get_mtime(bt_piece_t * me)
+{
+    return priv(me)->mtime;
 }
 

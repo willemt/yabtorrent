@@ -90,6 +90,12 @@ int bt_piece_validate(bt_piece_t* me);
 int bt_piece_get_size(bt_piece_t * me);
 
 /**
+ * @return mtime */
+unsigned int bt_piece_get_mtime(bt_piece_t * me);
+
+void bt_piece_set_mtime(bt_piece_t * me, unsigned int mtime);
+
+/**
  * I/O performed.
  * @return data that the block represents */
 void *bt_piece_read_block(bt_piece_t *pceo, void *caller, const bt_block_t * b);
