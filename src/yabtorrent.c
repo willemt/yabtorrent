@@ -514,7 +514,6 @@ int main(int argc, char **argv)
     if (args.torrent_file)
         config_set_va(me.cfg,"torrent_file","%s", args.torrent_file);
     config_set(me.cfg, "my_peerid", bt_generate_peer_id());
-    assert(config_get(me.cfg, "my_peerid"));
 
     if (args.info)
         __read_torrent_file(&me, config_get(me.cfg,"torrent_file"));
