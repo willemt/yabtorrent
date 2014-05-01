@@ -25,7 +25,26 @@ contribs = [
 ('CHeaplessBencodeReader', 'http://github.com/willemt/CHeaplessBencodeReader'),
 ]
 
+def external_cmd(conf, cmd, cwd):
+    try:
+        return conf.cmd_and_log(cmd, cwd=cwd)
+    except Exception as e:
+        from waflib import Logs
+        Logs.info('cmd failed! ' + str(e))
+        Logs.info(e.stdout)
+        Logs.info(e.stderr)
+        Logs.info(dir(e))
+        return 0
+
+def get_contrib(conf,c):
+    print "Pulling via git %s..." % c[1]
+    conf.env.CONTRIB_PATH = './'
+    conf.exec_command("git clone %s %s" % (c[1],c[0],))
+    conf.exec_command("git pull %s" % c[1], cwd=c[0])
+
 def configure(conf):
+    conf.env.CONTRIB_PATH = './'
+
     conf.load('compiler_c')
     if sys.platform == 'win32':
         conf.check_cc(lib='ws2_32')
@@ -35,29 +54,33 @@ def configure(conf):
 #    conf.check_cc(lib='uv')
 
     conf.find_program("git")
+    #conf.find_program("automake")
+    #conf.find_program("glibtoolize")
 
     # Get the required contributions via GIT
-    for c in contribs:
-        print "Pulling via git %s..." % c[1]
-        #conf.exec_command("mkdir %s" % c[0])
-        #conf.exec_command("git init", cwd=c[0])
-        #conf.exec_command("git pull %s" % c[1], cwd=c[0])
-        if not os.path.exists("../"+c[0]):
-            conf.env.CONTRIB_PATH = './'
-            conf.exec_command("git clone %s %s" % (c[1],c[0],))
-            conf.exec_command("git pull %s" % c[1], cwd=c[0])
-        else:
-            conf.env.CONTRIB_PATH = '../'
-            
+    #for c in contribs:
+    #    get_contrib(conf,c)
+
     # Install and build libuv
     print "Configuring libuv (autogen.sh)"
-    conf.exec_command("sh autogen.sh", cwd="libuv")
-    print "Configuring libuv (configure)"
-    conf.exec_command("sh configure", cwd="libuv")
-    print "Building libuv.a"
-    conf.exec_command("make", cwd="libuv")
-    conf.exec_command("mkdir build")
-    conf.exec_command("cp libuv/.libs/libuv.a build/")
+    if sys.platform == 'darwin':
+        #external_cmd(conf, 'mkdir -p build', cwd='libuv')
+        conf.exec_command('mkdir -p build', cwd='libuv')
+        #external_cmd(conf, 'git clone https://git.chromium.org/external/gyp.git build/gyp', cwd='libuv')
+        conf.exec_command('git clone https://git.chromium.org/external/gyp.git build/gyp', cwd='libuv')
+        conf.exec_command('git pull https://git.chromium.org/external/gyp.git', cwd='libuv/build/gyp')
+        external_cmd(conf, './gyp_uv.py -f xcode', cwd='libuv')
+        external_cmd(conf, 'xcodebuild -ARCHS="x86_64" -project uv.xcodeproj -configuration Release -target All', cwd='libuv')
+        #conf.exec_command('./gyp_uv.py -f xcode', cwd='libuv')
+        #conf.exec_command('xcodebuild -ARCHS="x86_64" -project uv.xcodeproj -configuration Release -target All', cwd='libuv')
+    else:
+        conf.exec_command("sh autogen.sh", cwd="libuv")
+        print "Configuring libuv (configure)"
+        conf.exec_command("sh configure", cwd="libuv")
+        print "Building libuv.a"
+        conf.exec_command("make", cwd="libuv")
+        conf.exec_command("mkdir build")
+        conf.exec_command("cp libuv/.libs/libuv.a build/")
 
 
 #from waflib.Task import Task
@@ -159,8 +182,10 @@ def scenario_test(bld, src, ccflag=None):
 def build(bld):
     cp = bld.env.CONTRIB_PATH
 
+    print cp
+
     # Copy libuv.a to build/
-    bld(rule='cp ../libuv/.libs/libuv.a .', always=True)#, target="libuv.a")
+    bld(rule='cp '+cp+'/libuv/.libs/libuv.a .', always=True)#, target="libuv.a")
 
     if sys.platform == 'win32':
         platform = '-DWIN32'
