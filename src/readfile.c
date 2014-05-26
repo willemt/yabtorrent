@@ -14,9 +14,8 @@ char *read_file(
     FILE *file;
     char *buffer;
     unsigned long fileLen;
-
-    file = fopen(name, "rb");
-    if (!file)
+    
+    if (!(file = fopen(name, "rb"))
     {
         fprintf(stderr, "Unable to open file %s\n", name);
         return NULL;
