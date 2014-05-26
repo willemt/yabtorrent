@@ -1,5 +1,3 @@
-YABTorrent
-==========
 .. image:: https://travis-ci.org/willemt/YABTorrent.png
    :target: https://travis-ci.org/willemt/YABTorrent
 
@@ -44,6 +42,10 @@ Below is a description of the key source files:
 - bt_selector_random.c: Random piece selection alogrithm
 - bt_selector_rarestfirst.c: Rarest first piece selection alogrithm
 - bt_selector_sequential.c: Sequential piece selection alogrithm
+
+Example usage
+-------------
+https://github.com/willemt/dogebox - a Bittorrent Sync clone
 
 Building
 --------
