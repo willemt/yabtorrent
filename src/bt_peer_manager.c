@@ -45,7 +45,7 @@ static unsigned long __peer_hash(const void *obj)
     unsigned long hash = 5381;
     int c;
     
-    for (str = peer->ip; c = *str++;)
+    for (str = peer->ip; (c = *(str++));)
         hash = ((hash << 5) + hash) + c;
     hash += peer->port * 59;
     return hash;

@@ -64,15 +64,12 @@ def configure(conf):
     # Install and build libuv
     print "Configuring libuv (autogen.sh)"
     if sys.platform == 'darwin':
-        #external_cmd(conf, 'mkdir -p build', cwd='libuv')
         conf.exec_command('mkdir -p build', cwd='libuv')
-        #external_cmd(conf, 'git clone https://git.chromium.org/external/gyp.git build/gyp', cwd='libuv')
         conf.exec_command('git clone https://git.chromium.org/external/gyp.git build/gyp', cwd='libuv')
         conf.exec_command('git pull https://git.chromium.org/external/gyp.git', cwd='libuv/build/gyp')
         external_cmd(conf, './gyp_uv.py -f xcode', cwd='libuv')
         external_cmd(conf, 'xcodebuild -ARCHS="x86_64" -project uv.xcodeproj -configuration Release -target All', cwd='libuv')
-        #conf.exec_command('./gyp_uv.py -f xcode', cwd='libuv')
-        #conf.exec_command('xcodebuild -ARCHS="x86_64" -project uv.xcodeproj -configuration Release -target All', cwd='libuv')
+        conf.exec_command("cp libuv/build/Release/libuv.a build/")
     else:
         conf.exec_command("sh autogen.sh", cwd="libuv")
         print "Configuring libuv (configure)"
@@ -81,15 +78,6 @@ def configure(conf):
         conf.exec_command("make", cwd="libuv")
         conf.exec_command("mkdir build")
         conf.exec_command("cp libuv/.libs/libuv.a build/")
-
-
-#from waflib.Task import Task
-
-#class compiletest(Task):
-#    def run(self):
-#        return self.exec_command('sh ../make-tests.sh %s > %s' % (
-#                            self.inputs[0].abspath(),
-#                            self.outputs[0].abspath()))
 
 def unit_test(bld, src, ccflag=None):
     # collect tests into one area
@@ -185,7 +173,7 @@ def build(bld):
     print cp
 
     # Copy libuv.a to build/
-    bld(rule='cp '+cp+'/libuv/.libs/libuv.a .', always=True)#, target="libuv.a")
+    #bld(rule='cp '+cp+'/libuv/.libs/libuv.a .', always=True)#, target="libuv.a")
 
     if sys.platform == 'win32':
         platform = '-DWIN32'
@@ -267,6 +255,7 @@ def build(bld):
             '-Werror',
             '-Werror=format',
             '-Werror=int-to-pointer-cast',
+            '-Qunused-arguments',
             '-g',
             platform,
             '-Werror=unused-variable',

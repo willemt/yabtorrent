@@ -39,7 +39,6 @@ enum {
 
 typedef struct
 {
-    /* idx must align with bt_piece_t */
     int idx;
 
     /* for marking peers as invalid piece givers */
@@ -200,7 +199,7 @@ static void *__get_data(bt_piece_t * me)
     }
 
     /* read whole piece */
-    tmp.piece_idx = me->idx;
+    tmp.piece_idx = priv(me)->idx;
     tmp.offset = 0;
     tmp.len = priv(me)->piece_length;
 
@@ -243,7 +242,8 @@ int bt_piece_is_complete(bt_piece_t * me)
     if (priv(me)->is_completed)
         return TRUE;
 
-    int off, ln;
+    unsigned int off, ln;
+
     sc_get_incomplete(priv(me)->progress_downloaded, &off, &ln,
                               priv(me)->piece_length);
 
@@ -267,7 +267,7 @@ int bt_piece_is_fully_requested(bt_piece_t * me)
 
 void bt_piece_poll_block_request(bt_piece_t * me, bt_block_t * request)
 {
-    int offset, len, blk_size;
+    unsigned int offset, len, blk_size;
 
     /*  very rare that the standard block size is greater than the piece size
      *  this should relate to testing only */
@@ -282,7 +282,7 @@ void bt_piece_poll_block_request(bt_piece_t * me, bt_block_t * request)
 
     /* create the request by getting an incomplete block */
     sc_get_incomplete(priv(me)->progress_requested, &offset, &len, blk_size);
-    request->piece_idx = me->idx;
+    request->piece_idx = priv(me)->idx;
     request->offset = offset;
     request->len = len;
 
@@ -321,12 +321,12 @@ void bt_piece_set_hash(bt_piece_t * me, const unsigned char *sha1sum)
 
 void bt_piece_set_idx(bt_piece_t * me, const int idx)
 {
-    me->idx = idx;
+    priv(me)->idx = idx;
 }
 
 int bt_piece_get_idx(bt_piece_t * me)
 {
-    return me->idx;
+    return priv(me)->idx;
 }
 
 char *bt_piece_get_hash(bt_piece_t * me)

@@ -30,7 +30,10 @@ int bt_sha1_equal(char * s1, char * s2)
 #endif
 }
 
-void bt_str2sha1hash(char *hash_out, const char *str, int len)
+void bt_str2sha1hash(
+    unsigned char *hash_out,
+    const unsigned char *str,
+    int len)
 {
     SHA1_CTX ctx;
     int ii;

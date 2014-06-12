@@ -32,6 +32,7 @@
 #include "config.h"
 #include "networkfuncs.h"
 #include "linked_list_queue.h"
+
 #include "pwp_handshaker.h"
 
 #include "docopt.c"

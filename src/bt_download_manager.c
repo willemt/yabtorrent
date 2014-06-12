@@ -171,7 +171,7 @@ static int __handle_handshake(
     bt_dm_private_t *me,
     bt_peer_t* p,
     const unsigned char** buf,
-    int *len)
+    unsigned int *len)
 {
     /* TODO: needs test case */
     if (!me->cb.handshaker_dispatch_from_buffer)
@@ -351,7 +351,7 @@ static void* __offer_job(void *me_, void* j_)
     return NULL; 
 }
 
-static void* __poll_job(void *me_, void* __unused)
+static void* __poll_job(void *me_, void* __attribute__ ((unused)) unused)
 {
     bt_dm_private_t* me = me_;
     return llqueue_poll(me->jobs);
@@ -435,7 +435,7 @@ static void __job_dispatch_validate_piece(bt_dm_private_t* me, bt_job_t* j)
             }
 
             bt_piece_drop_download_progress(p);
-            me->ips.peer_giveback_piece(me->pselector, NULL, p->idx);
+            me->ips.peer_giveback_piece(me->pselector, NULL, bt_piece_get_idx(p));
         }
     }
         break;
@@ -549,9 +549,6 @@ static void __FUNC_peerconn_giveback_block(void* bt, void* peer, bt_block_t* b)
 {
     bt_dm_private_t *me = bt;
     void* pce;
-
-    if (b->len < 0)
-        return;
 
     pce = me->ipdb.get_piece(me->pdb, b->piece_idx);
     bt_piece_giveback_block(pce, b);
@@ -844,7 +841,7 @@ void *bt_dm_new()
 
     /*  set leeching choker */
     me->lchoke = bt_leeching_choker_new(
-            atoi(config_get(me->cfg,"max_active_peers")));
+            atoi(config_get(me->cfg, "max_active_peers")));
     bt_leeching_choker_set_choker_peer_iface(me->lchoke, me,
             &iface_choker_peer);
 

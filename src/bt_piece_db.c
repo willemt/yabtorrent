@@ -123,10 +123,10 @@ int bt_piecedb_add_with_hash_and_size(bt_piecedb_t * db,
 
 int bt_piecedb_add(bt_piecedb_t * db, unsigned int npieces)
 {
+    unsigned int idx, len;
+
     /* get space for this block of pieces */
-    int idx, len;
     sc_get_incomplete(priv(db)->space, &idx, &len, npieces);
-    //printf("len %d npieces %d\n", len, npieces);
     assert(len == npieces);
     return bt_piecedb_add_at_idx(db, npieces, idx);
 }
@@ -144,7 +144,8 @@ int bt_piecedb_add_at_idx(bt_piecedb_t * db, unsigned int npieces, int idx)
         bt_piece_t *p = bt_piece_new(NULL, 0);
         bt_piece_set_disk_blockrw(p, priv(db)->blockrw, priv(db)->blockrw_data);
         bt_piece_set_idx(p, idx + i);
-        hashmap_put(priv(db)->pmap, (void*)((unsigned long)p->idx+1), p);
+        hashmap_put(priv(db)->pmap,
+            (void*)((unsigned long)bt_piece_get_idx(p)+1), p);
     }
 
     return idx;

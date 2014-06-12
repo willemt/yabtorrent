@@ -68,6 +68,8 @@ typedef struct
 } bt_diskcache_t;
 
 typedef void* bt_dm_t;
+typedef void* bt_piece_t;
+
 
 /**
  * Peer statistics */
@@ -114,6 +116,7 @@ typedef struct
     int npieces;
 } bt_piece_info_t;
 
+#if 0
 /**
  * Bittorrent piece */
 typedef struct
@@ -121,6 +124,7 @@ typedef struct
     /* TODO: change to const? */
     int idx;
 } bt_piece_t;
+#endif
 
 typedef struct {
     void* (*get_piece)(void *db, const unsigned int piece_idx);
@@ -277,7 +281,7 @@ typedef struct
 
     /**
      * @return newly initialised handshaker */
-    void* (*handshaker_new)(unsigned char* expected_info_hash, unsigned char* mypeerid);
+    void* (*handshaker_new)(char* expected_info_hash, char* mypeerid);
 
     /**
      * deallocate handshaker */
