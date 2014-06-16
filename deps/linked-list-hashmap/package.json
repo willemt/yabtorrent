@@ -1,0 +1,9 @@
+{
+  "name": "linked-list-hashmap",
+  "version": "0.0.1",
+  "repo": "willemt/linked-list-hashmap",
+  "description": "Hashmap that uses linked lists for managing collisions",
+  "keywords": ["hashmap", "dictionary"],
+  "license": "BSD",
+  "src": ["linked_list_hashmap.c", "linked_list_hashmap.h"]
+}

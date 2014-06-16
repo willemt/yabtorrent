@@ -1,0 +1,9 @@
+{
+  "name": "array-avl-tree",
+  "version": "0.0.1",
+  "repo": "willemt/array-avl-tree",
+  "description": "self balancing tree with slower inserts/removals than a red-black tree, but faster retrieval",
+  "keywords": ["AVL tree", "self balancing", "set", "data structure"],
+  "license": "BSD",
+  "src": ["avl_tree.c", "avl_tree.h"]
+}

@@ -1,0 +1,9 @@
+{
+  "name": "pseudolru",
+  "version": "0.0.1",
+  "repo": "willemt/pseudo-lru",
+  "description": "Pseudo least recently used cache",
+  "keywords": ["LRU", "cache"],
+  "license": "BSD",
+  "src": ["pseudolru.c", "pseudolru.h"]
+}

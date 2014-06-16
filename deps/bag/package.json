@@ -1,0 +1,9 @@
+{
+  "name": "bag",
+  "version": "0.0.1",
+  "repo": "willemt/bag",
+  "description": "Data structure which only has PUT and TAKE operations (TAKE removes a random item)",
+  "keywords": ["random", "bag"],
+  "license": "BSD",
+  "src": ["bag.c", "bag.h"]
+}

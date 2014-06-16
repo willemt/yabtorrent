@@ -1,0 +1,9 @@
+{
+  "name": "config-re",
+  "version": "0.0.1",
+  "repo": "willemt/config-re",
+  "description": "Library that allows you to have configuration within your program",
+  "keywords": ["configuration"],
+  "license": "BSD",
+  "src": ["config.c", "config.h", "list.h"]
+}

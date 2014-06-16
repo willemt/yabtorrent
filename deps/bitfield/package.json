@@ -1,0 +1,9 @@
+{
+  "name": "bitfield",
+  "version": "0.0.1",
+  "repo": "willemt/bitfield",
+  "description": "Abstracts an array of bits",
+  "keywords": ["bits", "array", "bitfield"],
+  "license": "BSD",
+  "src": ["bitfield.c", "bitfield.h"]
+}
