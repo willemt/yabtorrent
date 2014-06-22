@@ -1,4 +1,3 @@
-/* ================ sha1.c ================ */
 /*
 SHA-1 in C
 By Steve Reid <steve@edmweb.com>
@@ -23,9 +22,6 @@ A million repetitions of "a"
 
 /* for uint32_t */
 #include <stdint.h>
-//#include <endian.h>
-
-//#include <sys/types.h>  /* for u_int*_t */
 
 #include "sha1.h"
 
@@ -283,4 +279,3 @@ void SHA1Final(
     memset(&finalcount, '\0', sizeof(finalcount));
 }
 
-/* ================ end of sha1.c ================ */

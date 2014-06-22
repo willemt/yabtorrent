@@ -1,7 +1,6 @@
 #ifndef SHA1_H
 #define SHA1_H
 
-/* ================ sha1.h ================ */
 /*
 SHA-1 in C
 By Steve Reid <steve@edmweb.com>
@@ -34,8 +33,5 @@ void SHA1Final(
     unsigned char digest[20],
     SHA1_CTX * context
 );
-
-
-/* ================ end of sha1.h ================ */
 
 #endif /* SHA1_H */

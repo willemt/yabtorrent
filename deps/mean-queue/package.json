@@ -1,0 +1,9 @@
+{
+  "name": "mean-queue",
+  "version": "0.0.1",
+  "repo": "willemt/mean-queue",
+  "description": "An integer queue that calculates mean in O(1)",
+  "keywords": ["queue", "mean"],
+  "license": "BSD",
+  "src": ["meanqueue.c", "meanqueue.h"]
+}

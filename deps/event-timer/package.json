@@ -1,0 +1,12 @@
+{
+  "name": "event-timer",
+  "version": "0.0.1",
+  "repo": "willemt/event-timer",
+  "description": "A timer that fires events based off time",
+  "keywords": ["event", "timer"],
+  "license": "BSD",
+  "dependencies": {
+    "willemt/heap": "*"
+  },
+  "src": ["event_timer.c", "event_timer.h"]
+}

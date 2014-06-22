@@ -1,0 +1,9 @@
+{
+  "name": "mt19937ar",
+  "version": "0.0.1",
+  "repo": "clibs/mt19937ar",
+  "description": "Mersenne Twister random number generator",
+  "keywords": ["Mersenne Twister", "random"],
+  "license": "BSD style",
+  "src": ["mt19937ar.c", "mt19937ar.h"]
+}
