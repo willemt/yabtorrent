@@ -3,28 +3,6 @@ import sys, os
 def options(opt):
         opt.load('compiler_c')
 
-contribs = [
-('CBag', 'http://github.com/willemt/CBag'),
-('CHeap','http://github.com/willemt/CHeap'),
-('libuv','http://github.com/joyent/libuv'),
-('CAVLTree', 'http://github.com/willemt/CAVLTree'),
-('CBitfield', 'http://github.com/willemt/CBitfield'),
-('CPSeudoLRU','http://github.com/willemt/CPseudoLRU'),
-('CMeanQueue','http://github.com/willemt/CMeanQueue'),
-('CBipBuffer', 'http://github.com/willemt/CBipBuffer'),
-('CConfig-re', 'http://github.com/willemt/CConfig-re'),
-('CEventTimer', 'http://github.com/willemt/CEventTimer'),
-('CTrackerClient', 'http://github.com/willemt/CTrackerClient'),
-('CSparseCounter', 'http://github.com/willemt/CSparseCounter'),
-('CLinkedListQueue', 'http://github.com/willemt/CLinkedListQueue'),
-('CSimpleBitstream', 'http://github.com/willemt/CSimpleBitstream'),
-('PeerWireProtocol', 'http://github.com/willemt/PeerWireProtocol'),
-('CTorrentFileReader', 'http://github.com/willemt/CTorrentFileReader'),
-('CSparseFileAllocator', 'http://github.com/willemt/CSparseFileAllocator'),
-('CHashMapViaLinkedList','http://github.com/willemt/CHashMapViaLinkedList'),
-('CHeaplessBencodeReader', 'http://github.com/willemt/CHeaplessBencodeReader'),
-]
-
 def external_cmd(conf, cmd, cwd):
     try:
         return conf.cmd_and_log(cmd, cwd=cwd)
@@ -43,9 +21,18 @@ def get_contrib(conf,c):
     conf.exec_command("git pull %s" % c[1], cwd=c[0])
 
 def configure(conf):
-    conf.env.CONTRIB_PATH = './'
 
     conf.load('compiler_c')
+    conf.load('clib')
+
+    print conf.clib_c_files('strndup')
+    print conf.clib_h_files('strndup')
+    print conf.clib_info('strndup')
+
+    conf.env.CONTRIB_PATH = './'
+
+
+
     if sys.platform == 'win32':
         conf.check_cc(lib='ws2_32')
         conf.check_cc(lib='psapi')
@@ -57,27 +44,23 @@ def configure(conf):
     #conf.find_program("automake")
     #conf.find_program("glibtoolize")
 
-    # Get the required contributions via GIT
-    #for c in contribs:
-    #    get_contrib(conf,c)
-
     # Install and build libuv
     print "Configuring libuv (autogen.sh)"
-    if sys.platform == 'darwin':
-        conf.exec_command('mkdir -p build', cwd='libuv')
-        conf.exec_command('git clone https://git.chromium.org/external/gyp.git build/gyp', cwd='libuv')
-        conf.exec_command('git pull https://git.chromium.org/external/gyp.git', cwd='libuv/build/gyp')
-        external_cmd(conf, './gyp_uv.py -f xcode', cwd='libuv')
-        external_cmd(conf, 'xcodebuild -ARCHS="x86_64" -project uv.xcodeproj -configuration Release -target All', cwd='libuv')
-        conf.exec_command("cp libuv/build/Release/libuv.a build/")
-    else:
-        conf.exec_command("sh autogen.sh", cwd="libuv")
-        print "Configuring libuv (configure)"
-        conf.exec_command("sh configure", cwd="libuv")
-        print "Building libuv.a"
-        conf.exec_command("make", cwd="libuv")
-        conf.exec_command("mkdir build")
-        conf.exec_command("cp libuv/.libs/libuv.a build/")
+#    if sys.platform == 'darwin':
+#        conf.exec_command('mkdir -p build', cwd='libuv')
+#        conf.exec_command('git clone https://git.chromium.org/external/gyp.git build/gyp', cwd='libuv')
+#        conf.exec_command('git pull https://git.chromium.org/external/gyp.git', cwd='libuv/build/gyp')
+#        external_cmd(conf, './gyp_uv.py -f xcode', cwd='libuv')
+#        external_cmd(conf, 'xcodebuild -ARCHS="x86_64" -project uv.xcodeproj -configuration Release -target All', cwd='libuv')
+#        conf.exec_command("cp libuv/build/Release/libuv.a build/")
+#    else:
+#        conf.exec_command("sh autogen.sh", cwd="libuv")
+#        print "Configuring libuv (configure)"
+#        conf.exec_command("sh configure", cwd="libuv")
+#        print "Building libuv.a"
+#        conf.exec_command("make", cwd="libuv")
+#        conf.exec_command("mkdir build")
+#        conf.exec_command("cp libuv/.libs/libuv.a build/")
 
 def unit_test(bld, src, ccflag=None):
     # collect tests into one area
@@ -170,6 +153,10 @@ def scenario_test(bld, src, ccflag=None):
 def build(bld):
     cp = bld.env.CONTRIB_PATH
 
+
+    print bld.clib_c_files('bitfield')
+    print bld.clib_h_files('bitfield')
+
     print cp
 
     # Copy libuv.a to build/
@@ -184,73 +171,73 @@ def build(bld):
 
     libs = []
 
+    libyabtorrent_src = [
+        "src/bt_blacklist.c",
+        "src/bt_choker_leecher.c",
+        "src/bt_choker_seeder.c",
+        "src/bt_diskcache.c",
+        "src/bt_diskmem.c",
+        "src/bt_download_manager.c",
+        "src/bt_filedumper.c",
+        "src/bt_peer_manager.c",
+        "src/bt_piece.c",
+        "src/bt_piece_db.c",
+        "src/bt_selector_random.c",
+        "src/bt_selector_rarestfirst.c",
+        "src/bt_selector_sequential.c",
+        "src/bt_util.c",
+        "src/bt_sha1.c", ] +\
+        bld.clib_c_files([
+        'array-avl-tree',
+        'asprintf',
+        'bag',
+        'bitfield',
+        'bitstream',
+        'chunky-bar',
+        'config-re',
+        'event-timer',
+        'file2str',
+        'heap',
+        'heapless-bencode',
+        'linked-list-hashmap',
+        'linked-list-queue',
+        'meanqueue',
+        'peer-wire-protocol',
+        'pseudolru',
+        'sha1',
+        'strndup',
+        'stubfile',
+        'torrent-file-reader',
+        ])
+
     bld.shlib(
-        source= [
-            "src/bt_download_manager.c",
-            "src/bt_peer_manager.c",
-            "src/bt_piece.c",
-            "src/bt_diskmem.c",
-            "src/bt_piece_db.c",
-            "src/bt_blacklist.c",
-            "src/bt_diskcache.c",
-            "src/bt_filedumper.c",
-            "src/bt_choker_seeder.c",
-            "src/bt_choker_leecher.c",
-            "src/bt_selector_random.c",
-            "src/bt_selector_rarestfirst.c",
-            "src/bt_selector_sequential.c",
-            "src/bt_util.c",
-            "src/bt_sha1.c",
-            "src/bt_string.c",
-            "src/readfile.c",
-            "src/sha1.c",
-            cp+"CBag/bag.c",
-            cp+"CHeap/heap.c",
-            cp+"CConfig-re/list.c",
-            cp+"CAVLTree/avl_tree.c",
-            cp+"CConfig-re/config.c",
-            cp+"CBitfield/bitfield.c",
-            cp+"CMeanQueue/meanqueue.c",
-            cp+"CPSeudoLRU/pseudolru.c",
-            cp+"CEventTimer/event_timer.c",
-            cp+"CSimpleBitstream/bitstream.c",
-            cp+"CSparseCounter/sparse_counter.c",
-            cp+"CHeaplessBencodeReader/bencode.c",
-            cp+"PeerWireProtocol/pwp_connection.c",
-            cp+"PeerWireProtocol/pwp_util.c",
-            cp+"PeerWireProtocol/pwp_bitfield.c",
-            cp+"PeerWireProtocol/pwp_msghandler.c",
-            cp+"PeerWireProtocol/pwp_handshaker.c",
-            cp+"CLinkedListQueue/linked_list_queue.c",
-            cp+"CTorrentFileReader/torrentfile_reader.c",
-            cp+"CHashMapViaLinkedList/linked_list_hashmap.c",
-            cp+"CSparseFileAllocator/sparsefile_allocator.c",
-            ],
-        #bt_diskmem.c
-        #CCircularBuffer/cbuffer.c
+        source=libyabtorrent_src,
         #use='config',
         target='yabbt',
         lib = libs,
-        includes=[
-            './include',
-            cp+"CBag",
-            cp+"CHeap",
-            cp+"CAVLTree",
-            cp+"CBitfield",
-            cp+"CMeanQueue",
-            cp+"CPSeudoLRU",
-            cp+"CBipBuffer",
-            cp+"CConfig-re",
-            cp+"CEventTimer",
-            cp+"CSparseCounter",
-            cp+"CTrackerClient",
-            cp+"CLinkedListQueue",
-            cp+"PeerWireProtocol",
-            cp+"CSimpleBitstream",
-            cp+"CSparseFileAllocator",
-            cp+"CHashMapViaLinkedList",
-            cp+"CHeaplessBencodeReader",
-           ], 
+        includes=\
+            [ './include', ] +\ 
+            bld.clib_paths([
+                'array-avl-tree',
+                'asprintf',
+                'bag',
+                'bipbuffer',
+                'bitfield',
+                'bitstream',
+                'chunkybar',
+                'config-re',
+                'event-timer',
+                'heap',
+                'heapless-bencode',
+                'linked-list-hashmap',
+                'linked-list-queue',
+                'meanqueue',
+                'pseudo-lru',
+                'pwp',
+                'strndup',
+                'stubfile',
+                'tracker-client',
+               ]), 
         cflags=[
             '-Werror',
             '-Werror=format',
@@ -265,21 +252,21 @@ def build(bld):
             '-Wcast-align'],
         )
 
-    unit_test(bld,"test_bt.c")
-    unit_test(bld,"test_download_manager.c")
-    unit_test(bld,"test_peer_manager.c")
-    unit_test(bld,'test_choker_leecher.c')
-    unit_test(bld,'test_choker_seeder.c')
-    unit_test(bld,'test_selector_rarestfirst.c')
-    unit_test(bld,'test_selector_random.c')
-    unit_test(bld,'test_selector_sequential.c')
-    unit_test(bld,'test_piece.c',ccflag='-I../'+cp+"CBitfield")
-    unit_test(bld,'test_piece_db.c')
-    unit_test(bld,'test_blacklist.c')
-    scenario_test(bld,'test_scenario_shares_all_pieces.c')
-    scenario_test(bld,'test_scenario_shares_all_pieces_between_each_other.c')
-    scenario_test(bld,'test_scenario_share_20_pieces.c')
-    scenario_test(bld,'test_scenario_three_peers_share_all_pieces_between_each_other.c')
+    #unit_test(bld,"test_bt.c")
+    #unit_test(bld,"test_download_manager.c")
+    #unit_test(bld,"test_peer_manager.c")
+    #unit_test(bld,'test_choker_leecher.c')
+    #unit_test(bld,'test_choker_seeder.c')
+    #unit_test(bld,'test_selector_rarestfirst.c')
+    #unit_test(bld,'test_selector_random.c')
+    #unit_test(bld,'test_selector_sequential.c')
+    #unit_test(bld,'test_piece.c',ccflag='-I../'+cp+"CBitfield")
+    #unit_test(bld,'test_piece_db.c')
+    #unit_test(bld,'test_blacklist.c')
+    #scenario_test(bld,'test_scenario_shares_all_pieces.c')
+    #scenario_test(bld,'test_scenario_shares_all_pieces_between_each_other.c')
+    #scenario_test(bld,'test_scenario_share_20_pieces.c')
+    #scenario_test(bld,'test_scenario_three_peers_share_all_pieces_between_each_other.c')
 
     libs = ['yabbt','uv']
     if sys.platform == 'win32':
@@ -291,18 +278,25 @@ def build(bld):
         libs += ['rt']
         libs += ['pthread']
 
-    bld.program(
-        source=[
-            "src/mt19937ar.c",
+    yabtorrent_src = [
             'src/yabtorrent.c',
-            "src/networkfuncs_libuv.c",
-            cp+"CBipBuffer/bipbuffer.c",
-            cp+"CTrackerClient/url_encoder.c",
-            cp+"CTrackerClient/tracker_http.c",
-            cp+"CTrackerClient/tracker_client.c",
-            cp+"CTrackerClient/tracker_http_response_reader.c",
-            cp+"CTrackerClient/http-parser/http_parser.c",
-            ],
+            "src/network_adapter_libuv.c",
+#            cp+"CTrackerClient/url_encoder.c",
+#            cp+"CTrackerClient/tracker_http.c",
+#            cp+"CTrackerClient/tracker_client.c",
+#            cp+"CTrackerClient/tracker_http_response_reader.c",
+#            cp+"CTrackerClient/http-parser/http_parser.c",
+            ] +\
+            bld.clib_files([
+                'mt19937ar',
+                'bipbuffer',
+                'tracker-client',
+                'http-parser',
+            ])
+    yabtorrent_src
+
+    bld.program(
+        source=yabtorrent_src,
         target='yabtorrent',
         cflags=[
             '-g',
@@ -315,15 +309,17 @@ def build(bld):
         lib = libs,
         includes=[
             './include',
-            './libuv/include',
-            cp+"CBipBuffer",
-            cp+"CConfig-re",
-            cp+"CLinkedListQueue",
-            cp+"CTrackerClient",
-            cp+"CTorrentFileReader",
-            cp+"CHashMapViaLinkedList",
-            cp+"CHeaplessBencodeReader",
-            cp+"CTrackerClient/http-parser",
-            cp+"PeerWireProtocol",
-           ])
+            './libuv/include'] +\
+            bld.clib_paths([
+                'asprintf',
+                'bipbuffer',
+                'config-re',
+                'heapless-bencode',
+                'http-parser',
+                'linked-list-hashmap',
+                'linked-list-queue',
+                'pwp',
+                'strndup',
+                'tracker-client',
+           ]))
 
