@@ -1,0 +1,9 @@
+{
+  "name": "file2str",
+  "version": "0.0.1",
+  "repo": "willemt/file2str",
+  "description": "Simply read a file and return its contents as a null terminated string",
+  "keywords": ["read", "file"],
+  "license": "public domain",
+  "src": ["file2str.c", "file2str.h"]
+}

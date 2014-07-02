@@ -1,0 +1,9 @@
+{
+  "name": "torrent-reader",
+  "version": "0.0.1",
+  "repo": "willemt/torrent-reader",
+  "description": "Read the contents of torrent files",
+  "keywords": ["bencode", "bittorrent", "torrent", "serialization"],
+  "license": "BSD",
+  "src": ["torrent_reader.c", "torrent_reader.h"]
+}

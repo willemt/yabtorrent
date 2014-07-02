@@ -1,0 +1,13 @@
+{
+  "name": "uri",
+  "version": "0.0.4",
+  "repo": "littlstar/uri.c",
+  "description": "URI Component encoder/decoder",
+  "keywords": ["uri", "component", "decode", "encode"],
+  "development": { "jwerle/libok": "*" },
+  "src": [
+    "uri.h",
+    "encode.c",
+    "decode.c"
+  ]
+}

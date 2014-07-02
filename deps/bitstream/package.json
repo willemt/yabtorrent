@@ -1,0 +1,9 @@
+{
+  "name": "bitstream",
+  "version": "0.0.1",
+  "repo": "willemt/bitstream",
+  "description": "Let me write out bits to a stream",
+  "keywords": ["stream", "bits"],
+  "license": "BSD",
+  "src": ["bitstream.c", "bitstream.h"]
+}

@@ -1,0 +1,12 @@
+{
+  "name": "strndup",
+  "version": "0.0.1",
+  "repo": "clibs/strndup",
+  "description": "strndup implementation. Useful when unavailable on your platform.",
+  "keywords": [ "string" ],
+  "license": "public domain",
+  "src": [
+    "strndup.c",
+    "strndup.h"
+  ]
+}
