@@ -1,7 +1,6 @@
 
 #ifndef BENCODE_H_
 #define BENCODE_H_
-#pragma once
 
 typedef struct
 {

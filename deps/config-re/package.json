@@ -5,5 +5,5 @@
   "description": "Library that allows you to have configuration within your program",
   "keywords": ["configuration"],
   "license": "BSD",
-  "src": ["config.c", "config.h", "list.h"]
+  "src": ["config.c", "config.h", "list.c", "list.h"]
 }

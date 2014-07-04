@@ -1,6 +1,6 @@
-#ifndef STRNDUP_H
-#define STRNDUP_H
+#ifndef HAVE_STRNDUP
+#define HAVE_STRNDUP
 
 char *strndup(const char *s, size_t n);
 
-#endif /* STRNDUP_H */
+#endif /* HAVE_STRNDUP */
