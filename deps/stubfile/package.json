@@ -1,7 +1,7 @@
 {
-  "name": "stub-file",
+  "name": "stubfile",
   "version": "0.0.1",
-  "repo": "willemt/stub-file",
+  "repo": "willemt/stubfile",
   "description": "Functions for writing out stub files (eg. bittorrent download files)",
   "keywords": ["bittorrent", "file", "stub file"],
   "license": "BSD",
