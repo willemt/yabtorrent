@@ -1,4 +1,6 @@
 before_install:
+  - wget http://mirrors.kernel.org/ubuntu/pool/universe/libu/libuv/libuv0.10_0.10.22-2_i386.deb 
+  - sudo dpkg -i libuv0.10_0.10.22-2_i386.deb
   - wget http://mirrors.kernel.org/ubuntu/pool/universe/libu/libuv/libuv-dev_0.10.22-2_i386.deb
   - sudo dpkg -i libuv-dev_0.10.22-2_i386.deb
 
