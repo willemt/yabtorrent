@@ -7,11 +7,8 @@ Yet another Bittorrent client/library written in C with a BSD license. The clien
 
 Why?
 ----
-YABTorrent was spawned by:
-
-1. There are not that many bittorrent clients in C that are licensed under non-copyleft licenses
-
-2. There are not that many lightweight torrent libraries which can be used for adding bittorrent-like download capability. 
+1. There aren't any bittorrent clients in C that are licensed under non-copyleft licenses
+2. There aren't any lightweight bittorrent C libraries that aim to be integrable outside of their intended use case
 
 How does it work?
 -----------------
@@ -27,7 +24,7 @@ See bt.h for documentation.
 Below is a description of the key source files:
 
 - yabtorrent.c: main()
-- networkfuncs_libuv.c: Implementation of network stack
+- network_adapter_libuv_v0.10.c: Implementation of network stack
 - bt_download_manager.c: Key functions for orchestrating the download
 - bt_peer_manager.c: Collection of peers
 - bt_piece.c: Manage piece data (ie. write/read and progress)
@@ -62,7 +59,7 @@ $python waf build
 Usage
 -----
 
-$./yabtorrent torrentfile.torrent
+$./bt torrentfile.torrent
 
 Help/Todo
 ---------
