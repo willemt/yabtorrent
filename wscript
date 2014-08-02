@@ -18,7 +18,7 @@ def configure(conf):
 
     conf.check_cc(lib='uv', libpath=[os.getcwd()])
 
-def unit_test(bld, src, ccflag=None):
+def unit_test(bld, src, ccflag=None, packages=[]):
     target = "build/tests/t_{0}".format(src)
 
     # collect tests into one area
@@ -44,7 +44,7 @@ def unit_test(bld, src, ccflag=None):
         lib = libs,
         unit_test='yes',
         includes=[ "./include" ] + bld.clib_h_paths("""
-                                    asprintf
+                                    bitfield
                                     cutest
                                     """.split())
         )
@@ -113,9 +113,6 @@ def scenario_test(bld, src, ccflag=None):
 def build(bld):
     bld.load('clib')
 
-    # Copy libuv.a to build/
-    #bld(rule='cp '+cp+'/libuv/.libs/libuv.a .', always=True)#, target="libuv.a")
-
     if sys.platform == 'win32':
         platform = '-DWIN32'
     elif sys.platform == 'linux2':
@@ -134,7 +131,6 @@ def build(bld):
         event-timer
         file2str
         heap
-        heapless-bencode
         linked-list-hashmap
         linked-list-queue
         meanqueue
@@ -178,16 +174,16 @@ def build(bld):
             '-Wcast-align'])
 
     unit_test(bld,"test_bt.c")
-    #unit_test(bld,"test_download_manager.c")
-    #unit_test(bld,"test_peer_manager.c")
-    #unit_test(bld,'test_choker_leecher.c')
-    #unit_test(bld,'test_choker_seeder.c')
-    #unit_test(bld,'test_selector_rarestfirst.c')
-    #unit_test(bld,'test_selector_random.c')
-    #unit_test(bld,'test_selector_sequential.c')
-    #unit_test(bld,'test_piece.c',ccflag='-I../'+cp+"CBitfield")
-    #unit_test(bld,'test_piece_db.c')
-    #unit_test(bld,'test_blacklist.c')
+    unit_test(bld,"test_download_manager.c")
+    unit_test(bld,"test_peer_manager.c")
+    unit_test(bld,'test_choker_leecher.c')
+    unit_test(bld,'test_choker_seeder.c')
+    unit_test(bld,'test_selector_rarestfirst.c')
+    unit_test(bld,'test_selector_random.c')
+    unit_test(bld,'test_selector_sequential.c')
+    unit_test(bld,'test_piece.c')
+    unit_test(bld,'test_piece_db.c')
+    unit_test(bld,'test_blacklist.c')
     #scenario_test(bld,'test_scenario_shares_all_pieces.c')
     #scenario_test(bld,'test_scenario_shares_all_pieces_between_each_other.c')
     #scenario_test(bld,'test_scenario_share_20_pieces.c')
@@ -218,6 +214,7 @@ def build(bld):
                 mt19937ar
                 tracker-client
                 torrent-reader
+                heapless-bencode
                 """.split()),
         target='yabtorrent',
         cflags="""
@@ -241,4 +238,5 @@ def build(bld):
                 strndup
                 tracker-client
                 torrent-reader
+                heapless-bencode
                 """.split()))

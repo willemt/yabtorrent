@@ -19,7 +19,7 @@
 #include "bt.h"
 
 void bt_str2sha1hash(
-    unsigned char *hash_out,
+    char *hash_out,
     const char *str,
     int len)
 {
@@ -29,6 +29,6 @@ void bt_str2sha1hash(
     SHA1Init(&ctx);
     for (ii=0; ii<len; ii+=1)
         SHA1Update(&ctx, (const unsigned char*)str + ii, 1);
-    SHA1Final(hash_out, &ctx);
+    SHA1Final((unsigned char *)hash_out, &ctx);
     hash_out[20] = '\0';
 }

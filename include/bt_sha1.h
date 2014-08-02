@@ -2,7 +2,7 @@
 #define BT_SHA1_H
 
 void bt_str2sha1hash(
-    unsigned char *hashout,
+    char *hashout,
     const char *str,
     int len);
 

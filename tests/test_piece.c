@@ -220,7 +220,7 @@ void TestBTPiece_Write_Block_To_Stream( CuTest * tc)
     bt_piece_t *pce;
     bt_block_t blk;
     void *dc;
-    unsigned char *msg = "this great message is 40 bytes in length", out[40], *bs;
+    char *msg = "this great message is 40 bytes in length", out[40], *bs;
 
     bs = out;
 

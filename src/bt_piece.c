@@ -393,7 +393,7 @@ int bt_piece_calculate_hash(bt_piece_t* me, char *hash)
         return 0;
     }
 
-    bt_str2sha1hash((unsigned char*)hash, data, priv(me)->piece_length);
+    bt_str2sha1hash(hash, data, priv(me)->piece_length);
     return 1;
 }
 

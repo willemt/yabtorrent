@@ -8,6 +8,8 @@ bt_piece_t *bt_piece_new(
     const int piece_bytes_size
 );
 
+void bt_piece_free(bt_piece_t * me);
+
 /**
  * @param sha1sum The 20 byte hash that describes the content of this piece */
 void bt_piece_set_hash(bt_piece_t * me, const char *sha1sum);

@@ -266,7 +266,7 @@ static int __tfr_event_str(void* udata, const char* key, const char* val, int le
     {
         char hash[21];
 
-        bt_str2sha1hash((unsigned char*)hash, val, len);
+        bt_str2sha1hash(hash, val, len);
         config_set_va(me->sys->cfg,"infohash","%.*s", 20, hash);
     }
     else if (!strcmp(key,"pieces"))
