@@ -1,7 +1,7 @@
 {
-  "name": "mean-queue",
+  "name": "meanqueue",
   "version": "0.0.1",
-  "repo": "willemt/mean-queue",
+  "repo": "willemt/meanqueue",
   "description": "An integer queue that calculates mean in O(1)",
   "keywords": ["queue", "mean"],
   "license": "BSD",

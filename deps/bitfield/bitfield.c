@@ -47,6 +47,13 @@ void bitfield_init(bitfield_t * me, const unsigned int nbits)
     assert(me->bits);
 }
 
+bitfield_t* bitfield_new(const unsigned int nbits)
+{
+    bitfield_t* me = malloc(sizeof(bitfield_t*));
+    bitfield_init(me, nbits);
+    return me;
+}
+
 void bitfield_clone(bitfield_t * me, bitfield_t * clone)
 {
     clone->size = me->size;
@@ -54,8 +61,9 @@ void bitfield_clone(bitfield_t * me, bitfield_t * clone)
     memcpy(clone->bits, me->bits, __bytes_required_for_bits(me->size));
 }
 
-void bitfield_release(bitfield_t* me)
+void bitfield_free(bitfield_t* me)
 {
+    free(me);
     free(me->bits);
 }
 
@@ -101,11 +109,9 @@ unsigned int bitfield_get_length(bitfield_t * me)
 
 char *bitfield_str(bitfield_t * me)
 {
-    char *str;
+    char *str = malloc(me->size + 1);
+
     unsigned int i;
-
-    str = malloc(me->size + 1);
-
     for (i = 0; i < me->size; i++)
         str[i] = bitfield_is_marked(me, i) ? '1' : '0';
 

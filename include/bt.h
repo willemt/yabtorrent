@@ -116,16 +116,6 @@ typedef struct
     int npieces;
 } bt_piece_info_t;
 
-#if 0
-/**
- * Bittorrent piece */
-typedef struct
-{
-    /* TODO: change to const? */
-    int idx;
-} bt_piece_t;
-#endif
-
 typedef struct {
     void* (*get_piece)(void *db, const unsigned int piece_idx);
     void* (*get_sparsecounter)(void *db);
@@ -223,7 +213,7 @@ typedef struct
         */
         int (*func_process_data) (void *me,
         void* conn_ctx,
-        const unsigned char* buf,
+        const char* buf,
         unsigned int len),
 
        /**
@@ -255,11 +245,13 @@ typedef struct
      * @param me 
      * @param conn_ctx The peer's network ID
      * @param send_data Data to be sent
-     * @param len Length of data to be sent */
+     * @param len Length of data to be sent
+     * @return 0 if added to buffer due to write failure, -2 if disconnect
+     */
     int (*peer_send) (void* me,
                       void **udata,
                       void* conn_ctx,
-                      const unsigned char *send_data, const int len);
+                      const char *send_data, const int len);
 
     /**
      * Drop the connection for this peer
@@ -292,7 +284,7 @@ typedef struct
      *  Disconnect on any errors
      *  @return 1 succesful handshake; 0 unfinished reading; -1 bad handshake */
     int (*handshaker_dispatch_from_buffer)(void* me_,
-            const unsigned char** buf,
+            const char** buf,
             unsigned int* len);
 
     /**
@@ -348,7 +340,7 @@ void bt_dm_peer_connect_fail(void *bto, void* conn_ctx);
 int bt_dm_dispatch_from_buffer(
         void *bto,
         void *peer_conn_ctx,
-        const unsigned char* buf,
+        const char* buf,
         unsigned int len);
 
 /**

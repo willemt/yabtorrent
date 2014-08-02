@@ -1,51 +1,39 @@
-import sys, os
+# -*- mode: python -*-
+# vi: set ft=python :
+
+import sys
+
 
 def options(opt):
         opt.load('compiler_c')
 
-def external_cmd(conf, cmd, cwd):
-    try:
-        return conf.cmd_and_log(cmd, cwd=cwd)
-    except Exception as e:
-        from waflib import Logs
-        Logs.info('cmd failed! ' + str(e))
-        Logs.info(e.stdout)
-        Logs.info(e.stderr)
-        Logs.info(dir(e))
-        return 0
-
-def get_contrib(conf,c):
-    print "Pulling via git %s..." % c[1]
-    conf.env.CONTRIB_PATH = './'
-    conf.exec_command("git clone %s %s" % (c[1],c[0],))
-    conf.exec_command("git pull %s" % c[1], cwd=c[0])
-
 def configure(conf):
-
     conf.load('compiler_c')
     conf.load('clib')
-
-    print conf.clib_c_files('strndup')
-    print conf.clib_h_files('strndup')
-    print conf.clib_info('strndup')
-
-    conf.env.CONTRIB_PATH = './'
-
-
 
     if sys.platform == 'win32':
         conf.check_cc(lib='ws2_32')
         conf.check_cc(lib='psapi')
 
     conf.env.STDLIBPATH = ['.']
-#    conf.check_cc(lib='uv')
-
-    conf.find_program("git")
-    #conf.find_program("automake")
+    #conf.find_program("git")
     #conf.find_program("glibtoolize")
+    conf.check_cc(lib='uv')
+    #build_libuv()
 
-    # Install and build libuv
-    print "Configuring libuv (autogen.sh)"
+
+def build_libuv():
+    def external_cmd(conf, cmd, cwd):
+        try:
+            return conf.cmd_and_log(cmd, cwd=cwd)
+        except Exception as e:
+            from waflib import Logs
+            Logs.info('cmd failed! ' + str(e))
+            Logs.info(e.stdout)
+            Logs.info(e.stderr)
+            Logs.info(dir(e))
+            return 0
+#    print "Configuring libuv (autogen.sh)"
 #    if sys.platform == 'darwin':
 #        conf.exec_command('mkdir -p build', cwd='libuv')
 #        conf.exec_command('git clone https://git.chromium.org/external/gyp.git build/gyp', cwd='libuv')
@@ -61,6 +49,7 @@ def configure(conf):
 #        conf.exec_command("make", cwd="libuv")
 #        conf.exec_command("mkdir build")
 #        conf.exec_command("cp libuv/.libs/libuv.a build/")
+
 
 def unit_test(bld, src, ccflag=None):
     # collect tests into one area
@@ -118,7 +107,7 @@ def scenario_test(bld, src, ccflag=None):
             bld.clib_c_files([
                 'mt19937ar',
                 'bipbuffer',
-                'pwp'])
+                'pwp']),
         stlibpath = ['libuv','.'],
         target=src[:-2],
         cflags=[
@@ -153,13 +142,7 @@ def scenario_test(bld, src, ccflag=None):
         #bld(rule='pwd && export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:. && ./'+src[:-2])
 
 def build(bld):
-    cp = bld.env.CONTRIB_PATH
-
-
-    print bld.clib_c_files('bitfield')
-    print bld.clib_h_files('bitfield')
-
-    print cp
+    bld.load('clib')
 
     # Copy libuv.a to build/
     #bld(rule='cp '+cp+'/libuv/.libs/libuv.a .', always=True)#, target="libuv.a")
@@ -171,75 +154,49 @@ def build(bld):
     else:
         platform = ''
 
-    libs = []
-
-    libyabtorrent_src = [
-        "src/bt_blacklist.c",
-        "src/bt_choker_leecher.c",
-        "src/bt_choker_seeder.c",
-        "src/bt_diskcache.c",
-        "src/bt_diskmem.c",
-        "src/bt_download_manager.c",
-        "src/bt_filedumper.c",
-        "src/bt_peer_manager.c",
-        "src/bt_piece.c",
-        "src/bt_piece_db.c",
-        "src/bt_selector_random.c",
-        "src/bt_selector_rarestfirst.c",
-        "src/bt_selector_sequential.c",
-        "src/bt_util.c",
-        "src/bt_sha1.c", ] +\
-        bld.clib_c_files([
-        'array-avl-tree',
-        'asprintf',
-        'bag',
-        'bitfield',
-        'bitstream',
-        'chunky-bar',
-        'config-re',
-        'event-timer',
-        'file2str',
-        'heap',
-        'heapless-bencode',
-        'linked-list-hashmap',
-        'linked-list-queue',
-        'meanqueue',
-        'peer-wire-protocol',
-        'pseudolru',
-        'sha1',
-        'strndup',
-        'stubfile',
-        'torrent-file-reader',
-        ])
+    libyabtorrent_clibs = """
+        array-avl-tree
+        asprintf
+        bag
+        bitfield
+        bitstream
+        chunkybar
+        config-re
+        event-timer
+        file2str
+        heap
+        heapless-bencode
+        linked-list-hashmap
+        linked-list-queue
+        meanqueue
+        pwp
+        pseudolru
+        sha1
+        strndup
+        stubfile
+        torrent-reader
+        """.split()
 
     bld.shlib(
-        source=libyabtorrent_src,
-        #use='config',
+        source="""
+        src/bt_blacklist.c
+        src/bt_choker_leecher.c
+        src/bt_choker_seeder.c
+        src/bt_diskcache.c
+        src/bt_diskmem.c
+        src/bt_download_manager.c
+        src/bt_filedumper.c
+        src/bt_peer_manager.c
+        src/bt_piece.c
+        src/bt_piece_db.c
+        src/bt_selector_random.c
+        src/bt_selector_rarestfirst.c
+        src/bt_selector_sequential.c
+        src/bt_util.c
+        src/bt_sha1.c""".split() + bld.clib_c_files(libyabtorrent_clibs),
+        includes=['./include'] + bld.clib_h_paths(libyabtorrent_clibs),
         target='yabbt',
-        lib = libs,
-        includes=\
-            [ './include', ] +\ 
-            bld.clib_paths([
-                'array-avl-tree',
-                'asprintf',
-                'bag',
-                'bipbuffer',
-                'bitfield',
-                'bitstream',
-                'chunkybar',
-                'config-re',
-                'event-timer',
-                'heap',
-                'heapless-bencode',
-                'linked-list-hashmap',
-                'linked-list-queue',
-                'meanqueue',
-                'pseudo-lru',
-                'pwp',
-                'strndup',
-                'stubfile',
-                'tracker-client',
-               ]), 
+        #lib=libs,
         cflags=[
             '-Werror',
             '-Werror=format',
@@ -251,8 +208,7 @@ def build(bld):
             '-Werror=return-type',
             '-Werror=uninitialized',
             '-Werror=pointer-to-int-cast',
-            '-Wcast-align'],
-        )
+            '-Wcast-align'])
 
     #unit_test(bld,"test_bt.c")
     #unit_test(bld,"test_download_manager.c")
@@ -270,53 +226,54 @@ def build(bld):
     #scenario_test(bld,'test_scenario_share_20_pieces.c')
     #scenario_test(bld,'test_scenario_three_peers_share_all_pieces_between_each_other.c')
 
-    libs = ['yabbt','uv']
+    libs = ['yabbt', 'uv']
     if sys.platform == 'win32':
-        libs += ['ws2_32']
-        libs += ['psapi']
-        libs += ['Iphlpapi']
+        libs += """
+                ws2_32
+                psapi
+                Iphlpapi
+                """.split()
+    elif sys.platform == 'darwin':
+        pass
     else:
-        libs += ['dl']
-        libs += ['rt']
-        libs += ['pthread']
+        libs += """
+                dl
+                rt
+                pthread
+                """.split()
 
-    yabtorrent_src = [
-            'src/yabtorrent.c',
-            "src/network_adapter_libuv.c",
-            ] +\
-            bld.clib_files([
-                'mt19937ar',
-                'bipbuffer',
-                'tracker-client',
-                'http-parser',
-            ])
-    yabtorrent_src
 
     bld.program(
-        source=yabtorrent_src,
+        source="""
+            src/yabtorrent.c
+            src/network_adapter_libuv_v0.10.c
+            """.split() + bld.clib_c_files("""
+                bipbuffer
+                http-parser
+                mt19937ar
+                tracker-client
+                """.split()),
         target='yabtorrent',
-        cflags=[
-            '-g',
-            '-Werror',
-            '-Werror=uninitialized',
-            '-Werror=pointer-to-int-cast',
-            '-Werror=return-type'
-            ],
-        stlibpath = ['./libuv','.'],
-        lib = libs,
-        includes=[
-            './include',
-            './libuv/include'] +\
-            bld.clib_paths([
-                'asprintf',
-                'bipbuffer',
-                'config-re',
-                'heapless-bencode',
-                'http-parser',
-                'linked-list-hashmap',
-                'linked-list-queue',
-                'pwp',
-                'strndup',
-                'tracker-client',
-           ]))
-
+        cflags="""
+            -g
+            -Werror
+            -Werror=uninitialized
+            -Werror=pointer-to-int-cast
+            -Werror=return-type
+            """.split(),
+        stlibpath=['./libuv', '.'],
+        lib=libs,
+        includes=['./include', './libuv/include'] + bld.clib_h_paths("""
+                asprintf
+                bipbuffer
+                config-re
+                file2str
+                heapless-bencode
+                http-parser
+                linked-list-hashmap
+                linked-list-queue
+                pwp
+                strndup
+                tracker-client
+                torrent-reader
+                """.split()))

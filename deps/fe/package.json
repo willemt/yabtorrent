@@ -1,0 +1,9 @@
+{
+  "name": "fe",
+  "version": "0.0.1",
+  "repo": "willemt/fe",
+  "description": "Flip endianess of 32bit integer",
+  "keywords": ["little endian", "big endian", "endianess"],
+  "license": "MIT",
+  "src": ["fe.c", "fe.h"]
+}

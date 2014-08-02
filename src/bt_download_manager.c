@@ -25,7 +25,7 @@
 #include "event_timer.h"
 #include "config.h"
 #include "linked_list_queue.h"
-#include "sparse_counter.h"
+#include "chunkybar.h"
 
 #include "pwp_connection.h"
 #include "pwp_msghandler.h"
@@ -84,7 +84,7 @@ typedef struct
     /* are we seeding? */
     int am_seeding;
 
-    sparsecounter_t* pieces_completed;
+    chunkybar_t* pieces_completed;
 
 } bt_dm_private_t;
 
@@ -170,7 +170,7 @@ void __FUNC_peer_stats_visitor(void* cb_ctx, void* peer, void* udata)
 static int __handle_handshake(
     bt_dm_private_t *me,
     bt_peer_t* p,
-    const unsigned char** buf,
+    const char** buf,
     unsigned int *len)
 {
     /* TODO: needs test case */
@@ -207,7 +207,7 @@ static int __handle_handshake(
 int bt_dm_dispatch_from_buffer(
         void *me_,
         void *peer_conn_ctx,
-        const unsigned char* buf,
+        const char* buf,
         unsigned int len)
 {
     bt_dm_private_t *me = me_;
@@ -402,7 +402,7 @@ static void __job_dispatch_validate_piece(bt_dm_private_t* me, bt_job_t* j)
         __log(me, NULL, "client,piece completed,pieceidx=%d", piece_idx);
         assert(me->ips.have_piece);
         me->ips.have_piece(me->pselector, piece_idx);
-        sc_mark_complete(me->pieces_completed, piece_idx, 1);
+        chunky_mark_complete(me->pieces_completed, piece_idx, 1);
         bt_peermanager_forall(me->pm,me,p,__FUNC_peerconn_send_have);
     }
         break;
@@ -557,7 +557,7 @@ static void __FUNC_peerconn_giveback_block(void* bt, void* peer, bt_block_t* b)
 
 static void __FUNC_peerconn_write_block_to_stream(void* cb_ctx,
         bt_block_t * blk,
-        unsigned char ** msg)
+        char **msg)
 {
     bt_dm_private_t *me = cb_ctx;
     void* p;
@@ -851,7 +851,7 @@ void *bt_dm_new()
     eventtimer_push_event(me->ticker, 30, me, __leecher_peer_optimistic_unchoke);
 
     /* we don't need to specify the amount of pieces we need */
-    me->pieces_completed = sc_init(0);
+    me->pieces_completed = chunky_new(0);
     return me;
 }
 

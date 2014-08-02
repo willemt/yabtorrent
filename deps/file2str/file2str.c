@@ -5,7 +5,7 @@
 
 char *file2strl(
     const char *path,
-    unsigned long *file_len_out
+    unsigned int *file_len_out
 )
 {
     FILE *file;

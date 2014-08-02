@@ -13,3 +13,7 @@ Implement the following tests via a Vagrantfile:
 
 Planned features
 ================
+
+Performance
+-----------
+Use sendfile() on Linux for zero copy send.

@@ -19,7 +19,7 @@
 
 static void __fatal(int status)
 {
-    printf("ERROR: %s %s\n", uv_err_name(status), uv_strerror(status));
+    //printf("ERROR: %s %s\n", uv_err_name(status), uv_strerror(status));
     assert(0);
 }
 
@@ -37,26 +37,28 @@ typedef struct {
     uv_stream_t* stream;
 } connection_attempt_t;
 
-static void __alloc_cb(uv_handle_t* handle, size_t size, uv_buf_t* buf)
+static uv_buf_t __alloc_cb(uv_handle_t* handle, size_t size)
 {
-    buf->len = size;
-    buf->base = malloc(size);
+    uv_buf_t buf;
+    buf.len = size;
+    buf.base = malloc(size);
+    return buf;
 }
 
-static void __read_cb(uv_stream_t* tcp, ssize_t nread, const uv_buf_t* buf)
+static void __read_cb(uv_stream_t* tcp, ssize_t nread, uv_buf_t buf)
 {
     connection_attempt_t *ca = tcp->data;
 
     if (nread >= 0)
     {
-        ca->func_process_data(ca->callee, ca, buf->base, nread);
+        ca->func_process_data(ca->callee, ca, (const unsigned char*)buf.base, nread);
     }
     else
     {
 
     }
 
-    free(buf->base);
+    free(buf.base);
 }
 
 static void __write_cb(uv_write_t *req, int status)
@@ -132,7 +134,7 @@ int peer_connect(void* caller,
         return 0;
     }
 
-    uv_ip4_addr(host, port, (struct sockaddr_in*)&addr);
+    addr = uv_ip4_addr(host, port);//, (struct sockaddr_in*)&addr);
 
     c = malloc(sizeof(uv_connect_t));
     c->data = ca;

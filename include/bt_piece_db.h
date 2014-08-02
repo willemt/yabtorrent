@@ -67,7 +67,7 @@ void* bt_piecedb_get_diskstorage(bt_piecedb_t * db);
 
 
 int bt_piecedb_add_with_hash_and_size(bt_piecedb_t * db,
-    const unsigned char *sha1sum, const int piece_bytes_size);
+    const char *sha1sum, const int piece_bytes_size);
 
 int bt_piecedb_add_at_idx(bt_piecedb_t * db, unsigned int npieces, int idx);
 

@@ -27,14 +27,14 @@
 #include "linked_list_hashmap.h"
 
 /* for finding empty slots */
-#include "sparse_counter.h"
+#include "chunkybar.h"
 
 typedef struct
 {
     /* piece map */
     hashmap_t *pmap;
 
-    sparsecounter_t *space;
+    chunkybar_t *space;
 
     int tot_file_size_bytes;
 
@@ -66,7 +66,7 @@ bt_piecedb_t *bt_piecedb_new()
     db = calloc(1, sizeof(bt_piecedb_private_t));
     priv(db)->tot_file_size_bytes = 0;
     priv(db)->pmap = hashmap_new(__piece_hash, __piece_cmp, 11);
-    priv(db)->space = sc_init(1 << 31);
+    priv(db)->space = chunky_new(1 << 31);
     return db;
 }
 
@@ -112,12 +112,12 @@ int bt_piecedb_count(bt_piecedb_t * db)
 }
 
 int bt_piecedb_add_with_hash_and_size(bt_piecedb_t * db,
-    const unsigned char *sha1sum, const int piece_bytes_size)
+    const char *sha1sum, const int piece_bytes_size)
 {
     int i = bt_piecedb_add(db, 1);
     void *p = bt_piecedb_get(db, i);
-    bt_piece_set_hash(p,sha1sum);
-    bt_piece_set_size(p,piece_bytes_size);
+    bt_piece_set_hash(p, sha1sum);
+    bt_piece_set_size(p, piece_bytes_size);
     return i;
 }
 
@@ -126,17 +126,17 @@ int bt_piecedb_add(bt_piecedb_t * db, unsigned int npieces)
     unsigned int idx, len;
 
     /* get space for this block of pieces */
-    sc_get_incomplete(priv(db)->space, &idx, &len, npieces);
+    chunky_get_incomplete(priv(db)->space, &idx, &len, npieces);
     assert(len == npieces);
     return bt_piecedb_add_at_idx(db, npieces, idx);
 }
 
 int bt_piecedb_add_at_idx(bt_piecedb_t * db, unsigned int npieces, int idx)
 {
-    if (sc_have(priv(db)->space,idx, npieces))
+    if (chunky_have(priv(db)->space,idx, npieces))
         return -1;
 
-    sc_mark_complete(priv(db)->space, idx, npieces);
+    chunky_mark_complete(priv(db)->space, idx, npieces);
 
     int i;
     for (i=0; i<npieces; i++)
@@ -155,7 +155,7 @@ void bt_piecedb_remove(bt_piecedb_t * db, int idx)
 {
     // TODO memleak here?
     hashmap_remove(priv(db)->pmap, (void*)((unsigned long)idx+1));
-    sc_mark_incomplete(priv(db)->space, idx, 1);
+    chunky_mark_incomplete(priv(db)->space, idx, 1);
 }
 
 int bt_piecedb_get_num_downloaded(bt_piecedb_t * db)

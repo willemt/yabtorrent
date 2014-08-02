@@ -1,3 +1,5 @@
+#ifndef NETWORK_ADAPTER_MOCK_H
+#define NETWORK_ADAPTER_MOCK_H
 
 /* connect status */
 typedef enum {
@@ -41,3 +43,15 @@ client_t* networkfuncs_mock_get_client_from_id(void* nethandle);
 
 void* networkfuns_mock_client_new(void* nethandle);
 
+int network_poll(void* caller, void **udata,
+               const int msec_timeout,
+               int (*func_process) (void *caller,
+                                    void* nethandle,
+                                    const char* buf,
+                                    unsigned int len),
+               void (*func_process_connection) (void *,
+                                                void* nethandle,
+                                                char *ip,
+                                                int port));
+
+#endif /* NETWORK_ADAPTER_MOCK_H */

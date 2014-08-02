@@ -4,13 +4,13 @@
 /**
  * @return newly initialised piece */
 bt_piece_t *bt_piece_new(
-    const unsigned char *sha1sum,
+    const char *sha1sum,
     const int piece_bytes_size
 );
 
 /**
  * @param sha1sum The 20 byte hash that describes the content of this piece */
-void bt_piece_set_hash(bt_piece_t * me, const unsigned char *sha1sum);
+void bt_piece_set_hash(bt_piece_t * me, const char *sha1sum);
 
 void bt_piece_set_size(bt_piece_t * me, const unsigned int piece_bytes_size);
 
@@ -121,7 +121,7 @@ int bt_piece_write_block(
 int bt_piece_write_block_to_stream(
     bt_piece_t * me,
     bt_block_t * blk,
-    unsigned char ** msg);
+    char ** msg);
 
 /**
  * I/O performed.
@@ -129,7 +129,7 @@ int bt_piece_write_block_to_stream(
 int bt_piece_write_block_to_stream(
     bt_piece_t * me,
     bt_block_t * blk,
-    unsigned char ** msg);
+    char ** msg);
 
 void bt_piece_set_disk_blockrw(
         bt_piece_t *me,

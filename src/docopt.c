@@ -92,7 +92,7 @@ const char help_message[] =
 //"  -t --tos  Set the peer socket TOS for local router-based traffic shaping.\n"
 //"  -u --uplimit=<uplimit-number>  Set the maximum upload speed in KB/s.\n"
 //"  -U --no-uplimit  Don’t limit the upload speed.\n"
-"  -v --verify  Verify the torrent’s downloaded data.\n"
+"  -v --verify  Verify the downloaded torrent data.\n"
 "  -w --download-dir=<download-dir>  Where to save downloaded data.\n"
 "";
 

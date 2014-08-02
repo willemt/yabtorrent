@@ -32,15 +32,15 @@ int bt_sha1_equal(char * s1, char * s2)
 
 void bt_str2sha1hash(
     unsigned char *hash_out,
-    const unsigned char *str,
+    const char *str,
     int len)
 {
     SHA1_CTX ctx;
-    int ii;
+    unsigned int ii;
 
     SHA1Init(&ctx);
     for (ii=0; ii<len; ii+=1)
-        SHA1Update(&ctx, str + ii, 1);
+        SHA1Update(&ctx, (const unsigned char*)str + ii, 1);
     SHA1Final(hash_out, &ctx);
     hash_out[20] = '\0';
 }

@@ -22,7 +22,7 @@
 //#include <unistd.h>
 
 #include "bt.h"
-#include "sparsefile_allocator.h"
+#include "stubfile.h"
 
 /* file dumper */
 typedef struct
@@ -41,7 +41,7 @@ int bt_filedumper_write_block(
 {
     bt_filedumper_t *me = flo;
 
-    return sfa_write(
+    return sf_write(
             me->sfa,
             blk->piece_idx * me->piece_length + blk->offset,
             blk->len,
@@ -61,7 +61,7 @@ void *bt_filedumper_read_block(
             blk->piece_idx,  blk->offset, blk->len);
 #endif
 
-    return sfa_read(
+    return sf_read(
             me->sfa,
             blk->piece_idx * me->piece_length + blk->offset,
             blk->len);
@@ -76,7 +76,7 @@ int bt_filedumper_flush_block(
 #if 0
     bt_filedumper_t *me = flo;
 
-    return sfa_write(
+    return sf_write(
             me->sfa,
             blk->piece_idx * me->piece_length + blk->offset,
             blk->len,
@@ -91,7 +91,7 @@ void *bt_filedumper_new(
     bt_filedumper_t *me;
 
     me = calloc(1, sizeof(bt_filedumper_t));
-    me->sfa = sfa_new();
+    me->sfa = sf_new();
     assert(me->sfa);
     me->irw.write_block = bt_filedumper_write_block;
     me->irw.read_block = bt_filedumper_read_block;
@@ -108,7 +108,7 @@ void bt_filedumper_add_file(
 {
     bt_filedumper_t* me = fl;
 
-    sfa_add_file(me->sfa, fname, fname_len, size);
+    sf_add_file(me->sfa, fname, fname_len, size);
 }
 
 /**
@@ -119,7 +119,7 @@ int bt_filedumper_get_nfiles(
 {
     bt_filedumper_t* me = fl;
 
-    return sfa_get_nfiles(me->sfa);
+    return sf_get_nfiles(me->sfa);
 }
 
 const char *bt_filedumper_file_get_path(
@@ -128,7 +128,7 @@ const char *bt_filedumper_file_get_path(
 )
 {
     bt_filedumper_t* me = fl;
-    return sfa_file_get_path(me->sfa,idx);
+    return sf_file_get_path(me->sfa,idx);
 }
 
 bt_blockrw_i *bt_filedumper_get_blockrw(
@@ -157,12 +157,12 @@ void bt_filedumper_set_cwd(
 {
     bt_filedumper_t* me = fl;
 
-    sfa_set_cwd(me->sfa, path);
+    sf_set_cwd(me->sfa, path);
 }
 
 unsigned int bt_filedumper_get_total_size(void * fl)
 {
     bt_filedumper_t* me = fl;
-    return sfa_get_total_size(me->sfa);
+    return sf_get_total_size(me->sfa);
 }
 

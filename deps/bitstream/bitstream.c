@@ -4,24 +4,48 @@
 #include <assert.h>
 
 void bitstream_init(
-    unsigned char *b,
+    char *b,
     int size
 )
 {
-    memset(b, 0, sizeof(unsigned char) * size);
+    memset(b, 0, sizeof(char) * size);
 }
 
-void bitstream_write_ubyte(
-    unsigned char **b,
-    unsigned char value
+void bitstream_write_byte(
+    char **b,
+    char value
 )
 {
     **b = value;
     *b += 1;
 }
 
+void bitstream_write_byte_from_bitoffset(
+    char **b,
+    char value,
+    unsigned int* bit_pos
+)
+{
+    /* position pointer */
+    unsigned int byte_offset = (*bit_pos - *bit_pos % 8) / 8;
+    unsigned int bit_offset = *bit_pos % 8;
+    unsigned char *ptr = (unsigned char*)*b + byte_offset;
+
+    /* left half */
+    unsigned char val = *ptr;
+    val >>= bit_offset;
+    val <<= bit_offset;
+    val |= value >> bit_offset;
+    *ptr = val;
+
+    /* right half */
+    val = value << bit_offset;
+    *(ptr + 1) = val;
+    *b += 1;
+}
+
 void bitstream_write_uint32(
-    unsigned char **b,
+    char **b,
     uint32_t value
 )
 {
@@ -29,8 +53,8 @@ void bitstream_write_uint32(
     *b += sizeof(uint32_t);
 }
 
-unsigned char bitstream_read_ubyte(
-    unsigned char **b
+char bitstream_read_byte(
+    char **b
 )
 {
     unsigned char val = **b;
@@ -39,7 +63,7 @@ unsigned char bitstream_read_ubyte(
 }
 
 uint32_t bitstream_read_uint32(
-    unsigned char **b
+    char **b
 )
 {
     uint32_t value;
@@ -50,20 +74,20 @@ uint32_t bitstream_read_uint32(
 }
 
 void bitstream_write_uint32_from_bitoffset(
-    unsigned char **b,
+    char **b,
     const uint32_t val,
     const unsigned int nbits,
     unsigned int* bit_pos
 )
 {
-    unsigned int bit_offset, int_offset;
-    uint32_t val_posting;
 
     assert(nbits <= 32);
 
-    int_offset = (*bit_pos - *bit_pos % 32) / 32;
-    bit_offset = *bit_pos % 32;
+    unsigned int int_offset = (*bit_pos - *bit_pos % 32) / 32;
+    unsigned int bit_offset = *bit_pos % 32;
 
+    uint32_t val_posting;
+    /* get old value */
     memcpy(&val_posting, *b + (int_offset) * sizeof(uint32_t), sizeof(uint32_t));
 
     /* write b out */
@@ -84,16 +108,27 @@ void bitstream_write_uint32_from_bitoffset(
 }
 
 void bitstream_write_bit_from_bitoffset(
-    unsigned char **b,
+    char **b,
     const unsigned int val,
     unsigned int* bit_pos
 )
 {
-    bitstream_write_uint32_from_bitoffset(b,val,1,bit_pos);
+    /* position pointer */
+    unsigned int byte_offset = (*bit_pos - *bit_pos % 8) / 8;
+    unsigned int bit_offset = *bit_pos % 8;
+    unsigned char *ptr = (unsigned char*)*b + byte_offset;
+
+    unsigned char stamp;
+
+    stamp = val != 0;
+    stamp <<= 8 -1;
+    stamp >>= bit_offset;
+    *ptr |= stamp;
+    *bit_pos += 1;
 }
 
 void bitstream_read_uint32_from_bitoffset(
-    unsigned char **b,
+    char **b,
     uint32_t * val_out,
     const unsigned int nbits,
     unsigned int* bit_pos
@@ -119,7 +154,7 @@ void bitstream_read_uint32_from_bitoffset(
     {
         int nbits2;
         uint32_t val;
-        
+
         nbits2 = (bit_offset + nbits) % 32;
         memcpy(&val, *b + (int_offset + 1) * sizeof(uint32_t), sizeof(uint32_t));
 
@@ -132,28 +167,20 @@ void bitstream_read_uint32_from_bitoffset(
     *bit_pos += nbits;
 }
 
-/**
- * read the next bit.
- * @return true if bit == 1 else false
- */
 int bitstream_read_bit(
-    unsigned char **b,
+    char **b,
     unsigned int* bit_pos
 )
 {
-    uint32_t *ptr;
-    uint32_t val;
-    unsigned int bit_offset, int_offset;
-
     /* position pointer */
-    int_offset = (*bit_pos - *bit_pos % 32) / 32;
-    bit_offset = *bit_pos % 32;
-    ptr = (uint32_t*)*b + int_offset;
+    unsigned int byte_offset = (*bit_pos - *bit_pos % 8) / 8;
+    unsigned int bit_offset = *bit_pos % 8;
+    unsigned char *ptr = (unsigned char*)*b + byte_offset;
 
     //val = ntohl(*ptr);
-    val = *ptr;
+    unsigned char val = *ptr;
     val <<= bit_offset;
-    val >>= 32 - 1;
+    val >>= 8 - 1;
     *bit_pos += 1;
     return val == 1;
 }
@@ -173,7 +200,7 @@ static int l2b_endian(int in)
 #endif
 
 void bitstream_write_string(
-    unsigned char **b,
+    char **b,
     const char* string,
     unsigned int len
 )
@@ -183,7 +210,7 @@ void bitstream_write_string(
 }
 
 void bitstream_read_string(
-    unsigned char **b,
+    char **b,
     char* out_string,
     unsigned int len
 )

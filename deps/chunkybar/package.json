@@ -1,0 +1,9 @@
+{
+  "name": "chunkybar",
+  "version": "0.0.1",
+  "repo": "willemt/chunkybar",
+  "description": "Data structure that efficiently represents multi-piece progress bars",
+  "keywords": ["bittorrent", "progress"],
+  "license": "BSD",
+  "src": ["chunkybar.c", "chunkybar.h"]
+}

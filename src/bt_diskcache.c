@@ -284,7 +284,7 @@ void *bt_diskcache_new()
     priv(me)->irw.read_block = __read_block;
     priv(me)->irw.flush_block = __flush_block;
     priv(me)->piece_length = 0;
-    priv(me)->lru_piece = pseudolru_initalloc(__lru_piece_compare);
+    priv(me)->lru_piece = pseudolru_new(__lru_piece_compare);
     return me;
 }
 

@@ -23,7 +23,7 @@
 #include "bt_piece.h"
 
 #include "bt_sha1.h"
-#include "sparse_counter.h"
+#include "chunkybar.h"
 #include "avl_tree.h"
 
 /* for bitstream_write() */
@@ -49,10 +49,10 @@ typedef struct
     int piece_length;
 
     /* downloaded: we have this block downloaded */
-    sparsecounter_t *progress_downloaded;
+    chunkybar_t *progress_downloaded;
 
     /* we have requested this block */
-    sparsecounter_t *progress_requested;
+    chunkybar_t *progress_requested;
 
     char *sha1;
 
@@ -124,17 +124,17 @@ int bt_piece_write_block(
     }
 
     /* mark progress */
-    sc_mark_complete(priv(me)->progress_requested, b->offset, b->len);
-    sc_mark_complete(priv(me)->progress_downloaded, b->offset, b->len);
+    chunky_mark_complete(priv(me)->progress_requested, b->offset, b->len);
+    chunky_mark_complete(priv(me)->progress_downloaded, b->offset, b->len);
 
 #if 0 /*  debugging */
     printf("%d left to go: %d/%d\n",
            me->idx,
-           sc_get_nbytes_completed(priv(me)->progress_downloaded),
+           chunky_get_nbytes_completed(priv(me)->progress_downloaded),
            priv(me)->piece_length);
 #endif
 
-    if (sc_is_complete(priv(me)->progress_downloaded))
+    if (chunky_is_complete(priv(me)->progress_downloaded))
         return BT_PIECE_WRITE_BLOCK_COMPLETELY_DOWNLOADED;
 
     return BT_PIECE_WRITE_BLOCK_SUCCESS;
@@ -147,7 +147,7 @@ void *bt_piece_read_block(bt_piece_t *me, void *caller, const bt_block_t * b)
     if (!priv(me)->disk->read_block)
         return NULL;
 
-    if (!sc_have(priv(me)->progress_downloaded, b->offset, b->len))
+    if (!chunky_have(priv(me)->progress_downloaded, b->offset, b->len))
         return NULL;
 
     return priv(me)->disk->read_block(priv(me)->disk_udata, me, b);
@@ -159,14 +159,14 @@ static long __cmp_address(const void *e1, const void *e2)
 }
 
 bt_piece_t *bt_piece_new(
-        const unsigned char *sha1sum,
+        const char *sha1sum,
         const int piece_bytes_size)
 {
     __piece_private_t *me;
 
     me = calloc(1,sizeof(__piece_private_t));
-    priv(me)->progress_downloaded = sc_init(piece_bytes_size);
-    priv(me)->progress_requested = sc_init(piece_bytes_size);
+    priv(me)->progress_downloaded = chunky_new(piece_bytes_size);
+    priv(me)->progress_requested = chunky_new(piece_bytes_size);
     priv(me)->piece_length = piece_bytes_size;
     priv(me)->is_completed = FALSE;
     priv(me)->peers = avltree_new(__cmp_address);
@@ -178,8 +178,8 @@ bt_piece_t *bt_piece_new(
 void bt_piece_free(bt_piece_t * me)
 {
     free(priv(me)->sha1);
-    sc_free(priv(me)->progress_downloaded);
-    sc_free(priv(me)->progress_requested);
+    chunky_free(priv(me)->progress_downloaded);
+    chunky_free(priv(me)->progress_requested);
     free(me);
 }
 
@@ -234,7 +234,7 @@ int bt_piece_is_valid(bt_piece_t * me)
 
 int bt_piece_is_downloaded(bt_piece_t * me)
 {
-    return sc_is_complete(priv(me)->progress_downloaded);
+    return chunky_is_complete(priv(me)->progress_downloaded);
 }
 
 int bt_piece_is_complete(bt_piece_t * me)
@@ -244,7 +244,7 @@ int bt_piece_is_complete(bt_piece_t * me)
 
     unsigned int off, ln;
 
-    sc_get_incomplete(priv(me)->progress_downloaded, &off, &ln,
+    chunky_get_incomplete(priv(me)->progress_downloaded, &off, &ln,
                               priv(me)->piece_length);
 
     /*  if we haven't downloaded any of the file */
@@ -262,7 +262,7 @@ int bt_piece_is_complete(bt_piece_t * me)
 
 int bt_piece_is_fully_requested(bt_piece_t * me)
 {
-    return sc_is_complete(priv(me)->progress_requested);
+    return chunky_is_complete(priv(me)->progress_requested);
 }
 
 void bt_piece_poll_block_request(bt_piece_t * me, bt_block_t * request)
@@ -281,7 +281,7 @@ void bt_piece_poll_block_request(bt_piece_t * me, bt_block_t * request)
     }
 
     /* create the request by getting an incomplete block */
-    sc_get_incomplete(priv(me)->progress_requested, &offset, &len, blk_size);
+    chunky_get_incomplete(priv(me)->progress_requested, &offset, &len, blk_size);
     request->piece_idx = priv(me)->idx;
     request->offset = offset;
     request->len = len;
@@ -292,12 +292,12 @@ void bt_piece_poll_block_request(bt_piece_t * me, bt_block_t * request)
 #endif
 
     /* mark requested counter */
-    sc_mark_complete(priv(me)->progress_requested, offset, len);
+    chunky_mark_complete(priv(me)->progress_requested, offset, len);
 }
 
 void bt_piece_giveback_block(bt_piece_t * me, bt_block_t * b)
 {
-    sc_mark_incomplete(priv(me)->progress_requested, b->offset, b->len);
+    chunky_mark_incomplete(priv(me)->progress_requested, b->offset, b->len);
 }
 
 void bt_piece_set_complete(bt_piece_t * me, int yes)
@@ -307,12 +307,12 @@ void bt_piece_set_complete(bt_piece_t * me, int yes)
 
 void bt_piece_set_size(bt_piece_t * me, const unsigned int piece_bytes_size)
 {
-    sc_set_max(priv(me)->progress_downloaded, piece_bytes_size);
-    sc_set_max(priv(me)->progress_requested, piece_bytes_size);
+    chunky_set_max(priv(me)->progress_downloaded, piece_bytes_size);
+    chunky_set_max(priv(me)->progress_requested, piece_bytes_size);
     priv(me)->piece_length = piece_bytes_size;
 }
 
-void bt_piece_set_hash(bt_piece_t * me, const unsigned char *sha1sum)
+void bt_piece_set_hash(bt_piece_t * me, const char *sha1sum)
 {
     assert(!priv(me)->sha1);
     priv(me)->sha1 = malloc(20);
@@ -343,10 +343,10 @@ int bt_piece_get_size(bt_piece_t * me)
 int bt_piece_write_block_to_stream(
     bt_piece_t *me,
     bt_block_t *blk,
-    unsigned char **msg
+    char **msg
 )
 {
-    unsigned char *data;
+    char *data;
     int i;
 
     if (!(data = __get_data(me)))
@@ -356,8 +356,8 @@ int bt_piece_write_block_to_stream(
 
     for (i = 0; i < blk->len; i++)
     {
-        unsigned char val = *(data + i);
-        bitstream_write_ubyte(msg, val);
+        char val = *(data + i);
+        bitstream_write_byte(msg, val);
     }
 
     return 1;
@@ -371,7 +371,7 @@ int bt_piece_write_block_to_str(bt_piece_t *me, bt_block_t *blk, char *out)
     data = __get_data(me);
     offset = blk->offset;
     len = blk->len;
-    memcpy(out, (unsigned char *) data + offset, len);
+    memcpy(out, (char *) data + offset, len);
     return 1;
 }
 
@@ -380,8 +380,8 @@ void bt_piece_drop_download_progress(bt_piece_t *me)
     avltree_empty(priv(me)->peers);
     priv(me)->is_completed = 0;
     priv(me)->validity = VALIDITY_NOTCHECKED;
-    sc_mark_all_incomplete(priv(me)->progress_downloaded);
-    sc_mark_all_incomplete(priv(me)->progress_requested);
+    chunky_mark_all_incomplete(priv(me)->progress_downloaded);
+    chunky_mark_all_incomplete(priv(me)->progress_requested);
 }
 
 int bt_piece_calculate_hash(bt_piece_t* me, char *hash)
@@ -393,7 +393,7 @@ int bt_piece_calculate_hash(bt_piece_t* me, char *hash)
         return 0;
     }
 
-    bt_str2sha1hash(hash, data, priv(me)->piece_length);
+    bt_str2sha1hash((unsigned char*)hash, data, priv(me)->piece_length);
     return 1;
 }
 

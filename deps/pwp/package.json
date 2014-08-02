@@ -1,0 +1,19 @@
+{
+  "name": "pwp",
+  "version": "0.0.1",
+  "repo": "willemt/pwp",
+  "description": "A Bittorrent peer wire protocol implementation",
+  "keywords": ["bittorrent"],
+  "license": "BSD",
+  "src": ["pwp_bitfield.c", "pwp_connection.c", "pwp_handshaker.c", "pwp_msghandler.c",
+          "pwp_connection.h", "pwp_connection_private.h", "pwp_handshaker.h", "pwp_local.h", "pwp_msghandler.h", "pwp_msghandler_private.h"],
+  "dependencies": {
+        "willemt/bitfield": "*",
+        "willemt/bitstream": "*",
+        "willemt/chunkybar": "*",
+        "willemt/fe": "*",
+        "willemt/linked-list-hashmap": "*",
+        "willemt/linked-list-queue": "*",
+        "willemt/meanqueue": "*"
+  }
+}

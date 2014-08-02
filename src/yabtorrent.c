@@ -26,12 +26,15 @@
 #include "bt_filedumper.h"
 #include "bt_string.h"
 #include "bt_selector_random.h"
+#include "bt_sha1.h"
+
 #include "tracker_client.h"
-#include "torrentfile_reader.h"
-#include "readfile.h"
+#include "torrent_reader.h"
+#include "file2str.h"
 #include "config.h"
-#include "networkfuncs.h"
 #include "linked_list_queue.h"
+
+#include "network_adapter.h"
 
 #include "pwp_handshaker.h"
 
@@ -169,13 +172,13 @@ static void* on_call_exclusively(void* me, void* cb_ctx, void **lock, void* udat
 static int __dispatch_from_buffer(
         void *callee,
         void *peer_nethandle,
-        const unsigned char* buf,
+        const char* buf,
         unsigned int len)
 {
     sys_t* me = callee;
 
     uv_mutex_lock(&me->mutex);
-    bt_dm_dispatch_from_buffer(me->bc,peer_nethandle,buf,len);
+    bt_dm_dispatch_from_buffer(me->bc, peer_nethandle, buf, len);
     uv_mutex_unlock(&me->mutex);
     return 1;
 }
@@ -263,12 +266,12 @@ static int __tfr_event_str(void* udata, const char* key, const char* val, int le
     {
         char hash[21];
 
-        bt_str2sha1hash(hash, val, len);
+        bt_str2sha1hash((unsigned char*)hash, val, len);
         config_set_va(me->sys->cfg,"infohash","%.*s", 20, hash);
     }
     else if (!strcmp(key,"pieces"))
     {
-        int i, bytes_used = 0, piece_size;
+        unsigned int i, bytes_used = 0, piece_size;
 
         piece_size = atoi(config_get(me->sys->cfg, "piece_length"));
 
@@ -277,7 +280,8 @@ static int __tfr_event_str(void* udata, const char* key, const char* val, int le
         /* do N-1 pieces */
         for (i=0; i < len - 20; i += 20)
         {
-            bt_piecedb_add_with_hash_and_size(me->sys->db, val+i, piece_size);
+            bt_piecedb_add_with_hash_and_size(me->sys->db, (const char*)val + i,
+                    piece_size);
             bytes_used += piece_size;
         }
 
@@ -285,8 +289,7 @@ static int __tfr_event_str(void* udata, const char* key, const char* val, int le
         int tot_size = bt_filedumper_get_total_size(me->sys->fd);
         assert(bytes_used < tot_size);
         assert(tot_size - bytes_used <= piece_size);
-        bt_piecedb_add_with_hash_and_size(me->sys->db,
-                val + i, tot_size - bytes_used);
+        bt_piecedb_add_with_hash_and_size(me->sys->db, val + i, tot_size - bytes_used);
 
         config_set_va(me->sys->cfg, "npieces", "%d",
                 bt_piecedb_get_length(me->sys->db));
@@ -337,14 +340,14 @@ static int __tfr_event_int(void* udata, const char* key, int val)
 static int __read_torrent_file(sys_t* me, const char* torrent_file)
 {
     void* tf;
-    int len;
+    unsigned int len;
     char* metainfo;
     torrent_reader_t r;
 
     memset(&r, 0, sizeof(torrent_reader_t));
     r.sys = me;
     tf = tfr_new(__tfr_event, __tfr_event_str, __tfr_event_int, &r);
-    metainfo = read_file(torrent_file,&len);
+    metainfo = file2strl(torrent_file, &len);
     tfr_read_metainfo(tf, metainfo, len);
     return 1;
 }

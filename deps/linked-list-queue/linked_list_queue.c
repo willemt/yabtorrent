@@ -102,8 +102,6 @@ void llqueue_offer(
     qu->count++;
 }
 
-/**
- * remove this item, by comparing the memory address of the item */
 void *llqueue_remove_item(
     linked_list_queue_t * qu,
     const void *item
@@ -146,8 +144,6 @@ void *llqueue_remove_item(
     return NULL;
 }
 
-/**
- * remove this item, by using the supplied compare function */
 void *llqueue_remove_item_via_cmpfunction(
     linked_list_queue_t * qu,
     const void *item,
@@ -194,8 +190,6 @@ void *llqueue_remove_item_via_cmpfunction(
     return NULL;
 }
 
-/**
- * get this item, by using the supplied compare function */
 void *llqueue_get_item_via_cmpfunction(
     linked_list_queue_t * qu,
     const void *item,

@@ -7,12 +7,11 @@ void *eventtimer_new();
  * @param nsecs run this event in this many seconds
  * @param udata use this data for the event function
  * @param func run this event callback */
-void eventtimer_schedule_event(
+void eventtimer_push_event(
     void *ti,
     int nsecs,
     void *udata,
-    void (*cb_func) (void *)
-);
+    void (*func) (void *));
 
 /**
  * Poll any events that need to be triggered */
