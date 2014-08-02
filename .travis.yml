@@ -1,1 +1,5 @@
-script: "git clone http://github.com/joyent/libuv && cd libuv && sh autogen.sh && ./configure && make && mkdir ../build && cp .libs/libuv.a ../build/ && cd .. && python waf configure && python waf"
+before_install:
+  - wget http://mirrors.kernel.org/ubuntu/pool/universe/libu/libuv/libuv-dev_0.10.22-2_i386.deb
+  - sudo dpkg -i libuv-dev_0.10.22-2_i386.deb
+
+#script: "git clone http://github.com/joyent/libuv && cd libuv && sh autogen.sh && ./configure && make && mkdir ../build && cp .libs/libuv.a ../build/ && cd .. && python waf configure && python waf"
