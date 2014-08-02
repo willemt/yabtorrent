@@ -1,0 +1,9 @@
+{
+  "name": "cutest",
+  "version": "0.0.1",
+  "repo": "willemt/cutest",
+  "description": "TAP producing C unit test framework",
+  "keywords": ["unit test"],
+  "license": "BSD",
+  "src": ["CuTest.c", "CuTest.h", "make-tests.sh"]
+}

@@ -1,8 +1,18 @@
-letsdothis:
-	if test -e waf; \
-	then python waf ; \
-	else echo Downloading waf...; wget http://waf.googlecode.com/files/waf-1.7.2; mv waf-1.7.2 waf; python waf configure; python waf; \
-	fi
+letsbuildthis:
+	python waf configure
+	python waf build
 
 clean:
 	python waf clean
+
+install_libuv:
+	if test -e libuv; \
+	then cd libuv && git pull ; \
+	else git clone http://github.com/joyent/libuv; \
+	fi
+	cd libuv && git checkout v0.10
+	cd libuv && make
+	mkdir -p build
+	cp libuv/libuv.a .
+
+

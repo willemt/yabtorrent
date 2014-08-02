@@ -18,18 +18,6 @@
 
 #include "bt.h"
 
-int bt_sha1_equal(char * s1, char * s2)
-{
-    return 0 == memcmp(s1, s2, 20);
-#if 0
-    return ((*s1 + 0) == *(s1 + 0) & *(s2 + 0)) &&
-        ((*s1 + 1) == *(s1 + 1) & *(s2 + 1)) &&
-        ((*s1 + 2) == *(s1 + 2) & *(s2 + 2)) &&
-        ((*s1 + 3) == *(s1 + 3) & *(s2 + 3)) &&
-        ((*s1 + 4) == *(s1 + 4) & *(s2 + 4));
-#endif
-}
-
 void bt_str2sha1hash(
     unsigned char *hash_out,
     const char *str,

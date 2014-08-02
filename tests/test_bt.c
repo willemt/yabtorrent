@@ -10,6 +10,8 @@
 
 #include "bt.h"
 
+#include "bt_sha1.h"
+
 /*
  * bt_sha1_equal tells if a sha1 hash is equal or not
  */
@@ -23,8 +25,8 @@ void TestBT_Sha1Equal(
 
     char *s3 = "10000000000000000000";
 
-    CuAssertTrue(tc, 1 == bt_sha1_equal(s1, s2));
-    CuAssertTrue(tc, 0 == bt_sha1_equal(s1, s3));
+    CuAssertTrue(tc, 1 == memcmp(s1, s2, 20));
+    CuAssertTrue(tc, 0 == memcmp(s1, s3, 20));
 }
 
 void TestBT_GeneratedPeeridIs20BytesLong(

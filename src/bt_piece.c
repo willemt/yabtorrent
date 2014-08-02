@@ -406,7 +406,7 @@ int bt_piece_validate(bt_piece_t* me)
     if (0 == bt_piece_calculate_hash(me, hash))
         return 0;
 
-    ret = bt_sha1_equal(hash, priv(me)->sha1);
+    ret = memcmp(hash, priv(me)->sha1, 20);
 
     if (1 == ret)
     {

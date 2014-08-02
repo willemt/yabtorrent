@@ -2,12 +2,13 @@
 # vi: set ft=python :
 
 import sys
-
+import os
 
 def options(opt):
         opt.load('compiler_c')
 
 def configure(conf):
+    
     conf.load('compiler_c')
     conf.load('clib')
 
@@ -15,56 +16,25 @@ def configure(conf):
         conf.check_cc(lib='ws2_32')
         conf.check_cc(lib='psapi')
 
-    conf.env.STDLIBPATH = ['.']
-    #conf.find_program("git")
-    #conf.find_program("glibtoolize")
-    conf.check_cc(lib='uv')
-    #build_libuv()
-
-
-def build_libuv():
-    def external_cmd(conf, cmd, cwd):
-        try:
-            return conf.cmd_and_log(cmd, cwd=cwd)
-        except Exception as e:
-            from waflib import Logs
-            Logs.info('cmd failed! ' + str(e))
-            Logs.info(e.stdout)
-            Logs.info(e.stderr)
-            Logs.info(dir(e))
-            return 0
-#    print "Configuring libuv (autogen.sh)"
-#    if sys.platform == 'darwin':
-#        conf.exec_command('mkdir -p build', cwd='libuv')
-#        conf.exec_command('git clone https://git.chromium.org/external/gyp.git build/gyp', cwd='libuv')
-#        conf.exec_command('git pull https://git.chromium.org/external/gyp.git', cwd='libuv/build/gyp')
-#        external_cmd(conf, './gyp_uv.py -f xcode', cwd='libuv')
-#        external_cmd(conf, 'xcodebuild -ARCHS="x86_64" -project uv.xcodeproj -configuration Release -target All', cwd='libuv')
-#        conf.exec_command("cp libuv/build/Release/libuv.a build/")
-#    else:
-#        conf.exec_command("sh autogen.sh", cwd="libuv")
-#        print "Configuring libuv (configure)"
-#        conf.exec_command("sh configure", cwd="libuv")
-#        print "Building libuv.a"
-#        conf.exec_command("make", cwd="libuv")
-#        conf.exec_command("mkdir build")
-#        conf.exec_command("cp libuv/.libs/libuv.a build/")
-
+    conf.check_cc(lib='uv', libpath=[os.getcwd()])
 
 def unit_test(bld, src, ccflag=None):
+    target = "build/tests/t_{0}".format(src)
+
     # collect tests into one area
-    bld(rule='sh ../make-tests.sh ../tests/'+src+' > ${TGT}', target="tests/t_"+src)
+    bld(rule='sh {0}/deps/cutest/make-tests.sh {0}/tests/{1} > {2}'.format(os.getcwd(), src, target), target=target)
 
     libs = []
 
     # build the test program
     bld.program(
         source=[
-            "tests/"+src,
-            "tests/t_"+src,
-            'tests/CuTest.c',
-            bld.env.CONTRIB_PATH+"CBitfield/bitfield.c",
-        ],
+            "tests/{0}".format(src),
+            target,
+            ] + bld.clib_c_files("""
+                bitfield
+                cutest
+                """.split()),
         target=src[:-2],
         cflags=[
             '-g',
@@ -73,10 +43,10 @@ def unit_test(bld, src, ccflag=None):
         use='yabbt',
         lib = libs,
         unit_test='yes',
-        includes=[
-            "./include",
-            bld.env.CONTRIB_PATH+"CBitfield"
-        ]
+        includes=[ "./include" ] + bld.clib_h_paths("""
+                                    asprintf
+                                    cutest
+                                    """.split())
         )
 
     # run the test
@@ -106,7 +76,6 @@ def scenario_test(bld, src, ccflag=None):
             ] +\
             bld.clib_c_files([
                 'mt19937ar',
-                'bipbuffer',
                 'pwp']),
         stlibpath = ['libuv','.'],
         target=src[:-2],
@@ -174,7 +143,6 @@ def build(bld):
         sha1
         strndup
         stubfile
-        torrent-reader
         """.split()
 
     bld.shlib(
@@ -201,7 +169,6 @@ def build(bld):
             '-Werror',
             '-Werror=format',
             '-Werror=int-to-pointer-cast',
-            '-Qunused-arguments',
             '-g',
             platform,
             '-Werror=unused-variable',
@@ -210,7 +177,7 @@ def build(bld):
             '-Werror=pointer-to-int-cast',
             '-Wcast-align'])
 
-    #unit_test(bld,"test_bt.c")
+    unit_test(bld,"test_bt.c")
     #unit_test(bld,"test_download_manager.c")
     #unit_test(bld,"test_peer_manager.c")
     #unit_test(bld,'test_choker_leecher.c')
@@ -248,10 +215,9 @@ def build(bld):
             src/yabtorrent.c
             src/network_adapter_libuv_v0.10.c
             """.split() + bld.clib_c_files("""
-                bipbuffer
-                http-parser
                 mt19937ar
                 tracker-client
+                torrent-reader
                 """.split()),
         target='yabtorrent',
         cflags="""
@@ -261,15 +227,14 @@ def build(bld):
             -Werror=pointer-to-int-cast
             -Werror=return-type
             """.split(),
-        stlibpath=['./libuv', '.'],
+        stlibpath=['.'],
+	libpath=[os.getcwd()],
         lib=libs,
         includes=['./include', './libuv/include'] + bld.clib_h_paths("""
                 asprintf
-                bipbuffer
                 config-re
                 file2str
                 heapless-bencode
-                http-parser
                 linked-list-hashmap
                 linked-list-queue
                 pwp
