@@ -8,7 +8,6 @@ def options(opt):
         opt.load('compiler_c')
 
 def configure(conf):
-    
     conf.load('compiler_c')
     conf.load('clib')
 
@@ -46,9 +45,7 @@ def unit_test(bld, src, ccflag=None, packages=[]):
         includes=[ "./include" ] + bld.clib_h_paths("""
                                     bitfield
                                     cutest
-                                    """.split())
-        )
-
+                                    """.split()))
     # run the test
     if sys.platform == 'win32':
         bld(rule='${SRC}',source=src[:-2]+'.exe')
@@ -72,7 +69,6 @@ def scenario_test(bld, src, ccflag=None):
             "src/network_adapter_mock.c",
             "tests/mock_torrent.c",
             "tests/mock_client.c",
-            #bld.env.CONTRIB_PATH+"PeerWireProtocol/pwp_handshaker.c"
             ] +\
             bld.clib_c_files([
                 'mt19937ar',
@@ -173,21 +169,21 @@ def build(bld):
             '-Werror=pointer-to-int-cast',
             '-Wcast-align'])
 
-    unit_test(bld,"test_bt.c")
-    unit_test(bld,"test_download_manager.c")
-    unit_test(bld,"test_peer_manager.c")
-    unit_test(bld,'test_choker_leecher.c')
-    unit_test(bld,'test_choker_seeder.c')
-    unit_test(bld,'test_selector_rarestfirst.c')
-    unit_test(bld,'test_selector_random.c')
-    unit_test(bld,'test_selector_sequential.c')
-    unit_test(bld,'test_piece.c')
-    unit_test(bld,'test_piece_db.c')
-    unit_test(bld,'test_blacklist.c')
-    #scenario_test(bld,'test_scenario_shares_all_pieces.c')
-    #scenario_test(bld,'test_scenario_shares_all_pieces_between_each_other.c')
-    #scenario_test(bld,'test_scenario_share_20_pieces.c')
-    #scenario_test(bld,'test_scenario_three_peers_share_all_pieces_between_each_other.c')
+    unit_test(bld, "test_bt.c")
+    unit_test(bld, "test_download_manager.c")
+    unit_test(bld, "test_peer_manager.c")
+    unit_test(bld, 'test_choker_leecher.c')
+    unit_test(bld, 'test_choker_seeder.c')
+    unit_test(bld, 'test_selector_rarestfirst.c')
+    unit_test(bld, 'test_selector_random.c')
+    unit_test(bld, 'test_selector_sequential.c')
+    unit_test(bld, 'test_piece.c')
+    unit_test(bld, 'test_piece_db.c')
+    unit_test(bld, 'test_blacklist.c')
+    #scenario_test(bld, 'test_scenario_shares_all_pieces.c')
+    #scenario_test(bld, 'test_scenario_shares_all_pieces_between_each_other.c')
+    #scenario_test(bld, 'test_scenario_share_20_pieces.c')
+    #scenario_test(bld, 'test_scenario_three_peers_share_all_pieces_between_each_other.c')
 
     libs = ['yabbt', 'uv']
     if sys.platform == 'win32':
@@ -205,7 +201,6 @@ def build(bld):
                 pthread
                 """.split()
 
-
     bld.program(
         source="""
             src/yabtorrent.c
@@ -216,7 +211,7 @@ def build(bld):
                 torrent-reader
                 heapless-bencode
                 """.split()),
-        target='yabtorrent',
+        target='bt',
         cflags="""
             -g
             -Werror
@@ -225,7 +220,7 @@ def build(bld):
             -Werror=return-type
             """.split(),
         stlibpath=['.'],
-	libpath=[os.getcwd()],
+        libpath=[os.getcwd()],
         lib=libs,
         includes=['./include', './libuv/include'] + bld.clib_h_paths("""
                 asprintf

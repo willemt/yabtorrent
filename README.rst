@@ -5,11 +5,6 @@ What?
 -----
 Yet another Bittorrent client/library written in C with a BSD license. The client has been intended to be used as a drop-in bittorrent library. The client is in ALPHA and currently has 130+ unit tests covering the code base.
 
-Why?
-----
-1. There aren't any bittorrent clients in C that are licensed under non-copyleft licenses
-2. There aren't any lightweight bittorrent C libraries that aim to be integrable outside of their intended use case
-
 How does it work?
 -----------------
 
@@ -60,6 +55,11 @@ Usage
 -----
 
 $./bt torrentfile.torrent
+
+Why?
+----
+1. There aren't any bittorrent clients in C that are licensed under non-copyleft licenses
+2. There aren't any lightweight bittorrent C libraries that aim to be integrable outside of their intended use case
 
 Help/Todo
 ---------
