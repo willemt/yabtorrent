@@ -1,5 +1,5 @@
-.. image:: https://travis-ci.org/willemt/YABTorrent.png
-   :target: https://travis-ci.org/willemt/YABTorrent
+.. image:: https://travis-ci.org/willemt/yabtorrent.png
+   :target: https://travis-ci.org/willemt/yabtorrent
 
 What?
 -----
