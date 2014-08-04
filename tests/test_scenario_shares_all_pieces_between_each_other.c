@@ -17,8 +17,8 @@
 #include <assert.h>
 
 #include "bt.h"
-#include "networkfuncs.h"
-#include "networkfuncs_mock.h"
+#include "network_adapter.h"
+#include "network_adapter_mock.h"
 #include "mock_torrent.h"
 #include "mock_client.h"
 

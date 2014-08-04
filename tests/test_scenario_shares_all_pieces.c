@@ -18,8 +18,8 @@
 
 #include "bt.h"
 #include "bt_string.h"
-#include "networkfuncs.h"
-#include "networkfuncs_mock.h"
+#include "network_adapter.h"
+#include "network_adapter_mock.h"
 #include "mock_torrent.h"
 #include "mock_client.h"
 

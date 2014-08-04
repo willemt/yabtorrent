@@ -17,13 +17,15 @@
 #include <assert.h>
 
 #include "bt.h"
-#include "networkfuncs.h"
-#include "networkfuncs_mock.h"
+#include "network_adapter.h"
+#include "network_adapter_mock.h"
 #include "mock_torrent.h"
 #include "mock_client.h"
 
+#include "bt_piece.h"
 #include "bt_piece_db.h"
 #include "bt_diskmem.h"
+
 #include "config.h"
 #include "linked_list_hashmap.h"
 #include "bipbuffer.h"

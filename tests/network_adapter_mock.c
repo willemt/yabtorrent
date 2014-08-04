@@ -15,7 +15,7 @@
 #include <assert.h>
 
 #include "bt.h"
-#include "networkfuncs.h"
+#include "network_adapter.h"
 #include "mock_torrent.h"
 
 #include "bt_piece_db.h"
@@ -23,7 +23,7 @@
 #include "config.h"
 #include "linked_list_hashmap.h"
 #include "bipbuffer.h"
-#include "networkfuncs_mock.h"
+#include "network_adapter_mock.h"
 
 #include <fcntl.h>
 #include <sys/time.h>
@@ -150,7 +150,7 @@ int peer_connect(
         const char *host, const int port,
         int (*func_process_data) (void *caller,
                         void* nethandle,
-                        const unsigned char* buf,
+                        const char* buf,
                         unsigned int len),
         int (*func_process_connection) (void *, void* nethandle, char *ip, int iplen),
         void (*func_connection_failed) (void *, void* nethandle)
@@ -177,7 +177,7 @@ int peer_connect(
  * @return 0 if added to buffer due to write failure, -2 if disconnect
  */
 int peer_send(void* caller, void **udata,
-              void* nethandle, const unsigned char *send_data, const int len)
+              void* nethandle, const char *send_data, const int len)
 {
     client_t* me = *udata;
     client_t* you;
@@ -205,7 +205,7 @@ int network_poll(void* caller, void **udata,
                const int msec_timeout,
                int (*func_process) (void *caller,
                                     void* nethandle,
-                                    const unsigned char* buf,
+                                    const char* buf,
                                     unsigned int len),
                void (*func_process_connection) (void *,
                                                 void* nethandle,
@@ -243,11 +243,11 @@ int network_poll(void* caller, void **udata,
         }
         else if (!bipbuf_is_empty(cn->inbox))
         {
-            int len;
-
-            len = bipbuf_get_spaceused(cn->inbox);
-            if (len > 0)
-                func_process(me->bt, cn->nethandle, bipbuf_poll(cn->inbox, len), len);
+            int len = bipbuf_get_spaceused(cn->inbox);
+            if (0 < len)
+                func_process(me->bt,
+                             (char*)cn->nethandle,
+                             (char*)bipbuf_poll(cn->inbox, len), len);
         }
     }
 

@@ -11,7 +11,7 @@
 #include "bt_sha1.h"
 
 typedef struct {
-    unsigned char *data;
+    char *data;
     int size;
     int piece_len;
 
@@ -48,7 +48,6 @@ void *mocktorrent_get_piece_sha1(void* _me, char* hash, unsigned int piece)
 {
     mock_torrent_t* me = _me;
 
-    bt_str2sha1hash(hash, (unsigned char*)me->data + piece * me->piece_len,
-            me->piece_len);
+    bt_str2sha1hash(hash, me->data + piece * me->piece_len, me->piece_len);
     return hash;
 }
