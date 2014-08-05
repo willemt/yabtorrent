@@ -41,17 +41,16 @@ static void __add_piece_intersection_of_mocktorrent(void* db, void* db2, void* m
 
     for (ii=0; ii<npieces; ii++)
     {
-        void* data;
-        bt_block_t blk;
-
         /* only add the piece if db2 does not have it */
         if (bt_piece_is_complete(bt_piecedb_get(db2,ii)))
             continue;
 
+        bt_block_t blk;
         blk.piece_idx = ii;
         blk.offset = 0;
         blk.len = 5;
-        data = mocktorrent_get_data(mt,ii);
+
+        void* data = mocktorrent_get_data(mt,ii);
         bt_diskmem_write_block(bt_piecedb_get_diskstorage(db), NULL, &blk, data);
     }
 }
@@ -64,19 +63,15 @@ static void __add_random_piece_subset_of_mocktorrent(void* db, void* mt, int npi
 
     for (ii=0; ii<npieces; ii++)
     {
-        void* data;
-        bt_block_t blk;
-        int rand_num;
-        
-        rand_num = rand();
-
-        if (rand_num % 2 == 0)
+        if (rand() % 2 == 0)
              continue;
 
+        bt_block_t blk;
         blk.piece_idx = ii;
         blk.offset = 0;
         blk.len = 5;
-        data = mocktorrent_get_data(mt,ii);
+
+        void* data = mocktorrent_get_data(mt,ii);
         bt_diskmem_write_block(bt_piecedb_get_diskstorage(db), NULL, &blk, data);
     }
 }
@@ -142,7 +137,7 @@ void TestBT_Peer_share_20_pieces(CuTest * tc)
     bt_dm_check_pieces(a->bt);
     bt_dm_check_pieces(b->bt);
 
-    for (ii=0; ii<80; ii++)
+    for (ii=0; ii<2000; ii++)
     {
 #if 0 /* debugging */
         printf("\nStep %d:\n", ii+1);
@@ -162,6 +157,8 @@ void TestBT_Peer_share_20_pieces(CuTest * tc)
     bt_dm_periodic(a->bt, NULL);
     bt_dm_periodic(b->bt, NULL);
 
+    bt_piecedb_print_pieces_downloaded(bt_dm_get_piecedb(a->bt));
+    bt_piecedb_print_pieces_downloaded(bt_dm_get_piecedb(b->bt));
     CuAssertTrue(tc, 1 == bt_piecedb_all_pieces_are_complete(bt_dm_get_piecedb(a->bt)));
     CuAssertTrue(tc, 1 == bt_piecedb_all_pieces_are_complete(bt_dm_get_piecedb(b->bt)));
 }

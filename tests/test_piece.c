@@ -12,7 +12,7 @@
 #include "bt.h"
 #include "bitfield.h"
 
-/* used for disk memory backend */
+/* for disk memory backend */
 #include "bt_diskmem.h"
 
 #include "bt_sha1.h"

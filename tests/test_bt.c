@@ -20,13 +20,11 @@ void TestBT_Sha1Equal(
 )
 {
     char *s1 = "00000000000000000000";
-
     char *s2 = "00000000000000000000";
-
     char *s3 = "10000000000000000000";
 
-    CuAssertTrue(tc, 1 == memcmp(s1, s2, 20));
-    CuAssertTrue(tc, 0 == memcmp(s1, s3, 20));
+    CuAssertTrue(tc, 0 == memcmp(s1, s2, 20));
+    CuAssertTrue(tc, 0 != memcmp(s1, s3, 20));
 }
 
 void TestBT_GeneratedPeeridIs20BytesLong(

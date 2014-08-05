@@ -408,7 +408,7 @@ int bt_piece_validate(bt_piece_t* me)
 
     ret = memcmp(hash, priv(me)->sha1, 20);
 
-    if (1 == ret)
+    if (0 == ret)
     {
         priv(me)->validity = VALIDITY_VALID;
         priv(me)->is_completed = TRUE;
