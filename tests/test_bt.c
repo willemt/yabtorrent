@@ -10,14 +10,14 @@
 
 #include "bt.h"
 
-#include "bt_sha1.h"
+#include "sha1.h"
 
 /*
  * bt_sha1_equal tells if a sha1 hash is equal or not
  */
 void TestBT_Sha1Equal(
     CuTest * tc
-)
+    )
 {
     char *s1 = "00000000000000000000";
     char *s2 = "00000000000000000000";
@@ -29,7 +29,7 @@ void TestBT_Sha1Equal(
 
 void TestBT_GeneratedPeeridIs20BytesLong(
     CuTest * tc
-)
+    )
 {
     char *peerid;
 

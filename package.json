@@ -41,7 +41,7 @@
     ],
   "dependencies": {
     "willemt/array-avl-tree": "*",
-    "willemt/asprintf": "*",
+    "littlstar/asprintf.c": "*",
     "willemt/bag": "*",
     "willemt/bipbuffer": "*",
     "willemt/bitfield": "*",
