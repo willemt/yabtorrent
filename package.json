@@ -20,7 +20,7 @@
     "bt_selector_random.c",
     "bt_selector_rarestfirst.c",
     "bt_selector_sequential.c",
-    "bt_util.c",
+    "bt_util.c"
     ],
   "dependencies": {
     "willemt/array-avl-tree": "*",
