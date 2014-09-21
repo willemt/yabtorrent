@@ -22,7 +22,7 @@
 /* for bt_piece_write_block return codes */
 #include "bt_piece.h"
 
-#include "bt_sha1.h"
+#include "sha1.h"
 #include "chunkybar.h"
 #include "avl_tree.h"
 
@@ -383,7 +383,7 @@ int bt_piece_calculate_hash(bt_piece_t* me, char *hash)
     if (!(data = __get_data(me)))
         return 0;
 
-    bt_str2sha1hash(hash, data, priv(me)->piece_length);
+    SHA1(hash, data, priv(me)->piece_length);
     return 1;
 }
 

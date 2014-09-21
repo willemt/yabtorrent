@@ -32,6 +32,7 @@ def unit_test(bld, src, ccflag=None, packages=[]):
             target,
             ] + bld.clib_c_files("""
                 bitfield
+                sha1
                 cutest
                 """.split()),
         target=src[:-2],
@@ -44,6 +45,7 @@ def unit_test(bld, src, ccflag=None, packages=[]):
         unit_test='yes',
         includes=["./include"] + bld.clib_h_paths("""
                                     bitfield
+                                    sha1
                                     cutest
                                     """.split()))
     # run the test
@@ -68,6 +70,7 @@ def scenario_test(bld, src, ccflag=None):
             ] + bld.clib_c_files("""
                 bipbuffer
                 cutest
+                sha1
                 mt19937ar
                 pwp
                 """.split()),
@@ -90,6 +93,7 @@ def scenario_test(bld, src, ccflag=None):
                 config-re
                 bitfield
                 cutest
+                sha1
                 mt19937ar
                 pwp
                 """.split()),
@@ -101,6 +105,7 @@ def scenario_test(bld, src, ccflag=None):
     else:
         bld(rule='export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:. && ./${SRC}', source=src[:-2])
         #bld(rule='pwd && export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:. && ./'+src[:-2])
+
 
 def build(bld):
     bld.load('clib')
@@ -114,23 +119,17 @@ def build(bld):
 
     libyabtorrent_clibs = """
         array-avl-tree
-        asprintf
         bag
-        bitfield
         bitstream
         chunkybar
         config-re
         event-timer
-        file2str
         heap
         linked-list-hashmap
-        linked-list-queue
-        meanqueue
         pwp
         pseudolru
         sha1
         strndup
-        stubfile
         """.split()
 
     bld.shlib(
@@ -141,7 +140,6 @@ def build(bld):
         src/bt_diskcache.c
         src/bt_diskmem.c
         src/bt_download_manager.c
-        src/bt_filedumper.c
         src/bt_peer_manager.c
         src/bt_piece.c
         src/bt_piece_db.c
@@ -149,10 +147,9 @@ def build(bld):
         src/bt_selector_rarestfirst.c
         src/bt_selector_sequential.c
         src/bt_util.c
-        src/bt_sha1.c""".split() + bld.clib_c_files(libyabtorrent_clibs),
+        """.split() + bld.clib_c_files(libyabtorrent_clibs),
         includes=['./include'] + bld.clib_h_paths(libyabtorrent_clibs),
         target='yabbt',
-        #lib=libs,
         cflags=[
             '-Werror',
             '-Werror=format',
@@ -182,53 +179,3 @@ def build(bld):
     scenario_test(bld, 'test_scenario_share_20_pieces.c')
     scenario_test(bld, 'test_scenario_three_peers_share_all_pieces_between_each_other.c')
 
-    libs = ['yabbt', 'uv']
-    if sys.platform == 'win32':
-        libs += """
-                ws2_32
-                psapi
-                Iphlpapi
-                """.split()
-    elif sys.platform == 'darwin':
-        pass
-    else:
-        libs += """
-                dl
-                rt
-                pthread
-                """.split()
-
-    bld.program(
-        source="""
-            src/yabtorrent.c
-            src/network_adapter_libuv_v0.10.c
-            """.split() + bld.clib_c_files("""
-                mt19937ar
-                tracker-client
-                torrent-reader
-                heapless-bencode
-                """.split()),
-        target='bt',
-        cflags="""
-            -g
-            -Werror
-            -Werror=uninitialized
-            -Werror=pointer-to-int-cast
-            -Werror=return-type
-            """.split(),
-        stlibpath=['.'],
-        libpath=[os.getcwd()],
-        lib=libs,
-        includes=['./include', './libuv/include'] + bld.clib_h_paths("""
-                asprintf
-                config-re
-                file2str
-                heapless-bencode
-                linked-list-hashmap
-                linked-list-queue
-                pwp
-                strndup
-                tracker-client
-                torrent-reader
-                heapless-bencode
-                """.split()))

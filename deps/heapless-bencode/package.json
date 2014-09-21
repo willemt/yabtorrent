@@ -1,9 +1,0 @@
-{
-  "name": "heapless-bencode",
-  "version": "0.0.1",
-  "repo": "willemt/heapless-bencode",
-  "description": "Bencode reader that doesn't use the heap",
-  "keywords": ["bencode", "bittorrent", "torrent", "serialization"],
-  "license": "BSD",
-  "src": ["bencode.c", "bencode.h"]
-}

@@ -15,7 +15,7 @@
 /* for disk memory backend */
 #include "bt_diskmem.h"
 
-#include "bt_sha1.h"
+#include "sha1.h"
 
 #include "bt_piece_db.h"
 #include "bt_piece.h"
@@ -111,7 +111,7 @@ static int __mock_disk_write_block(
     void *caller,
     const bt_block_t * blk,
     const void *blkdata
-)
+    )
 {
     mockdisk_t *md = udata;
 
@@ -124,16 +124,15 @@ static void *__mock_disk_read_block(
     void *udata,
     void *caller,
     const bt_block_t * blk
-)
+    )
 {
     mockdisk_t *md = udata;
 
     return md->data + blk->offset;
 }
 
-bt_blockrw_i __mock_disk_rw = {.read_block =
-        __mock_disk_read_block,.write_block = __mock_disk_write_block
-};
+bt_blockrw_i __mock_disk_rw = { .read_block =
+                                    __mock_disk_read_block, .write_block= __mock_disk_write_block };
 
 mockdisk_t __mockdisk;
 
@@ -276,7 +275,7 @@ void TestBTPiece_write_valid_block_results_in_valid_piece( CuTest * tc)
     char hash[21];
 
     peer = malloc(1);
-    bt_str2sha1hash(hash, msg, 40);
+    SHA1(hash, msg, 40);
     pce = bt_piece_new(hash, 40);
     memset(&__mockdisk, 0, sizeof(mockdisk_t));
     bt_piece_set_disk_blockrw(pce, &__mock_disk_rw, &__mockdisk);
@@ -302,7 +301,7 @@ void TestBTPiece_write_invalid_block_results_in_invalid_piece( CuTest * tc)
     char hash[21];
 
     peer = malloc(1);
-    bt_str2sha1hash(hash, msg, 40);
+    SHA1(hash, msg, 40);
     pce = bt_piece_new(hash, 40);
     memset(&__mockdisk, 0, sizeof(mockdisk_t));
     bt_piece_set_disk_blockrw(pce, &__mock_disk_rw, &__mockdisk);
@@ -321,7 +320,7 @@ void TestBTPiece_write_invalid_block_results_in_invalid_piece( CuTest * tc)
 #if 0
 void TxestBTPiece_solo_peer_recognised_as_definitely_invalidating_piece(
     CuTest * tc
-)
+    )
 {
     void *peer;
     bt_piece_t *pce;
@@ -345,7 +344,7 @@ void TxestBTPiece_solo_peer_recognised_as_definitely_invalidating_piece(
 
 void TxestBTPiece_multi_peer_recognised_as_pontentially_invalidating_piece(
     CuTest * tc
-)
+    )
 {
     void *p1, *p2;
     bt_piece_t *pce;
@@ -377,8 +376,8 @@ void TxestBTPiece_multi_peer_recognised_as_pontentially_invalidating_piece(
     CuAssertTrue(tc, 0 == bt_piece_is_valid(pce));
     CuAssertTrue(tc, 0 == bt_piece_peer_is_blacklisted(pce, p1));
     CuAssertTrue(tc, 0 == bt_piece_peer_is_blacklisted(pce, p2));
-    CuAssertTrue(tc, 1 == bt_piece_peer_is_potentially_blacklisted(pce,p1));
-    CuAssertTrue(tc, 1 == bt_piece_peer_is_potentially_blacklisted(pce,p2));
+    CuAssertTrue(tc, 1 == bt_piece_peer_is_potentially_blacklisted(pce, p1));
+    CuAssertTrue(tc, 1 == bt_piece_peer_is_potentially_blacklisted(pce, p2));
 }
 #endif
 
@@ -393,7 +392,7 @@ void TestBTPiece_get_num_peers_from_write_block( CuTest * tc)
     p1 = malloc(1);
     p2 = malloc(1);
     msg = strdup("this great message is 40 bytes in length");
-    bt_str2sha1hash(hash,msg, 40);
+    SHA1(hash, msg, 40);
     pce = bt_piece_new(hash, 40);
     bt_piece_set_disk_blockrw(pce, &__mock_disk_rw, &__mockdisk);
     CuAssertTrue(tc, 0 == bt_piece_num_peers(pce));
@@ -425,7 +424,7 @@ void TestBTPiece_get_peers_from_write_block( CuTest * tc)
     p1 = malloc(1);
     p2 = malloc(1);
     msg = strdup("this great message is 40 bytes in length");
-    bt_str2sha1hash(hash, msg, 40);
+    SHA1(hash, msg, 40);
     pce = bt_piece_new(hash, 40);
     bt_piece_set_disk_blockrw(pce, &__mock_disk_rw, &__mockdisk);
 
@@ -440,12 +439,12 @@ void TestBTPiece_get_peers_from_write_block( CuTest * tc)
     int i = 0;
     void* p1_, *p2_;
 
-    p1_ = bt_piece_get_peers(pce,&i);
+    p1_ = bt_piece_get_peers(pce, &i);
     CuAssertTrue(tc, i != 0);
     CuAssertTrue(tc, p1 == p1_ || p2 == p1_);
-    p2_ = bt_piece_get_peers(pce,&i);
+    p2_ = bt_piece_get_peers(pce, &i);
     CuAssertTrue(tc, p1 == p2_ || p2 == p2_);
-    CuAssertTrue(tc, NULL == bt_piece_get_peers(pce,&i));
+    CuAssertTrue(tc, NULL == bt_piece_get_peers(pce, &i));
     CuAssertTrue(tc, (p1_ == p1 && p2_ == p2) || (p2_ == p1 && p1_ == p2));
-    CuAssertTrue(tc, !bt_piece_get_peers(pce,&i));
+    CuAssertTrue(tc, !bt_piece_get_peers(pce, &i));
 }
