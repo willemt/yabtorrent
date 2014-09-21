@@ -36,12 +36,12 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 unsigned int __bytes_required_for_bits(unsigned int bits)
 {
-    return (0 < (bits % 8) ? 1 : 0) + (bits / 8);
+    return (0u < (bits % 8u) ? 1u : 0u) + (bits / 8u);
 }
 
 void bitfield_init(bitfield_t * me, const unsigned int nbits)
 {
-    //assert(0 < nbits);
+    /* assert(0 < nbits); */
     me->size = nbits;
     me->bits = calloc(1, __bytes_required_for_bits(nbits));
     assert(me->bits);
@@ -72,11 +72,10 @@ void bitfield_mark(bitfield_t * me, const unsigned int bit)
     unsigned int cint;
 
     assert(me->bits);
-    assert(0 <= bit);
     assert(bit < me->size);
 
-    cint = bit / 8;
-    me->bits[cint] |= 1 << (8 - 1 - bit % 8);
+    cint = bit / 8u;
+    me->bits[cint] |= 1u << (8u - 1u - bit % 8u);
 }
 
 void bitfield_unmark(bitfield_t * me, const unsigned int bit)
@@ -84,22 +83,21 @@ void bitfield_unmark(bitfield_t * me, const unsigned int bit)
     unsigned int cint;
 
     assert(me->bits);
-    assert(0 <= bit);
     assert(bit < me->size);
 
-    cint = bit / 8;
-    me->bits[cint] &= ~(1 << (8 - 1 - bit % 8));
+    cint = bit / 8u;
+    me->bits[cint] &= ~(1u << (8u - 1u - bit % 8u));
 }
 
 int bitfield_is_marked(bitfield_t * me, const unsigned int bit)
 {
+    unsigned int cint;
+
     assert(me->bits);
     assert(bit < me->size);
 
-    unsigned int cint;
-
-    cint = bit / 8;
-    return 0 != (me->bits[cint] & (1 << (8 - 1 - bit % 8)));
+    cint = bit / 8u;
+    return 0u != (me->bits[cint] & (1u << (8u - 1u - bit % 8u)));
 }
 
 unsigned int bitfield_get_length(bitfield_t * me)
@@ -112,7 +110,7 @@ char *bitfield_str(bitfield_t * me)
     char *str = malloc(me->size + 1);
 
     unsigned int i;
-    for (i = 0; i < me->size; i++)
+    for (i = 0u; i < me->size; i++)
         str[i] = bitfield_is_marked(me, i) ? '1' : '0';
 
     str[me->size] = '\0';

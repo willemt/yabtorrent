@@ -176,6 +176,7 @@ def build(bld):
     unit_test(bld, 'test_piece.c')
     unit_test(bld, 'test_piece_db.c')
     unit_test(bld, 'test_blacklist.c')
+    scenario_test(bld, 'test_download_manager_check_pieces.c')
     scenario_test(bld, 'test_scenario_shares_all_pieces.c')
     scenario_test(bld, 'test_scenario_shares_all_pieces_between_each_other.c')
     scenario_test(bld, 'test_scenario_share_20_pieces.c')

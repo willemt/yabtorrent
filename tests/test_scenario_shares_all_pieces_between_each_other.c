@@ -2,7 +2,7 @@
 /**
  * Copyright (c) 2011, Willem-Hendrik Thiart
  * Use of this source code is governed by a BSD-style license that can be
- * found in the LICENSE file. 
+ * found in the LICENSE file.
  *
  * @file
  * @author  Willem Thiart himself@willemthiart.com
@@ -33,7 +33,7 @@
 
 void TestBT_Peer_shares_all_pieces_between_each_other(
     CuTest * tc
-)
+    )
 {
     int ii;
     client_t* a, *b;
@@ -42,7 +42,7 @@ void TestBT_Peer_shares_all_pieces_between_each_other(
     char *addr;
 
     clients_setup();
-    mt = mocktorrent_new(2,5);
+    mt = mocktorrent_new(2, 5);
     a = mock_client_setup(5);
     b = mock_client_setup(5);
 
@@ -63,15 +63,15 @@ void TestBT_Peer_shares_all_pieces_between_each_other(
         config_set(cfg, "piece_length", "5");
         config_set(cfg, "infohash", "00000000000000000000");
         /* add files/pieces */
-        //bt_piecedb_add_file(bt_dm_get_piecedb(bt),"test.txt",8,5);
-        bt_piecedb_increase_piece_space(bt_dm_get_piecedb(bt),5);
-        //bt_piecedb_add_file(bt_dm_get_piecedb(bt),"test2.txt",8,12);
-        bt_piecedb_increase_piece_space(bt_dm_get_piecedb(bt),12);
+        bt_piecedb_increase_piece_space(bt_dm_get_piecedb(bt), 5);
+        bt_piecedb_increase_piece_space(bt_dm_get_piecedb(bt), 12);
 
         bt_piecedb_add_with_hash_and_size(bt_dm_get_piecedb(bt),
-            mocktorrent_get_piece_sha1(mt,hash,0), 5);
+                                          mocktorrent_get_piece_sha1(mt, hash,
+                                                                     0), 5);
         bt_piecedb_add_with_hash_and_size(bt_dm_get_piecedb(bt),
-            mocktorrent_get_piece_sha1(mt,hash,1), 5);
+                                          mocktorrent_get_piece_sha1(mt, hash,
+                                                                     1), 5);
     }
 
     /* write blocks to client A & B */
@@ -83,47 +83,52 @@ void TestBT_Peer_shares_all_pieces_between_each_other(
         blk.offset = 0;
         blk.len = 5;
 
-        data = mocktorrent_get_data(mt,0);
+        data = mocktorrent_get_data(mt, 0);
         bt_diskmem_write_block(
-                bt_piecedb_get_diskstorage(bt_dm_get_piecedb(b->bt)),
-                NULL, &blk, data);
+            bt_piecedb_get_diskstorage(bt_dm_get_piecedb(b->bt)),
+            NULL, &blk, data);
 
         blk.piece_idx = 1;
-        data = mocktorrent_get_data(mt,1);
+        data = mocktorrent_get_data(mt, 1);
         bt_diskmem_write_block(
-                bt_piecedb_get_diskstorage(bt_dm_get_piecedb(a->bt)),
-                NULL, &blk, data);
+            bt_piecedb_get_diskstorage(bt_dm_get_piecedb(a->bt)),
+            NULL, &blk, data);
     }
 
     bt_dm_check_pieces(a->bt);
     bt_dm_check_pieces(b->bt);
 
-    asprintf(&addr,"%p", a);
-    client_add_peer(b,NULL,0,addr,strlen(addr),0);
+    bt_dm_periodic(a->bt, NULL);
+    bt_dm_periodic(b->bt, NULL);
 
-    for (ii=0; ii<20; ii++)
+    asprintf(&addr, "%p", a);
+    client_add_peer(b, NULL, 0, addr, strlen(addr), 0);
+
+    for (ii = 0; ii < 20; ii++)
     {
-#if 0 /* debugging */
-        printf("\nStep %d:\n", ii+1);
+#if 0   /* debugging */
+        printf("\nStep %d:\n", ii + 1);
 #endif
 
         bt_dm_periodic(a->bt, NULL);
         bt_dm_periodic(b->bt, NULL);
 
         network_poll(a->bt, (void*)&a, 0,
-                bt_dm_dispatch_from_buffer,
-                mock_on_connect);
+                     bt_dm_dispatch_from_buffer,
+                     mock_on_connect);
 
         network_poll(b->bt, (void*)&b, 0,
-                bt_dm_dispatch_from_buffer,
-                mock_on_connect);
+                     bt_dm_dispatch_from_buffer,
+                     mock_on_connect);
     }
 
     /* empty jobs */
     bt_dm_periodic(a->bt, NULL);
     bt_dm_periodic(b->bt, NULL);
 
-    CuAssertTrue(tc, 1 == bt_piecedb_all_pieces_are_complete(bt_dm_get_piecedb(a->bt)));
-    CuAssertTrue(tc, 1 == bt_piecedb_all_pieces_are_complete(bt_dm_get_piecedb(b->bt)));
+    CuAssertTrue(tc, 1 ==
+                 bt_piecedb_all_pieces_are_complete(bt_dm_get_piecedb(a->bt)));
+    CuAssertTrue(tc, 1 ==
+                 bt_piecedb_all_pieces_are_complete(bt_dm_get_piecedb(b->bt)));
 }
 

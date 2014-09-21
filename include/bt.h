@@ -2,7 +2,7 @@
 /**
  * Copyright (c) 2011, Willem-Hendrik Thiart
  * Use of this source code is governed by a BSD-style license that can be
- * found in the LICENSE file. 
+ * found in the LICENSE file.
  *
  * @file
  * @author  Willem Thiart himself@willemthiart.com
@@ -25,41 +25,41 @@ typedef struct
 #ifndef HAVE_FUNC_LOG
 #define HAVE_FUNC_LOG
 typedef void (
-    *func_log_f
+*func_log_f
 )    (
     void *udata,
     void *src,
     const char *buf,
     ...
-);
+    );
 #endif
 
 typedef int (
-    *func_flush_block_f
+*func_flush_block_f
 )   (
     void *udata,
     void *caller,
     const bt_block_t * blk
-);
+    );
 
 /**
  * @return 0 on error */
 typedef int (
-    *func_write_block_f
+*func_write_block_f
 )   (
     void *udata,
     void *caller,
     const bt_block_t * blk,
     const void *blkdata
-);
+    );
 
 typedef void *(
-    *func_read_block_f
+*func_read_block_f
 )    (
     void *udata,
     void *caller,
     const bt_block_t * blk
-);
+    );
 
 
 typedef struct
@@ -73,7 +73,8 @@ typedef void* bt_piece_t;
 
 /**
  * Peer statistics */
-typedef struct {
+typedef struct
+{
     int drate;
     int urate;
     int choked;
@@ -82,7 +83,8 @@ typedef struct {
     int failed_connection;
 } bt_dm_peer_stats_t;
 
-typedef struct {
+typedef struct
+{
     /* individual peer stats */
     bt_dm_peer_stats_t *peers;
 
@@ -116,12 +118,14 @@ typedef struct
     int npieces;
 } bt_piece_info_t;
 
-typedef struct {
+typedef struct
+{
     void* (*get_piece)(void *db, const unsigned int piece_idx);
     void* (*get_sparsecounter)(void *db);
 } bt_piecedb_i;
 
-typedef struct {
+typedef struct
+{
     void* (*new)(int npieces);
 
     /**
@@ -136,11 +140,11 @@ typedef struct {
      * Register this piece as something we have */
     void (*have_piece)(void *r, int piece_idx);
 
-    /* 
+    /*
      * Register this piece as being available from the peer */
     void (*peer_have_piece)(void *r, void* peer, int piece_idx);
 
-    /* 
+    /*
      * Give this piece back to the selector */
     void (*peer_giveback_piece)(void *r, void* peer, int piece_idx);
 
@@ -164,9 +168,9 @@ typedef struct {
 #define BT_PEER_ID_LEN 20
 #define BT_VERSION_NUM 1000
 #define BT_BLOCK_SIZE 1 << 14 // 16kb
-#define BT_HANDSHAKER_DISPATCH_SUCCESS 1
-#define BT_HANDSHAKER_DISPATCH_REMAINING 0
-#define BT_HANDSHAKER_DISPATCH_ERROR -1
+        #define BT_HANDSHAKER_DISPATCH_SUCCESS 1
+        #define BT_HANDSHAKER_DISPATCH_REMAINING 0
+        #define BT_HANDSHAKER_DISPATCH_ERROR -1
 
 typedef struct
 {
@@ -189,7 +193,7 @@ typedef struct
 {
     /**
      * Connect to the peer
-     * @param me 
+     * @param me
      * @param conn_ctx Pointer available for the callee to identify the peer
      * @param udata Memory to be used for connection. Callee's responsibility to alloc memory.
      * @param host Hostname
@@ -197,66 +201,66 @@ typedef struct
      * @param func_process_connection Callback for sucessful connections.
      * @param func_connection_failed Callback for failed connections.
      * @return 1 if successful; otherwise 0 */
-    int (*peer_connect) (void* me,
+    int (*peer_connect)(void* me,
                         void **udata,
                         void **conn_ctx,
                         const char *host, const int port,
 
-       /**
-        * We've received data from the peer.
-        * Announce this to the cb_ctx.
-        *
-        * @param me The caller
-        * @param conn_ctx Peer ID 
-        * @param buf Buffer containing data
-        * @param len Bytes available in buffer
-        */
-        int (*func_process_data) (void *me,
-        void* conn_ctx,
-        const char* buf,
-        unsigned int len),
+                        /**
+                         * We've received data from the peer.
+                         * Announce this to the cb_ctx.
+                         *
+                         * @param me The caller
+                         * @param conn_ctx Peer ID
+                         * @param buf Buffer containing data
+                         * @param len Bytes available in buffer
+                         */
+                        int (*func_process_data)(void *me,
+                                                 void* conn_ctx,
+                                                 const char* buf,
+                                                 unsigned int len),
 
-       /**
-        * We've determined that we are now connected.
-        * Announce the connection to the caller.
-        *
-        * @param me The caller
-        * @param conn_ctx Peer ID 
-        * @param ip The IP that connected to us
-        * @return 0 on failure
-        */
-        int (*func_process_connection) (
-            void *me,
-            void *conn_ctx,
-            char *ip,
-            int port),
+                        /**
+                         * We've determined that we are now connected.
+                         * Announce the connection to the caller.
+                         *
+                         * @param me The caller
+                         * @param conn_ctx Peer ID
+                         * @param ip The IP that connected to us
+                         * @return 0 on failure
+                         */
+                        int (*func_process_connection)(
+                            void *me,
+                            void *conn_ctx,
+                            char *ip,
+                            int port),
 
-       /**
-        * The connection attempt failed.
-        * Announce the failed connection to the caller.
-        *
-        * @param me The caller
-        * @param conn_ctx Peer ID */
-        void (*func_connection_failed) (void *, void* conn_ctx));
+                        /**
+                         * The connection attempt failed.
+                         * Announce the failed connection to the caller.
+                         *
+                         * @param me The caller
+                         * @param conn_ctx Peer ID */
+                        void (*func_connection_failed)(void *, void* conn_ctx));
 
     /**
      * Send data to peer
      *
-     * @param me 
+     * @param me
      * @param conn_ctx The peer's network ID
      * @param send_data Data to be sent
      * @param len Length of data to be sent
      * @return 0 if added to buffer due to write failure, -2 if disconnect
      */
-    int (*peer_send) (void* me,
-                      void **udata,
-                      void* conn_ctx,
-                      const char *send_data, const int len);
+    int (*peer_send)(void* me,
+                     void **udata,
+                     void* conn_ctx,
+                     const char *send_data, const int len);
 
     /**
      * Drop the connection for this peer
      * @return 1 on success, otherwise 0 */
-    int (*peer_disconnect) (void* me, void **udata, void* conn_ctx);
+    int (*peer_disconnect)(void* me, void **udata, void* conn_ctx);
 
     /**
      * Waits until lock is released, and then runs callback.
@@ -267,7 +271,7 @@ typedef struct
      * @param cb Callback
      * @return result of callback */
     void* (*call_exclusively)(void* me, void* cb_ctx, void **lock, void* udata,
-            void* (*cb)(void* me, void* udata));
+                              void* (*cb)(void* me, void* udata));
 
     func_log_f log;
 
@@ -284,8 +288,8 @@ typedef struct
      *  Disconnect on any errors
      *  @return 1 succesful handshake; 0 unfinished reading; -1 bad handshake */
     int (*handshaker_dispatch_from_buffer)(void* me_,
-            const char** buf,
-            unsigned int* len);
+                                           const char** buf,
+                                           unsigned int* len);
 
     /**
      * Send the handshake
@@ -294,16 +298,17 @@ typedef struct
         void* callee,
         void* udata,
         int (*send)(void *callee,
-            const void *udata,
-            const void *send_data,
-            const int len),
+                    const void *udata,
+                    const void *send_data,
+                    const int len),
         char* expected_ih,
         char* my_pi);
 
     /**
      * Called when a handshake is sucessful
      * @return newly initialised handshaker */
-    void (*handshake_success)(void* callee, void* udata, void* pc, void* pnethandle);
+    void (*handshake_success)(void* callee, void* udata, void* pc,
+                              void* pnethandle);
 
     void* (*msghandler_new)(void* callee, void* pc);
 } bt_dm_cbs_t;
@@ -322,7 +327,7 @@ int bt_dm_release(bt_dm_t* me_);
 /**
  * Connect a peer to the torrent
  *
- * Don't connect a peer if it hasn't been added 
+ * Don't connect a peer if it hasn't been added
  *
  * @pararm conn_ctx Context for this peer
  * @param ip IP that the peer is from
@@ -338,10 +343,10 @@ void bt_dm_peer_connect_fail(void *bto, void* conn_ctx);
  * Take this PWP message and process it on the Peer Connection side
  * @return 1 on sucess; 0 otherwise */
 int bt_dm_dispatch_from_buffer(
-        void *bto,
-        void *peer_conn_ctx,
-        const char* buf,
-        unsigned int len);
+    void *bto,
+    void *peer_conn_ctx,
+    const char* buf,
+    unsigned int len);
 
 /**
  * Add a peer. Initiate connection with the peer if conn_ctx is NULL
@@ -353,11 +358,11 @@ int bt_dm_dispatch_from_buffer(
  *                 connection will allocate it's own memory
  * @return the newly initialised peer; NULL on errors */
 void *bt_dm_add_peer(bt_dm_t* me_,
-                              const char *peer_id,
-                              const int peer_id_len,
-                              const char *ip, const int ip_len, const int port,
-                              void* conn_ctx,
-                              void* conn_mem);
+                     const char *peer_id,
+                     const int peer_id_len,
+                     const char *ip, const int ip_len, const int port,
+                     void* conn_ctx,
+                     void* conn_mem);
 
 /**
  * Remove the peer
@@ -373,7 +378,7 @@ void bt_dm_periodic(bt_dm_t* me_, bt_dm_stats_t *stats);
 
 /**
  * Set callback functions
- * 
+ *
  * If funcs.handshaker_dispatch_from_buffer is not set:
  *  No handshaking will occur. This is useful for client variants which
  *  establish a handshake earlier at a higher level.
@@ -410,7 +415,8 @@ void* bt_dm_get_config(bt_dm_t* me_);
  * implementation of the piece selector from bt_dm
  * @param ips Struct of function pointers for piece selector operation
  * @param piece_selector Selector instance. If NULL we call the constructor. */
-void bt_dm_set_piece_selector(bt_dm_t* me_, bt_pieceselector_i* ips, void* piece_selector);
+void bt_dm_set_piece_selector(bt_dm_t* me_, bt_pieceselector_i* ips,
+                              void* piece_selector);
 
 void *bt_peer_get_conn_ctx(void* pr);
 
@@ -421,5 +427,9 @@ char *bt_generate_peer_id();
 /**
  * @return number of jobs outstanding */
 int bt_dm_get_jobs(bt_dm_t* me_);
+
+/**
+ * @return 1 if piece is complete; 0 otherwise */
+int bt_dm_piece_is_complete(bt_dm_t* me_, unsigned int piece_idx);
 
 #endif /* BT_H_ */

@@ -2,7 +2,7 @@
 /**
  * Copyright (c) 2011, Willem-Hendrik Thiart
  * Use of this source code is governed by a BSD-style license that can be
- * found in the LICENSE file. 
+ * found in the LICENSE file.
  *
  * @file
  * @author  Willem Thiart himself@willemthiart.com
@@ -37,15 +37,16 @@
 
 void *__clients = NULL;
 
-static void* call_exclusively_pass_through(void* me, void* cb_ctx, void **lock, void* udata,
-        void* (*cb)(void* me, void* udata))
+static void* call_exclusively_pass_through(void* me, void* cb_ctx, void **lock,
+                                           void* udata,
+                                           void* (*cb)(void* me, void* udata))
 {
-    return cb(me,udata);
+    return cb(me, udata);
 }
 
 static unsigned long __vptr_hash(
     const void *e1
-)
+    )
 {
     return (unsigned long)e1;
 }
@@ -53,14 +54,16 @@ static unsigned long __vptr_hash(
 static long __vptr_compare(
     const void *e1,
     const void *e2
-)
+    )
 {
     return (unsigned long)e1 - (unsigned long)e2;
 }
 
 static void __log(void *udata, void *src, const char *buf, ...)
 {
-//    printf("%s\n", buf);
+#if 0
+    printf("%s\n", buf);
+#endif
 }
 
 void* clients_get()
@@ -85,7 +88,7 @@ void mock_client_setup_disk_backend(void* bt, unsigned int piece_len)
     db = bt_piecedb_new();
     bt_piecedb_set_diskstorage(db, bt_diskmem_get_blockrw(dc), dc);
     //bt_piecedb_set_piece_length(db,piece_len);
-    bt_dm_set_piece_db(bt, &((bt_piecedb_i){ .get_piece = bt_piecedb_get}),db);
+    bt_dm_set_piece_db(bt, &((bt_piecedb_i){.get_piece = bt_piecedb_get }), db);
 }
 
 void client_add_peer(
@@ -100,26 +103,25 @@ void client_add_peer(
     void* peer_nethandle;
     char ip_string[32];
 
-    sprintf(ip_string,"%.*s", ip_len, ip);
+    sprintf(ip_string, "%.*s", ip_len, ip);
     peer_nethandle = NULL;
-    
+
 #if 0
 
     /* connect to the peer */
     if (0 == peer_connect(me,
-                (void**)&me,
-                &peer_nethandle,
-                ip_string, port,
-                bt_dm_dispatch_from_buffer,
-                bt_dm_peer_connect,
-                bt_dm_peer_connect_fail))
-    {
+                          (void**)&me,
+                          &peer_nethandle,
+                          ip_string, port,
+                          bt_dm_dispatch_from_buffer,
+                          bt_dm_peer_connect,
+                          bt_dm_peer_connect_fail))
         printf("failed connection to peer");
-    }
+
 #endif
 
     peer = bt_dm_add_peer(me->bt, peer_id, peer_id_len, ip, ip_len, port,
-            peer_nethandle, NULL);
+                          peer_nethandle, NULL);
 
 }
 
@@ -135,30 +137,36 @@ client_t* mock_client_setup(int piecelen)
     cfg = bt_dm_get_config(cli->bt);
     config_set(cfg, "my_peerid", bt_generate_peer_id());
     bt_dm_set_cbs(cli->bt,
-        &((bt_dm_cbs_t) {
-        .peer_connect = peer_connect,
-        .peer_send = peer_send,
-        .peer_disconnect = peer_disconnect,
-        .call_exclusively = call_exclusively_pass_through,
-        .log = __log,
-        .handshaker_new = pwp_handshaker_new,
-        .handshaker_release = pwp_handshaker_release,
-        .handshaker_dispatch_from_buffer = pwp_handshaker_dispatch_from_buffer,
-        .send_handshake = pwp_send_handshake,
-        .msghandler_new = NULL
-        }), cli);
-    bt_dm_set_piece_selector(cli->bt, 
-        &((bt_pieceselector_i) {
-        .new = bt_random_selector_new,
-        .peer_giveback_piece = bt_random_selector_giveback_piece,
-        .have_piece = bt_random_selector_have_piece,
-        .remove_peer = bt_random_selector_remove_peer,
-        .add_peer = bt_random_selector_add_peer,
-        .peer_have_piece = bt_random_selector_peer_have_piece,
-        .get_npeers = bt_random_selector_get_npeers,
-        .get_npieces = bt_random_selector_get_npieces,
-        .poll_piece = bt_random_selector_poll_best_piece
-        }), NULL);
+                  &((bt_dm_cbs_t) {
+                        .peer_connect = peer_connect,
+                        .peer_send = peer_send,
+                        .peer_disconnect = peer_disconnect,
+                        .call_exclusively = call_exclusively_pass_through,
+                        .log = __log,
+                        .handshaker_new = pwp_handshaker_new,
+                        .handshaker_release = pwp_handshaker_release,
+                        .handshaker_dispatch_from_buffer =
+                            pwp_handshaker_dispatch_from_buffer,
+                        .send_handshake = pwp_send_handshake,
+                        .msghandler_new = NULL
+                    }), cli);
+    bt_dm_set_piece_selector(cli->bt,
+                             &((bt_pieceselector_i) {
+                                   .new = bt_random_selector_new,
+                                   .peer_giveback_piece =
+                                       bt_random_selector_giveback_piece,
+                                   .have_piece = bt_random_selector_have_piece,
+                                   .remove_peer =
+                                       bt_random_selector_remove_peer,
+                                   .add_peer = bt_random_selector_add_peer,
+                                   .peer_have_piece =
+                                       bt_random_selector_peer_have_piece,
+                                   .get_npeers = bt_random_selector_get_npeers,
+                                   .get_npieces =
+                                       bt_random_selector_get_npieces,
+                                   .poll_piece =
+                                       bt_random_selector_poll_best_piece
+                               }), NULL);
     mock_client_setup_disk_backend(cli->bt, piecelen);
 
     hashmap_put(__clients, cli, cli);

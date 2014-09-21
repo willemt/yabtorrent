@@ -1,7 +1,7 @@
 /**
  * Copyright (c) 2011, Willem-Hendrik Thiart
  * Use of this source code is governed by a BSD-style license that can be
- * found in the LICENSE file. 
+ * found in the LICENSE file.
  *
  * @file
  * @brief Represent a single piece and the accounting it needs
@@ -31,7 +31,8 @@
 
 enum { FALSE, TRUE };
 
-enum {
+enum
+{
     VALIDITY_NOTCHECKED,
     VALIDITY_VALID,
     VALIDITY_INVALID
@@ -71,11 +72,11 @@ typedef struct
 
 void* bt_piece_get_peers(bt_piece_t *me, int *iter)
 {
-    for (;*iter < avltree_size(priv(me)->peers); (*iter)++)
+    for (; *iter < avltree_size(priv(me)->peers); (*iter)++)
     {
         void* k;
 
-        if ((k = avltree_get_from_idx(priv(me)->peers,*iter)))
+        if ((k = avltree_get_from_idx(priv(me)->peers, *iter)))
         {
             (*iter)++;
             return k;
@@ -96,7 +97,7 @@ int bt_piece_write_block(
     const bt_block_t * b,
     const void *b_data,
     void* peer
-)
+    )
 {
     assert(me);
 
@@ -105,9 +106,7 @@ int bt_piece_write_block(
 #endif
 
     if (!priv(me)->disk)
-    {
         return 0;
-    }
 
     avltree_insert(priv(me)->peers, peer, peer);
 
@@ -115,13 +114,9 @@ int bt_piece_write_block(
     assert(priv(me)->disk_udata);
 
     if (0 == priv(me)->disk->write_block(priv(me)->disk_udata, me, b, b_data))
-    {
         return 0;
-    }
     else
-    {
         priv(me)->validity = VALIDITY_NOTCHECKED;
-    }
 
     /* mark progress */
     chunky_mark_complete(priv(me)->progress_requested, b->offset, b->len);
@@ -159,20 +154,20 @@ static long __cmp_address(const void *e1, const void *e2)
 }
 
 bt_piece_t *bt_piece_new(
-        const char *sha1sum,
-        const int piece_bytes_size)
+    const char *sha1sum,
+    const int piece_bytes_size)
 {
     __piece_private_t *me;
 
-    me = calloc(1,sizeof(__piece_private_t));
+    me = calloc(1, sizeof(__piece_private_t));
     priv(me)->progress_downloaded = chunky_new(piece_bytes_size);
     priv(me)->progress_requested = chunky_new(piece_bytes_size);
     priv(me)->piece_length = piece_bytes_size;
     priv(me)->is_completed = FALSE;
     priv(me)->peers = avltree_new(__cmp_address);
     if (sha1sum)
-        bt_piece_set_hash((bt_piece_t*)me,sha1sum);
-    return (bt_piece_t *) me;
+        bt_piece_set_hash((bt_piece_t*)me, sha1sum);
+    return (bt_piece_t*)me;
 }
 
 void bt_piece_free(bt_piece_t * me)
@@ -183,7 +178,7 @@ void bt_piece_free(bt_piece_t * me)
     free(me);
 }
 
-/** 
+/**
  * Get data via block read */
 static void *__get_data(bt_piece_t * me)
 {
@@ -192,7 +187,7 @@ static void *__get_data(bt_piece_t * me)
     /* fail without disk reading functions */
     if (!priv(me)->disk || !priv(me)->disk->read_block)
     {
-#if 0 /* debugging */
+#if 0   /* debugging */
         printf("ERROR: no disk reading functions available\n");
 #endif
         return NULL;
@@ -245,7 +240,7 @@ int bt_piece_is_complete(bt_piece_t * me)
     unsigned int off, ln;
 
     chunky_get_incomplete(priv(me)->progress_downloaded, &off, &ln,
-                              priv(me)->piece_length);
+                          priv(me)->piece_length);
 
     /*  if we haven't downloaded any of the file */
     if (0 == off && ln == priv(me)->piece_length)
@@ -272,16 +267,13 @@ void bt_piece_poll_block_request(bt_piece_t * me, bt_block_t * request)
     /*  very rare that the standard block size is greater than the piece size
      *  this should relate to testing only */
     if (priv(me)->piece_length < BT_BLOCK_SIZE)
-    {
         blk_size = priv(me)->piece_length;
-    }
     else
-    {
         blk_size = BT_BLOCK_SIZE;
-    }
 
     /* create the request by getting an incomplete block */
-    chunky_get_incomplete(priv(me)->progress_requested, &offset, &len, blk_size);
+    chunky_get_incomplete(priv(me)->progress_requested, &offset, &len,
+                          blk_size);
     request->piece_idx = priv(me)->idx;
     request->offset = offset;
     request->len = len;
@@ -344,7 +336,7 @@ int bt_piece_write_block_to_stream(
     bt_piece_t *me,
     bt_block_t *blk,
     char **msg
-)
+    )
 {
     char *data;
     int i;
@@ -367,11 +359,11 @@ int bt_piece_write_block_to_str(bt_piece_t *me, bt_block_t *blk, char *out)
 {
     int offset, len;
     void *data;
-    
+
     data = __get_data(me);
     offset = blk->offset;
     len = blk->len;
-    memcpy(out, (char *) data + offset, len);
+    memcpy(out, (char*)data + offset, len);
     return 1;
 }
 
@@ -389,9 +381,7 @@ int bt_piece_calculate_hash(bt_piece_t* me, char *hash)
     void *data;
 
     if (!(data = __get_data(me)))
-    {
         return 0;
-    }
 
     bt_str2sha1hash(hash, data, priv(me)->piece_length);
     return 1;
@@ -399,43 +389,41 @@ int bt_piece_calculate_hash(bt_piece_t* me, char *hash)
 
 int bt_piece_validate(bt_piece_t* me)
 {
-
     char hash[20];
-    int ret;
 
     if (0 == bt_piece_calculate_hash(me, hash))
         return 0;
 
-    ret = memcmp(hash, priv(me)->sha1, 20);
-
+    int ret = memcmp(hash, priv(me)->sha1, 20);
     if (0 == ret)
     {
         priv(me)->validity = VALIDITY_VALID;
         priv(me)->is_completed = TRUE;
+        return BT_PIECE_VALIDATE_COMPLETE_PIECE;
     }
     else
     {
         priv(me)->validity = VALIDITY_INVALID;
         priv(me)->is_completed = FALSE;
-        return 0;
+        return BT_PIECE_VALIDATE_INVALID_PIECE;
     }
 
 #if 0 /* debugging */
     {
         int ii;
 
-        printf("(idx:%d) Expected: ", me->idx);
-        for (ii=0; ii<20; ii++)
+//        printf("(idx:%d) Expected: ", me->idx);
+        for (ii = 0; ii < 20; ii++)
             printf("%02x ", ((unsigned char*)priv(me)->sha1)[ii]);
         printf("\n");
 
         printf("         File calc: ");
-        for (ii=0; ii<20; ii++)
+        for (ii = 0; ii < 20; ii++)
             printf("%02x ", ((unsigned char*)hash)[ii]);
         printf("\n");
     }
 #endif
-    return ret;
+    return BT_PIECE_VALIDATE_ERROR;
 }
 
 void bt_piece_set_mtime(bt_piece_t * me, unsigned int mtime)
