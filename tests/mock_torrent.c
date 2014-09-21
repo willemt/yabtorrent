@@ -5,6 +5,9 @@
 #include <stdio.h>
 #include <assert.h>
 
+/* for uint32_t */
+#include <stdint.h>
+
 #include "mock_torrent.h"
 #include "mt19937ar.h"
 #include "bt.h"

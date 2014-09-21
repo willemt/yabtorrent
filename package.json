@@ -59,6 +59,6 @@
     "willemt/pseudolru": "*",
     "willemt/pwp": "*",
     "clibs/sha1": "*",
-    "willemt/strndup": "*"
+    "clibs/strndup": "*"
   }
 }
