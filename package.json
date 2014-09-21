@@ -55,10 +55,10 @@
     "willemt/linked-list-hashmap": "*",
     "willemt/linked-list-queue": "*",
     "willemt/meanqueue": "*",
-    "clib/mt19937ar": "*",
+    "clibs/mt19937ar": "*",
     "willemt/pseudolru": "*",
     "willemt/pwp": "*",
-    "clib/sha1": "*",
+    "clibs/sha1": "*",
     "willemt/strndup": "*"
   }
 }
