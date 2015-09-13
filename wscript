@@ -137,8 +137,8 @@ def build(bld):
         src/bt_blacklist.c
         src/bt_choker_leecher.c
         src/bt_choker_seeder.c
-        src/bt_diskcache.c
-        src/bt_diskmem.c
+        src/bt_blockrw_cache.c
+        src/bt_blockrw_mem.c
         src/bt_download_manager.c
         src/bt_peer_manager.c
         src/bt_piece.c
