@@ -1,1 +1,1 @@
-script: "make install_libuv && make"
+script: "make libuv && make"
