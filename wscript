@@ -68,6 +68,7 @@ def scenario_test(bld, src, ccflag=None):
             "tests/mock_torrent.c",
             "tests/mock_client.c",
             ] + bld.clib_c_files("""
+                asprintf
                 bipbuffer
                 cutest
                 sha1
@@ -89,6 +90,7 @@ def scenario_test(bld, src, ccflag=None):
             "./include",
             "./tests"
             ] + bld.clib_h_paths("""
+                asprintf
                 bipbuffer
                 config-re
                 bitfield
