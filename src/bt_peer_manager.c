@@ -27,6 +27,7 @@
 #include "bt_peermanager.h"
 
 #include "linked_list_hashmap.h"
+#include "asprintf.h"
 
 typedef struct {
 

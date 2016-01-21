@@ -21,6 +21,7 @@
 #include "bt_util.h"
 
 #include "sha1.h"
+#include "asprintf.h"
 
 char *bt_generate_peer_id()
 {

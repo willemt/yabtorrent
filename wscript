@@ -119,6 +119,7 @@ def build(bld):
 
     libyabtorrent_clibs = """
         array-avl-tree
+        asprintf
         bag
         bitstream
         chunkybar
