@@ -27,6 +27,7 @@
 #include "config.h"
 #include "linked_list_hashmap.h"
 #include "bipbuffer.h"
+#include "asprintf.h"
 
 #include <fcntl.h>
 #include <sys/time.h>

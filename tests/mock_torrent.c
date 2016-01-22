@@ -12,6 +12,7 @@
 #include "mt19937ar.h"
 #include "bt.h"
 #include "sha1.h"
+#include "asprintf.h"
 
 typedef struct
 {
